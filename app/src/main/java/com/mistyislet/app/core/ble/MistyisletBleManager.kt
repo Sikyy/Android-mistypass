@@ -109,6 +109,15 @@ class MistyisletBleManager(
                 // 64 leaves only 61 usable bytes after ATT overhead — always truncates.
                 requestMtu(256).suspend()
 
+                // Step 0: Read reader identity (if available) for audit trail
+                readerIdentityChar?.let { idChar ->
+                    val idData = readCharacteristic(idChar).suspend()
+                    val readerId = idData.value?.let { String(it, Charsets.UTF_8) }
+                    if (!readerId.isNullOrBlank()) {
+                        Log.d(TAG, "Reader identity: $readerId")
+                    }
+                }
+
                 // Step 1: Read challenge
                 val challengeData = readCharacteristic(challengeChar).suspend()
                 val challengeBytes = challengeData.value ?: throw Exception("Empty challenge")
