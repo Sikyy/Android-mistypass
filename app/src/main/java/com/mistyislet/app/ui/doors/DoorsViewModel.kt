@@ -94,7 +94,7 @@ class DoorsViewModel @Inject constructor(
     private fun startAutoRefresh() {
         viewModelScope.launch {
             while (true) {
-                delay(15_000L)
+                delay(60_000L)
                 silentRefresh()
             }
         }

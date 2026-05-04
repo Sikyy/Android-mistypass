@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Production: pin certificate for API -->
+    <!--
+        Production cert pinning: uncomment and replace pins when api.mistyislet.com is deployed.
+        Generate pins with: openssl s_client -connect api.mistyislet.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+    -->
+    <!--
     <domain-config>
         <domain includeSubdomains="true">api.mistyislet.com</domain>
         <pin-set expiration="2027-01-01">
-            <!-- SHA-256 pin of the server's public key (update with real pin) -->
-            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
-            <!-- Backup pin -->
-            <pin digest="SHA-256">CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=</pin>
+            <pin digest="SHA-256">REPLACE_WITH_REAL_PRIMARY_PIN=</pin>
+            <pin digest="SHA-256">REPLACE_WITH_REAL_BACKUP_PIN=</pin>
         </pin-set>
     </domain-config>
+    -->
 
     <!-- Debug: allow cleartext for local development -->
     <domain-config cleartextTrafficPermitted="true">

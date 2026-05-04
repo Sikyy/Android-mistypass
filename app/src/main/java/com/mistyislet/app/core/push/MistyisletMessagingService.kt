@@ -5,29 +5,32 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.mistyislet.app.MainActivity
 import com.mistyislet.app.R
+import com.mistyislet.app.core.storage.TokenStore
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import javax.inject.Inject
 
-/**
- * Firebase Cloud Messaging 服务。
- * 接收推送通知并展示本地通知。
- *
- * 通知类型：
- * - door_unlocked: 开门成功
- * - visitor_arrived: 访客到达
- * - credential_updated: 凭证状态变更
- * - access_changed: 权限变更
- */
+@AndroidEntryPoint
 class MistyisletMessagingService : FirebaseMessagingService() {
+
+    @Inject lateinit var tokenStore: TokenStore
 
     companion object {
         private const val TAG = "FCM"
 
-        // 通知渠道
         const val CHANNEL_SECURITY = "security_alerts"
         const val CHANNEL_CREDENTIAL = "credential_alerts"
         const val CHANNEL_ACCESS = "access_updates"
@@ -55,7 +58,31 @@ class MistyisletMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         Log.d(TAG, "FCM token refreshed: ${token.take(10)}...")
-        // TODO: POST to /app/devices/register when API is ready
+        if (tokenStore.accessToken == null) return
+
+        val deviceId = "${Build.BOARD}_${Build.FINGERPRINT.hashCode().toUInt()}"
+        val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val json = """{"fcm_token":"$token","device_id":"$deviceId","device_model":"$deviceModel","platform":"android"}"""
+                val body = json.toRequestBody("application/json".toMediaType())
+                val httpRequest = Request.Builder()
+                    .url("${com.mistyislet.app.BuildConfig.API_BASE_URL}app/devices/register")
+                    .header("Authorization", "Bearer ${tokenStore.accessToken}")
+                    .post(body)
+                    .build()
+                val response = OkHttpClient().newCall(httpRequest).execute()
+                if (response.isSuccessful) {
+                    Log.i(TAG, "FCM token registered with backend")
+                } else {
+                    Log.w(TAG, "FCM register failed: ${response.code}")
+                }
+                response.close()
+            } catch (e: Exception) {
+                Log.e(TAG, "FCM register error", e)
+            }
+        }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
