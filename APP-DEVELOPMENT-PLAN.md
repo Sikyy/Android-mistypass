@@ -526,9 +526,9 @@ class MistyisletBleManager(context: Context) : BleManager(context) {
         // Service & Characteristic UUIDs (from ble_protocol.go)
         val SERVICE_UUID = UUID.fromString("4d495354-5950-4153-532d-424c45415554")
         val CHALLENGE_UUID = UUID.fromString("4d495354-5950-4153-532d-4348414c4c4e")
-        val AUTH_RESPONSE_UUID = UUID.fromString("4d495354-5950-4153-532d-41555448524553")
-        val READER_IDENTITY_UUID = UUID.fromString("4d495354-5950-4153-532d-52454144455249")
-        val AUTH_RESULT_UUID = UUID.fromString("4d495354-5950-4153-532d-524553554c5400")
+        val AUTH_RESPONSE_UUID = UUID.fromString("4d495354-5950-4153-532d-415554485245")
+        val READER_IDENTITY_UUID = UUID.fromString("4d495354-5950-4153-532d-524541444552")
+        val AUTH_RESULT_UUID = UUID.fromString("4d495354-5950-4153-532d-524553554c54")
     }
 
     override fun initialize() {

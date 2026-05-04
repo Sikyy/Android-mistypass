@@ -33,9 +33,9 @@ class MistyisletBleManager(
         // GATT Service & Characteristic UUIDs (from ble_protocol.go)
         val SERVICE_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-424c45415554")
         val CHALLENGE_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-4348414c4c4e")
-        val AUTH_RESPONSE_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-41555448524553")
-        val READER_IDENTITY_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-52454144455249")
-        val AUTH_RESULT_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-524553554c5400")
+        val AUTH_RESPONSE_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-415554485245")
+        val READER_IDENTITY_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-524541444552")
+        val AUTH_RESULT_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-524553554c54")
 
         private const val CHALLENGE_SIZE = 48
         private const val NONCE_SIZE = 32
@@ -104,8 +104,19 @@ class MistyisletBleManager(
 
                 Log.d(TAG, "Connected to ${device.address}")
 
-                // Request higher MTU for signature payload
-                requestMtu(64).suspend()
+                // Request higher MTU for signature payload.
+                // Auth response = [1B len] + userId (UTF-8) + ECDSA ASN.1 DER signature (~70-72B).
+                // 64 leaves only 61 usable bytes after ATT overhead — always truncates.
+                requestMtu(256).suspend()
+
+                // Step 0: Read reader identity (if available) for audit trail
+                readerIdentityChar?.let { idChar ->
+                    val idData = readCharacteristic(idChar).suspend()
+                    val readerId = idData.value?.let { String(it, Charsets.UTF_8) }
+                    if (!readerId.isNullOrBlank()) {
+                        Log.d(TAG, "Reader identity: $readerId")
+                    }
+                }
 
                 // Step 1: Read challenge
                 val challengeData = readCharacteristic(challengeChar).suspend()
