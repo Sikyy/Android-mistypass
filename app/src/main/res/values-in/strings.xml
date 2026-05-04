@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mistyislet</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_doors">Pintu</string>
+    <string name="nav_scanner">Kode QR</string>
+    <string name="nav_history">Riwayat</string>
+    <string name="nav_visitors">Pengunjung</string>
+    <string name="nav_credentials">Kredensial</string>
+    <string name="nav_dashboard">Dasbor</string>
+    <string name="nav_profile">Profil</string>
+
+    <!-- Login -->
+    <string name="login_title">Selamat Datang</string>
+    <string name="login_subtitle">Masuk untuk mengakses pintu Anda</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Kata Sandi</string>
+    <string name="login_button">Masuk</string>
+    <string name="login_failed">Gagal masuk</string>
+
+    <!-- Doors -->
+    <string name="doors_title">Pintu Saya</string>
+    <string name="doors_empty">Tidak ada pintu tersedia</string>
+    <string name="search_doors">Cari pintu</string>
+    <string name="door_unlock">Buka Kunci</string>
+    <string name="door_hold_to_unlock">Tahan untuk Buka</string>
+    <string name="door_unlocking">Membuka…</string>
+    <string name="door_access_granted">Akses Diberikan</string>
+    <string name="door_controller_offline">Kontroler offline</string>
+    <string name="door_offline">Offline</string>
+    <string name="door_locked_down">Terkunci</string>
+    <string name="door_disconnected">Terputus</string>
+    <string name="door_unlock_success">Pintu terbuka</string>
+    <string name="door_unlock_denied">Akses ditolak</string>
+    <string name="door_unavailable">Pintu saat ini tidak tersedia</string>
+
+    <!-- QR Code -->
+    <string name="qrcode_title">Kode QR</string>
+    <string name="qrcode_hint">Tunjukkan kode QR ini ke pembaca pintu</string>
+    <string name="qrcode_loading">Membuat kode QR…</string>
+    <string name="qrcode_expired">Kode QR kedaluwarsa, memperbarui…</string>
+    <string name="qrcode_select_door">Pilih pintu</string>
+    <string name="qrcode_valid_for">Berlaku %d detik</string>
+    <string name="qrcode_error">Gagal membuat kode QR</string>
+
+    <!-- Credentials -->
+    <string name="credentials_title">Kredensial Saya</string>
+    <string name="credentials_empty">Tidak ada kredensial</string>
+    <string name="credential_google_wallet">Google Wallet Pass</string>
+    <string name="credential_physical_card">Kartu Fisik</string>
+    <string name="credential_access_link">Tautan Akses</string>
+    <string name="credential_active">Aktif</string>
+    <string name="credential_suspended">Ditangguhkan</string>
+    <string name="credential_revoked">Dicabut</string>
+    <string name="bind_physical_card">Ikat Kartu Fisik</string>
+    <string name="add_to_google_wallet">Tambahkan ke Google Wallet</string>
+    <string name="credentials_other">Kredensial Lainnya</string>
+    <string name="qr_my_code">Kode QR Saya</string>
+    <string name="qr_visitor_code">Pass Pengunjung</string>
+    <string name="qr_my_code_hint">Tunjukkan kode QR ini ke pemindai pintu untuk membuka</string>
+    <string name="qr_visitor_hint">Buat pass pengunjung sementara untuk dibagikan ke tamu</string>
+    <string name="tap_to_close">Ketuk di mana saja untuk menutup</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_visitor_management">Manajemen Pengunjung</string>
+    <string name="dashboard_create_visitor_pass">Buat pass pengunjung</string>
+    <string name="dashboard_create_visitor_pass_desc">Buat pass sementara dan bagikan ke tamu</string>
+    <string name="dashboard_share_access_link">Bagikan tautan akses</string>
+    <string name="dashboard_share_access_link_desc">Kirim tautan akses sekali pakai</string>
+    <string name="dashboard_manage_access_links">Kelola tautan akses</string>
+    <string name="dashboard_manage_access_links_desc">Lihat dan cabut tautan aktif</string>
+    <string name="dashboard_activity">Aktivitas</string>
+    <string name="dashboard_event_history">Riwayat akses</string>
+    <string name="dashboard_event_history_desc">Lihat semua riwayat akses</string>
+    <string name="dashboard_recent_activity">Aktivitas Terbaru</string>
+
+    <!-- History -->
+    <string name="history_title">Riwayat</string>
+    <string name="history_empty">Tidak ada catatan akses</string>
+
+    <!-- Visitors -->
+    <string name="visitors_title">Pengunjung</string>
+    <string name="visitors_empty">Belum ada pass pengunjung</string>
+    <string name="visitors_active">Aktif</string>
+    <string name="visitors_expired">Kedaluwarsa</string>
+    <string name="visitors_remaining">%s tersisa</string>
+    <string name="visitor_contact">Email atau telepon pengunjung</string>
+    <string name="visitor_name">Nama pengunjung</string>
+    <string name="visitor_phone">Nomor telepon</string>
+    <string name="visitor_host">Nama tuan rumah</string>
+    <string name="delivery_method">Metode pengiriman</string>
+    <string name="valid_duration">Berlaku selama</string>
+    <string name="create_visitor_pass">Buat Pass Pengunjung</string>
+    <string name="visitor_expired">Kedaluwarsa</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profil</string>
+    <string name="profile_credentials">Kredensial Saya</string>
+    <string name="profile_biometric">Kunci Biometrik</string>
+    <string name="profile_biometric_desc">Memerlukan biometrik untuk membuka aplikasi</string>
+    <string name="profile_language">Bahasa</string>
+    <string name="profile_notifications">Notifikasi</string>
+    <string name="profile_visitor_passes">Pass Pengunjung</string>
+    <string name="profile_logout">Keluar</string>
+    <string name="profile_logout_confirm">Apakah Anda yakin ingin keluar?</string>
+
+    <!-- Common -->
+    <string name="loading">Memuat…</string>
+    <string name="retry">Coba Lagi</string>
+    <string name="error">Kesalahan</string>
+    <string name="cancel">Batal</string>
+    <string name="ok">OK</string>
+    <string name="network_error">Kesalahan jaringan. Periksa koneksi Anda.</string>
+</resources>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mistyislet</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_doors">门点</string>
+    <string name="nav_scanner">二维码</string>
+    <string name="nav_history">记录</string>
+    <string name="nav_visitors">访客</string>
+    <string name="nav_credentials">凭证</string>
+    <string name="nav_dashboard">面板</string>
+    <string name="nav_profile">我的</string>
+
+    <!-- Login -->
+    <string name="login_title">欢迎</string>
+    <string name="login_subtitle">登录以访问您的门点</string>
+    <string name="login_email">邮箱</string>
+    <string name="login_password">密码</string>
+    <string name="login_button">登录</string>
+    <string name="login_failed">登录失败</string>
+
+    <!-- Doors -->
+    <string name="doors_title">我的门点</string>
+    <string name="doors_empty">暂无可用门点</string>
+    <string name="search_doors">搜索门点</string>
+    <string name="door_unlock">开门</string>
+    <string name="door_hold_to_unlock">长按开门</string>
+    <string name="door_unlocking">开门中…</string>
+    <string name="door_access_granted">开门成功</string>
+    <string name="door_controller_offline">控制器离线</string>
+    <string name="door_offline">离线</string>
+    <string name="door_locked_down">已锁定</string>
+    <string name="door_disconnected">未连接</string>
+    <string name="door_unlock_success">门已解锁</string>
+    <string name="door_unlock_denied">拒绝访问</string>
+    <string name="door_unavailable">门点当前不可用</string>
+
+    <!-- QR Code -->
+    <string name="qrcode_title">二维码</string>
+    <string name="qrcode_hint">将此二维码出示给门禁读卡器</string>
+    <string name="qrcode_loading">正在生成二维码…</string>
+    <string name="qrcode_expired">二维码已过期，正在刷新…</string>
+    <string name="qrcode_select_door">请选择门点</string>
+    <string name="qrcode_valid_for">有效期 %d秒</string>
+    <string name="qrcode_error">生成二维码失败</string>
+
+    <!-- Credentials -->
+    <string name="credentials_title">我的凭证</string>
+    <string name="credentials_empty">暂无凭证</string>
+    <string name="credential_google_wallet">Google Wallet 通行证</string>
+    <string name="credential_physical_card">实体卡</string>
+    <string name="credential_access_link">访问链接</string>
+    <string name="credential_active">正常</string>
+    <string name="credential_suspended">已暂停</string>
+    <string name="credential_revoked">已撤销</string>
+    <string name="bind_physical_card">绑定实体卡</string>
+    <string name="add_to_google_wallet">添加到 Google Wallet</string>
+    <string name="credentials_other">其他凭证</string>
+    <string name="qr_my_code">我的二维码</string>
+    <string name="qr_visitor_code">访客通行证</string>
+    <string name="qr_my_code_hint">将此二维码出示给门禁扫描器即可开门</string>
+    <string name="qr_visitor_hint">创建临时访客通行证分享给访客</string>
+    <string name="tap_to_close">点击任意位置关闭</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_visitor_management">访客管理</string>
+    <string name="dashboard_create_visitor_pass">创建访客通行证</string>
+    <string name="dashboard_create_visitor_pass_desc">生成临时通行证并分享给访客</string>
+    <string name="dashboard_share_access_link">分享访问链接</string>
+    <string name="dashboard_share_access_link_desc">发送一次性访问链接</string>
+    <string name="dashboard_manage_access_links">管理访问链接</string>
+    <string name="dashboard_manage_access_links_desc">查看和撤销活跃链接</string>
+    <string name="dashboard_activity">活动</string>
+    <string name="dashboard_event_history">事件记录</string>
+    <string name="dashboard_event_history_desc">查看所有访问事件</string>
+    <string name="dashboard_recent_activity">最近活动</string>
+
+    <!-- History -->
+    <string name="history_title">记录</string>
+    <string name="history_empty">暂无访问记录</string>
+
+    <!-- Visitors -->
+    <string name="visitors_title">访客</string>
+    <string name="visitors_empty">暂无访客通行证</string>
+    <string name="visitors_active">进行中</string>
+    <string name="visitors_expired">已过期</string>
+    <string name="visitors_remaining">剩余 %s</string>
+    <string name="visitor_contact">访客邮箱或手机号</string>
+    <string name="visitor_name">访客姓名</string>
+    <string name="visitor_phone">手机号</string>
+    <string name="visitor_host">接待人</string>
+    <string name="delivery_method">发送方式</string>
+    <string name="valid_duration">有效时长</string>
+    <string name="create_visitor_pass">创建访客通行证</string>
+    <string name="visitor_expired">已过期</string>
+
+    <!-- Profile -->
+    <string name="profile_title">我的</string>
+    <string name="profile_credentials">我的凭证</string>
+    <string name="profile_biometric">生物识别锁</string>
+    <string name="profile_biometric_desc">打开应用时需要验证身份</string>
+    <string name="profile_language">语言</string>
+    <string name="profile_notifications">通知</string>
+    <string name="profile_visitor_passes">访客通行证</string>
+    <string name="profile_logout">退出登录</string>
+    <string name="profile_logout_confirm">确定要退出登录吗？</string>
+
+    <!-- Common -->
+    <string name="loading">加载中…</string>
+    <string name="retry">重试</string>
+    <string name="error">错误</string>
+    <string name="cancel">取消</string>
+    <string name="ok">确定</string>
+    <string name="network_error">网络异常，请检查网络连接</string>
+</resources>

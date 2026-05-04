@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mistyislet</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_doors">Doors</string>
+    <string name="nav_scanner">QR Code</string>
+    <string name="nav_history">History</string>
+    <string name="nav_visitors">Visitors</string>
+    <string name="nav_credentials">Credentials</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Login -->
+    <string name="login_title">Welcome</string>
+    <string name="login_subtitle">Sign in to access your doors</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_failed">Login failed</string>
+
+    <!-- Doors -->
+    <string name="doors_title">My Doors</string>
+    <string name="doors_empty">No doors available</string>
+    <string name="search_doors">Search doors</string>
+    <string name="door_unlock">Unlock</string>
+    <string name="door_hold_to_unlock">Hold to Unlock</string>
+    <string name="door_unlocking">Unlocking…</string>
+    <string name="door_access_granted">Access Granted</string>
+    <string name="door_controller_offline">Controller offline</string>
+    <string name="door_offline">Offline</string>
+    <string name="door_locked_down">Locked Down</string>
+    <string name="door_disconnected">Disconnected</string>
+    <string name="door_unlock_success">Door unlocked</string>
+    <string name="door_unlock_denied">Access denied</string>
+    <string name="door_unavailable">Door is currently unavailable</string>
+
+    <!-- QR Code -->
+    <string name="qrcode_title">QR Code</string>
+    <string name="qrcode_hint">Show this QR code to the door reader</string>
+    <string name="qrcode_loading">Generating QR code…</string>
+    <string name="qrcode_expired">QR code expired, refreshing…</string>
+    <string name="qrcode_select_door">Select a door</string>
+    <string name="qrcode_valid_for">Valid for %ds</string>
+    <string name="qrcode_error">Failed to generate QR code</string>
+
+    <!-- Credentials -->
+    <string name="credentials_title">My Credentials</string>
+    <string name="credentials_empty">No credentials</string>
+    <string name="credential_google_wallet">Google Wallet Pass</string>
+    <string name="credential_physical_card">Physical Card</string>
+    <string name="credential_access_link">Access Link</string>
+    <string name="credential_active">Active</string>
+    <string name="credential_suspended">Suspended</string>
+    <string name="credential_revoked">Revoked</string>
+    <string name="bind_physical_card">Bind Physical Card</string>
+    <string name="add_to_google_wallet">Add to Google Wallet</string>
+    <string name="credentials_other">Other Credentials</string>
+    <string name="qr_my_code">My QR Code</string>
+    <string name="qr_visitor_code">Visitor Pass</string>
+    <string name="qr_my_code_hint">Show this QR code to the door scanner to unlock</string>
+    <string name="qr_visitor_hint">Create a temporary visitor pass to share with guests</string>
+    <string name="tap_to_close">Tap anywhere to close</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_visitor_management">Visitor Management</string>
+    <string name="dashboard_create_visitor_pass">Create visitor pass</string>
+    <string name="dashboard_create_visitor_pass_desc">Generate a temporary pass and share with guests</string>
+    <string name="dashboard_share_access_link">Share access link</string>
+    <string name="dashboard_share_access_link_desc">Send a one-time access link</string>
+    <string name="dashboard_manage_access_links">Manage access links</string>
+    <string name="dashboard_manage_access_links_desc">View and revoke active links</string>
+    <string name="dashboard_activity">Activity</string>
+    <string name="dashboard_event_history">Event history</string>
+    <string name="dashboard_event_history_desc">View all access events</string>
+    <string name="dashboard_recent_activity">Recent Activity</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_empty">No access records</string>
+
+    <!-- Visitors -->
+    <string name="visitors_title">Visitors</string>
+    <string name="visitors_empty">No visitor passes yet</string>
+    <string name="visitors_active">Active</string>
+    <string name="visitors_expired">Expired</string>
+    <string name="visitors_remaining">%s remaining</string>
+    <string name="visitor_contact">Visitor email or phone</string>
+    <string name="visitor_name">Visitor name</string>
+    <string name="visitor_phone">Phone number</string>
+    <string name="visitor_host">Host name</string>
+    <string name="delivery_method">Delivery method</string>
+    <string name="valid_duration">Valid for</string>
+    <string name="create_visitor_pass">Create Visitor Pass</string>
+    <string name="visitor_expired">Expired</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_credentials">My Credentials</string>
+    <string name="profile_biometric">Biometric Lock</string>
+    <string name="profile_biometric_desc">Require biometric to open app</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_notifications">Notifications</string>
+    <string name="profile_visitor_passes">Visitor Passes</string>
+    <string name="profile_logout">Sign Out</string>
+    <string name="profile_logout_confirm">Are you sure you want to sign out?</string>
+
+    <!-- Common -->
+    <string name="loading">Loading…</string>
+    <string name="retry">Retry</string>
+    <string name="error">Error</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="network_error">Network error. Please check your connection.</string>
+</resources>
