@@ -35,6 +35,7 @@ import com.mistyislet.app.ui.admin.AdminDigitalCredentialsScreen
 import com.mistyislet.app.ui.admin.AdminEventsScreen
 import com.mistyislet.app.ui.admin.AdminExportScreen
 import com.mistyislet.app.ui.admin.AdminGatewaysScreen
+import com.mistyislet.app.ui.admin.AdminGuestManagementScreen
 import com.mistyislet.app.ui.admin.AdminGroupsScreen
 import com.mistyislet.app.ui.admin.AdminIncidentsScreen
 import com.mistyislet.app.ui.admin.AdminLiveActivityScreen
@@ -83,6 +84,7 @@ object Routes {
     const val ADMIN_CONTROLLERS = "admin_controllers"
     const val ADMIN_GATEWAYS = "admin_gateways"
     const val ADMIN_CAMERAS = "admin_cameras"
+    const val ADMIN_GUEST_MANAGEMENT = "admin_guest_management"
     const val ADMIN_ORG_SETTINGS = "admin_org_settings"
 }
 
@@ -202,6 +204,7 @@ private fun MainScreen(onLogout: () -> Unit) {
             composable(Routes.ADMIN_CONTROLLERS) { AdminControllersScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_GATEWAYS) { AdminGatewaysScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_CAMERAS) { AdminCamerasScreen(onBack = { navController.popBackStack() }) }
+            composable(Routes.ADMIN_GUEST_MANAGEMENT) { AdminGuestManagementScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_ORG_SETTINGS) { AdminOrgSettingsScreen(onBack = { navController.popBackStack() }) }
         }
     }

@@ -53,6 +53,18 @@ class PlaceRepository @Inject constructor(
         placeApi.disableLockdown(placeId)
     }
 
+    suspend fun getEventMedia(placeId: String, eventId: String) = safeApiCall {
+        placeApi.getEventMedia(placeId, eventId)
+    }
+
+    suspend fun getDoorRestrictions(placeId: String, doorId: String) = safeApiCall {
+        placeApi.getDoorRestrictions(placeId, doorId).items
+    }
+
+    suspend fun getDoorSchedules(placeId: String, doorId: String) = safeApiCall {
+        placeApi.getDoorSchedules(placeId, doorId).items
+    }
+
     suspend fun listVisitorGroups(placeId: String): ApiResult<List<VisitorGroup>> = safeApiCall {
         placeApi.listVisitorGroups(placeId)
     }

@@ -1,24 +1,38 @@
 package com.mistyislet.app.ui.doors
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mistyislet.app.core.auth.BiometricHelper
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.MobileCredentialRepository
 import com.mistyislet.app.data.repository.PlaceRepository
+import com.mistyislet.app.domain.model.DoorRestriction
+import com.mistyislet.app.domain.model.DoorSchedule
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.usecase.BLEUnlockUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.Instant
 import javax.inject.Inject
 
 enum class DoorsTab { ALL, FAVORITES }
+enum class DoorSort { NAME, STATUS, BUILDING }
 
 data class DoorsUiState(
     val placeId: String? = null,
@@ -26,9 +40,12 @@ data class DoorsUiState(
     val doors: List<AccessibleDoor> = emptyList(),
     val tab: DoorsTab = DoorsTab.ALL,
     val searchQuery: String = "",
+    val sort: DoorSort = DoorSort.NAME,
     val isLockdown: Boolean = false,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
+    val isOffline: Boolean = false,
+    val lastSyncedAt: Instant? = null,
     val errorMessage: String? = null,
     val unlockingDoorId: String? = null,
     val unlockResult: UnlockFeedback? = null,
@@ -47,12 +64,59 @@ class DoorsViewModel @Inject constructor(
     private val selectedPlaceRepository: SelectedPlaceRepository,
     private val bleUnlockUseCase: BLEUnlockUseCase,
     private val mobileCredentialRepo: MobileCredentialRepository,
+    val biometricHelper: BiometricHelper,
+    private val dataStore: DataStore<Preferences>,
+    @ApplicationContext appContext: Context,
 ) : ViewModel() {
+
+    companion object {
+        private val KEY_BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
+    }
 
     private val _uiState = MutableStateFlow(DoorsUiState())
     val uiState: StateFlow<DoorsUiState> = _uiState
 
+    val biometricEnabled = dataStore.data.map { it[KEY_BIOMETRIC_ENABLED] ?: false }
+
+    private val _doorRestrictions = MutableStateFlow<List<DoorRestriction>>(emptyList())
+    val doorRestrictions: StateFlow<List<DoorRestriction>> = _doorRestrictions
+    private val _doorSchedules = MutableStateFlow<List<DoorSchedule>>(emptyList())
+    val doorSchedules: StateFlow<List<DoorSchedule>> = _doorSchedules
+
+    fun loadDoorExtras(doorId: String) {
+        val pid = _uiState.value.placeId ?: return
+        viewModelScope.launch {
+            _doorRestrictions.value = emptyList()
+            _doorSchedules.value = emptyList()
+            when (val r = placeRepository.getDoorRestrictions(pid, doorId)) {
+                is ApiResult.Success -> _doorRestrictions.value = r.data
+                else -> {}
+            }
+            when (val r = placeRepository.getDoorSchedules(pid, doorId)) {
+                is ApiResult.Success -> _doorSchedules.value = r.data
+                else -> {}
+            }
+        }
+    }
+
     init {
+        val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        cm.registerNetworkCallback(request, object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                _uiState.value = _uiState.value.copy(isOffline = false)
+            }
+            override fun onLost(network: Network) {
+                _uiState.value = _uiState.value.copy(isOffline = true)
+            }
+        })
+        val activeNet = cm.activeNetwork
+        val caps = activeNet?.let { cm.getNetworkCapabilities(it) }
+        _uiState.value = _uiState.value.copy(
+            isOffline = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) != true,
+        )
         viewModelScope.launch {
             selectedPlaceRepository.scope
                 .map { it.placeId to it.placeName }
@@ -102,6 +166,7 @@ class DoorsViewModel @Inject constructor(
                     doors = doors,
                     isLockdown = anyLockedDown,
                     isRefreshing = false,
+                    lastSyncedAt = Instant.now(),
                 )
             }
             is ApiResult.Error -> _uiState.value = _uiState.value.copy(
@@ -119,6 +184,10 @@ class DoorsViewModel @Inject constructor(
 
     fun setSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
+    }
+
+    fun setSort(sort: DoorSort) {
+        _uiState.value = _uiState.value.copy(sort = sort)
     }
 
     fun back() {

@@ -201,7 +201,7 @@ fun DashboardScreen(
                     icon = Icons.Default.PeopleAlt,
                     iconTint = Color(0xFFFF9800),
                     title = stringResource(R.string.dashboard_guest_management),
-                    onClick = { onNavigate("visitors") },
+                    onClick = { onNavigate("admin_guest_management") },
                 )
             }
 

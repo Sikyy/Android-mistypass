@@ -1,8 +1,12 @@
 package com.mistyislet.app.data.api
 
 import com.mistyislet.app.domain.model.AccessibleDoor
+import com.mistyislet.app.domain.model.DoorRestriction
+import com.mistyislet.app.domain.model.DoorSchedule
+import com.mistyislet.app.domain.model.EventMedia
 import com.mistyislet.app.domain.model.ListResponse
 import com.mistyislet.app.domain.model.Organization
+import com.mistyislet.app.domain.model.PaginatedResponse
 import com.mistyislet.app.domain.model.Place
 import com.mistyislet.app.domain.model.UnlockRequest
 import com.mistyislet.app.domain.model.UnlockResponse
@@ -66,6 +70,24 @@ interface PlaceApi {
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
     ): List<VisitorGroupMember>
+
+    @GET("app/places/{placeId}/events/{eventId}/media")
+    suspend fun getEventMedia(
+        @Path("placeId") placeId: String,
+        @Path("eventId") eventId: String,
+    ): List<EventMedia>
+
+    @GET("app/places/{placeId}/doors/{doorId}/restrictions")
+    suspend fun getDoorRestrictions(
+        @Path("placeId") placeId: String,
+        @Path("doorId") doorId: String,
+    ): PaginatedResponse<DoorRestriction>
+
+    @GET("app/places/{placeId}/doors/{doorId}/schedules")
+    suspend fun getDoorSchedules(
+        @Path("placeId") placeId: String,
+        @Path("doorId") doorId: String,
+    ): PaginatedResponse<DoorSchedule>
 
     @POST("app/places/{placeId}/visitor-groups/{groupId}/cleanup-expired")
     suspend fun cleanupExpiredMembers(

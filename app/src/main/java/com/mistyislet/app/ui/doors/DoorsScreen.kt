@@ -4,6 +4,10 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,15 +30,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.DoorFront
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -74,10 +83,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.fragment.app.FragmentActivity
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.DoorDisplayStatus
 import com.mistyislet.app.domain.model.displayStatus
+import androidx.compose.material.icons.filled.Check
 import com.mistyislet.app.ui.theme.Danger
 import com.mistyislet.app.ui.theme.Success
 import com.mistyislet.app.ui.theme.Warning
@@ -91,8 +102,12 @@ fun DoorsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedDoor by remember { mutableStateOf<AccessibleDoor?>(null) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val biometricEnabled by viewModel.biometricEnabled.collectAsStateWithLifecycle(false)
 
-    val visibleDoors = remember(uiState.doors, uiState.tab, uiState.searchQuery) {
+    val visibleDoors = remember(uiState.doors, uiState.tab, uiState.searchQuery, uiState.sort) {
         uiState.doors
             .filter { door ->
                 if (uiState.tab == DoorsTab.FAVORITES && !door.isFavorite) return@filter false
@@ -101,7 +116,13 @@ fun DoorsScreen(
                 door.name.contains(q, ignoreCase = true) ||
                     door.groupName?.contains(q, ignoreCase = true) == true
             }
-            .sortedBy { it.name }
+            .let { list ->
+                when (uiState.sort) {
+                    DoorSort.NAME -> list.sortedBy { it.name }
+                    DoorSort.STATUS -> list.sortedBy { it.displayStatus().ordinal }
+                    DoorSort.BUILDING -> list.sortedBy { it.buildingId.ifBlank { "zzz" } }
+                }
+            }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -125,6 +146,30 @@ fun DoorsScreen(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
+                Box {
+                    IconButton(onClick = { showSortMenu = true }) {
+                        Icon(Icons.Default.SortByAlpha, contentDescription = stringResource(R.string.doors_sort))
+                    }
+                    DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
+                        DoorSort.entries.forEach { sort ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        when (sort) {
+                                            DoorSort.NAME -> stringResource(R.string.doors_sort_name)
+                                            DoorSort.STATUS -> stringResource(R.string.doors_sort_status)
+                                            DoorSort.BUILDING -> stringResource(R.string.doors_sort_building)
+                                        },
+                                    )
+                                },
+                                onClick = { viewModel.setSort(sort); showSortMenu = false },
+                                trailingIcon = {
+                                    if (uiState.sort == sort) Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                            )
+                        }
+                    }
+                }
             }
 
             // All / Favorites segmented control
@@ -174,6 +219,47 @@ fun DoorsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Offline banner
+            if (uiState.isOffline) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Warning.copy(alpha = 0.15f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.WifiOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Warning,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = buildString {
+                            append(stringResource(R.string.doors_offline_banner))
+                            uiState.lastSyncedAt?.let { syncTime ->
+                                val duration = java.time.Duration.between(syncTime, java.time.Instant.now())
+                                val relative = when {
+                                    duration.toMinutes() < 1 -> stringResource(R.string.doors_last_synced, "just now")
+                                    duration.toMinutes() < 60 -> stringResource(R.string.doors_last_synced, "${duration.toMinutes()}m ago")
+                                    duration.toHours() < 24 -> stringResource(R.string.doors_last_synced, "${duration.toHours()}h ago")
+                                    else -> stringResource(R.string.doors_last_synced, "${duration.toDays()}d ago")
+                                }
+                                append(" · ")
+                                append(relative)
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             // Door list
             Box(modifier = Modifier.weight(1f)) {
                 PullToRefreshBox(
@@ -221,7 +307,25 @@ fun DoorsScreen(
                                 DoorListCard(
                                     door = door,
                                     isUnlocking = uiState.unlockingDoorId == door.id,
-                                    onUnlock = { viewModel.unlock(door) },
+                                    onUnlock = {
+                                        if (biometricEnabled) {
+                                            scope.launch {
+                                                val activity = context as? FragmentActivity
+                                                if (activity != null) {
+                                                    val ok = viewModel.biometricHelper.authenticate(
+                                                        activity,
+                                                        title = context.getString(R.string.biometric_unlock_title),
+                                                        subtitle = context.getString(R.string.biometric_unlock_subtitle, door.name),
+                                                    )
+                                                    if (ok) viewModel.unlock(door)
+                                                } else {
+                                                    viewModel.unlock(door)
+                                                }
+                                            }
+                                        } else {
+                                            viewModel.unlock(door)
+                                        }
+                                    },
                                     onTap = { selectedDoor = door },
                                     onToggleFavorite = { viewModel.toggleFavorite(door) },
                                 )
@@ -261,6 +365,8 @@ fun DoorsScreen(
     selectedDoor?.let { door ->
         DoorDetailsSheet(
             door = door,
+            placeId = uiState.placeId,
+            viewModel = viewModel,
             onDismiss = { selectedDoor = null },
         )
     }
@@ -303,10 +409,19 @@ private fun LockdownBanner(onDisable: () -> Unit) {
 @Composable
 private fun DoorDetailsSheet(
     door: AccessibleDoor,
+    placeId: String?,
+    viewModel: DoorsViewModel,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val displayStatus = door.displayStatus()
+    val restrictions by viewModel.doorRestrictions.collectAsStateWithLifecycle()
+    val schedules by viewModel.doorSchedules.collectAsStateWithLifecycle()
+    val isLockedDown = door.status == "locked_down"
+
+    androidx.compose.runtime.LaunchedEffect(door.id) {
+        viewModel.loadDoorExtras(door.id)
+    }
 
     val statusColor = when (displayStatus) {
         DoorDisplayStatus.ONLINE_UNLOCKABLE -> Success
@@ -381,9 +496,20 @@ private fun DoorDetailsSheet(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             )
 
+            door.lastUnlockAt?.let { timestamp ->
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.doors_last_unlocked)) },
+                    supportingContent = { Text(timestamp.replace("T", " ").take(16)) },
+                    leadingContent = {
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+
             ListItem(
                 headlineContent = { Text(stringResource(R.string.doors_type)) },
-                supportingContent = { Text(stringResource(R.string.doors_type_door)) },
+                supportingContent = { Text(door.kind?.replaceFirstChar { it.uppercase() } ?: stringResource(R.string.doors_type_door)) },
                 leadingContent = {
                     Icon(Icons.Default.DoorFront, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 },
@@ -408,6 +534,111 @@ private fun DoorDetailsSheet(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             )
+
+            // Lockdown toggle
+            if (placeId != null) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Text(
+                    text = stringResource(R.string.doors_security),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.doors_lockdown)) },
+                    supportingContent = {
+                        Text(
+                            if (isLockedDown) stringResource(R.string.doors_lockdown_active)
+                            else stringResource(R.string.doors_lockdown_inactive),
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = if (isLockedDown) Danger else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    trailingContent = {
+                        androidx.compose.material3.Switch(
+                            checked = isLockedDown,
+                            onCheckedChange = { viewModel.toggleLockdown() },
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+
+            // Restrictions section
+            if (restrictions.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Text(
+                    text = stringResource(R.string.doors_restrictions),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                restrictions.forEach { restriction ->
+                    ListItem(
+                        headlineContent = {
+                            Text(restriction.type.replace("_", " ").replaceFirstChar { it.uppercase() })
+                        },
+                        supportingContent = {
+                            restriction.radiusMeters?.let { Text("${it}m radius") }
+                        },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = if (restriction.isEnabled) Warning else MaterialTheme.colorScheme.outlineVariant,
+                            )
+                        },
+                        trailingContent = {
+                            Text(
+                                text = if (restriction.isEnabled) "Enabled" else "Disabled",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (restriction.isEnabled) Success else MaterialTheme.colorScheme.outlineVariant,
+                            )
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    )
+                }
+            }
+
+            // Schedules section
+            if (schedules.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Text(
+                    text = stringResource(R.string.doors_schedules),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                val dayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+                schedules.forEach { schedule ->
+                    ListItem(
+                        headlineContent = { Text(schedule.name) },
+                        supportingContent = {
+                            Column {
+                                Text("${schedule.startTime} – ${schedule.endTime}")
+                                Text(
+                                    schedule.daysOfWeek.mapNotNull { dayNames.getOrNull(it) }.joinToString(", "),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    )
+                }
+            }
         }
     }
 }
@@ -416,6 +647,7 @@ private fun DoorDetailsSheet(
 private fun DoorListCard(
     door: AccessibleDoor,
     isUnlocking: Boolean,
+    isBleReady: Boolean = false,
     onUnlock: () -> Unit,
     onTap: () -> Unit,
     onToggleFavorite: () -> Unit,
@@ -469,6 +701,22 @@ private fun DoorListCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                if (isBleReady) {
+                    val infiniteTransition = rememberInfiniteTransition(label = "ble")
+                    val alpha by infiniteTransition.animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(tween(800), repeatMode = RepeatMode.Reverse),
+                        label = "bleAlpha",
+                    )
+                    Icon(
+                        Icons.Default.Bluetooth,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = alpha),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
                 }
                 IconButton(onClick = onToggleFavorite) {
                     Icon(

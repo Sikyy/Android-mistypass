@@ -1,5 +1,7 @@
 package com.mistyislet.app.ui.profile
 
+import android.content.Context
+import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -20,6 +22,10 @@ import com.mistyislet.app.domain.model.ChangePasswordRequest
 import com.mistyislet.app.domain.model.UserInfo
 import com.mistyislet.app.domain.model.UserLogin
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -33,7 +39,9 @@ data class ProfileUiState(
     val isLoading: Boolean = false,
     val biometricAvailable: Boolean = false,
     val biometricEnabled: Boolean = false,
+    val biometricTypeName: String = "Biometric",
     val notificationsEnabled: Boolean = true,
+    val geofenceEnabled: Boolean = false,
     val logins: List<UserLogin> = emptyList(),
     val isLoadingLogins: Boolean = false,
     val passwordChangeSuccess: Boolean = false,
@@ -45,13 +53,15 @@ data class ProfileUiState(
 class ProfileViewModel @Inject constructor(
     private val userApi: UserApi,
     private val authRepository: AuthRepository,
-    private val biometricHelper: BiometricHelper,
+    val biometricHelper: BiometricHelper,
     private val dataStore: DataStore<Preferences>,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     companion object {
         val KEY_BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
         val KEY_NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
+        val KEY_GEOFENCE_ENABLED = booleanPreferencesKey("geofence_enabled")
         val KEY_LANGUAGE = stringPreferencesKey("language")
     }
 
@@ -87,10 +97,14 @@ class ProfileViewModel @Inject constructor(
             val prefs = dataStore.data.first()
             val enabled = prefs[KEY_BIOMETRIC_ENABLED] ?: false
             val notifEnabled = prefs[KEY_NOTIFICATIONS_ENABLED] ?: true
+            val geoEnabled = prefs[KEY_GEOFENCE_ENABLED] ?: false
+            val typeName = biometricHelper.biometricTypeName()
             _uiState.value = _uiState.value.copy(
                 biometricAvailable = available,
                 biometricEnabled = enabled && available,
+                biometricTypeName = typeName,
                 notificationsEnabled = notifEnabled,
+                geofenceEnabled = geoEnabled,
             )
         }
     }
@@ -99,6 +113,13 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             dataStore.edit { it[KEY_BIOMETRIC_ENABLED] = enabled }
             _uiState.value = _uiState.value.copy(biometricEnabled = enabled)
+        }
+    }
+
+    fun toggleGeofence(enabled: Boolean) {
+        viewModelScope.launch {
+            dataStore.edit { it[KEY_GEOFENCE_ENABLED] = enabled }
+            _uiState.value = _uiState.value.copy(geofenceEnabled = enabled)
         }
     }
 
@@ -153,6 +174,18 @@ class ProfileViewModel @Inject constructor(
                 else -> {
                     _uiState.value = _uiState.value.copy(passwordChangeError = "Failed to change password")
                 }
+            }
+        }
+    }
+
+    fun uploadAvatar(uri: Uri) {
+        viewModelScope.launch {
+            val bytes = appContext.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@launch
+            val body = bytes.toRequestBody("image/jpeg".toMediaType())
+            val part = MultipartBody.Part.createFormData("file", "avatar.jpg", body)
+            when (val result = safeApiCall { userApi.uploadAvatar(part) }) {
+                is ApiResult.Success -> _uiState.value = _uiState.value.copy(user = result.data)
+                else -> {}
             }
         }
     }

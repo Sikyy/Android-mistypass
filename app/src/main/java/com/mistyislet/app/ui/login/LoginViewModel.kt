@@ -17,6 +17,8 @@ data class LoginUiState(
     val password: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val forgotPasswordSent: Boolean = false,
+    val forgotPasswordError: String? = null,
 )
 
 @HiltViewModel
@@ -36,6 +38,21 @@ class LoginViewModel @Inject constructor(
 
     fun onPasswordChange(password: String) {
         _uiState.value = _uiState.value.copy(password = password, errorMessage = null)
+    }
+
+    fun restorePassword(email: String) {
+        if (email.isBlank()) return
+        viewModelScope.launch {
+            when (authRepository.restorePassword(email)) {
+                is ApiResult.Success -> _uiState.value = _uiState.value.copy(forgotPasswordSent = true, forgotPasswordError = null)
+                is ApiResult.Error -> _uiState.value = _uiState.value.copy(forgotPasswordError = "Failed to send reset email")
+                is ApiResult.Exception -> _uiState.value = _uiState.value.copy(forgotPasswordError = "Failed to send reset email")
+            }
+        }
+    }
+
+    fun clearForgotPasswordState() {
+        _uiState.value = _uiState.value.copy(forgotPasswordSent = false, forgotPasswordError = null)
     }
 
     fun login() {

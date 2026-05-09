@@ -36,6 +36,12 @@ data class UserInfo(
     val name: String,
     @SerialName("tenant_id") val tenantId: String,
     val language: String? = null,
+    val avatar: String? = null,
+)
+
+@Serializable
+data class RestorePasswordRequest(
+    val email: String,
 )
 
 @Serializable

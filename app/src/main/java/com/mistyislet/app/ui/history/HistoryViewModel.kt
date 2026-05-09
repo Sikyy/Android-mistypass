@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AccessLogRepository
+import com.mistyislet.app.data.repository.PlaceRepository
+import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AccessLog
+import com.mistyislet.app.domain.model.EventMedia
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,10 +26,32 @@ data class HistoryUiState(
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val accessLogRepository: AccessLogRepository,
+    private val placeRepository: PlaceRepository,
+    private val selectedPlaceRepository: SelectedPlaceRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState
+
+    private val _eventMedia = MutableStateFlow<List<EventMedia>>(emptyList())
+    val eventMedia: StateFlow<List<EventMedia>> = _eventMedia
+    private val _isLoadingMedia = MutableStateFlow(false)
+    val isLoadingMedia: StateFlow<Boolean> = _isLoadingMedia
+
+    fun loadEventMedia(eventId: String) {
+        viewModelScope.launch {
+            _eventMedia.value = emptyList()
+            _isLoadingMedia.value = true
+            val placeId = selectedPlaceRepository.scope.first().placeId
+            if (placeId != null) {
+                when (val r = placeRepository.getEventMedia(placeId, eventId)) {
+                    is ApiResult.Success -> _eventMedia.value = r.data
+                    else -> {}
+                }
+            }
+            _isLoadingMedia.value = false
+        }
+    }
 
     private var currentPage = 1
 

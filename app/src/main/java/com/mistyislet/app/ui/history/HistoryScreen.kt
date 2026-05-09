@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.AccessLog
 import com.mistyislet.app.ui.theme.Danger
@@ -175,7 +176,7 @@ fun HistoryScreen(
     }
 
     selectedLog?.let { log ->
-        EventDetailSheet(log = log, onDismiss = { selectedLog = null })
+        EventDetailSheet(log = log, viewModel = viewModel, onDismiss = { selectedLog = null })
     }
 }
 
@@ -277,9 +278,15 @@ private fun MethodBadge(method: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EventDetailSheet(log: AccessLog, onDismiss: () -> Unit) {
-    val sheetState = rememberModalBottomSheetState()
+private fun EventDetailSheet(log: AccessLog, viewModel: HistoryViewModel, onDismiss: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val isSuccess = isGranted(log)
+    val media by viewModel.eventMedia.collectAsStateWithLifecycle()
+    val isLoadingMedia by viewModel.isLoadingMedia.collectAsStateWithLifecycle()
+
+    LaunchedEffect(log.id) {
+        viewModel.loadEventMedia(log.id)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -354,6 +361,54 @@ private fun EventDetailSheet(log: AccessLog, onDismiss: () -> Unit) {
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
+            }
+
+            // Camera snapshots section
+            if (isLoadingMedia) {
+                Spacer(modifier = Modifier.height(8.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally),
+                )
+            } else if (media.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Text(
+                    text = stringResource(R.string.history_camera_snapshots),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                media.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        AsyncImage(
+                            model = item.snapshotUrl,
+                            contentDescription = item.cameraName,
+                            modifier = Modifier
+                                .size(80.dp, 60.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(8.dp),
+                                ),
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = item.cameraName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = item.datetime.replace("T", " ").take(16),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

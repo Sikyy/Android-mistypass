@@ -55,7 +55,10 @@ fun AdminZonesScreen(
             AdminListItem(
                 id = zone.id,
                 title = zone.name,
-                subtitle = "${zone.doorCount} doors",
+                subtitle = listOfNotNull(
+                    zone.description.ifBlank { null },
+                    stringResource(R.string.admin_doors_count, zone.doorCount),
+                ).joinToString(" · "),
             )
         },
         isLoading = isLoading,

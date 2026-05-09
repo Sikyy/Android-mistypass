@@ -4,9 +4,14 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class PaginatedResponse<T>(
+    val items: List<T> = emptyList(),
+)
+
+@Serializable
 data class AdminEvent(
     val id: String,
-    @SerialName("event_type") val eventType: String? = null,
+    @SerialName("object_type") val eventType: String? = null,
     @SerialName("object_name") val objectName: String = "",
     val actor: String = "",
     val action: String = "",
@@ -19,7 +24,7 @@ data class AdminEvent(
 @Serializable
 data class AdminIncident(
     val id: String,
-    val title: String = "",
+    @SerialName("type") val title: String = "",
     val severity: String = "",
     val status: String = "",
     val description: String? = null,
@@ -60,62 +65,63 @@ data class AdminSchedule(
     val id: String,
     val name: String = "",
     val description: String? = null,
-    val type: String? = null,
-    val days: List<String> = emptyList(),
+    @SerialName("schedule_type") val type: String? = null,
+    @SerialName("days_of_week") val daysOfWeek: List<Int> = emptyList(),
     @SerialName("start_time") val startTime: String? = null,
     @SerialName("end_time") val endTime: String? = null,
+    @SerialName("is_enabled") val enabled: Boolean = true,
 )
 
 @Serializable
 data class AdminZone(
     val id: String,
     val name: String = "",
+    val description: String = "",
     @SerialName("door_count") val doorCount: Int = 0,
 )
 
 @Serializable
 data class Alarm(
     val id: String,
-    val name: String = "",
     val type: String = "",
-    @SerialName("type_label") val typeLabel: String = "",
     val status: String = "",
     val severity: String = "",
     val location: String = "",
-    @SerialName("time_ago") val timeAgo: String = "",
-    @SerialName("triggered_at") val triggeredAt: String? = null,
+    @SerialName("created_at") val triggeredAt: String? = null,
 ) {
     val isOpen: Boolean get() = status.lowercase() == "open"
 }
 
 @Serializable
 data class LiveActivityRecord(
-    val id: String,
-    @SerialName("user_name") val userName: String = "",
+    @SerialName("event_id") val id: String,
+    @SerialName("user_id") val userName: String = "",
     val action: String = "",
-    @SerialName("door_name") val doorName: String = "",
-    val timestamp: String = "",
+    @SerialName("last_door") val doorName: String = "",
+    @SerialName("last_seen") val timestamp: String = "",
 )
 
 @Serializable
 data class Booking(
     val id: String,
-    @SerialName("space_name") val spaceName: String = "",
-    @SerialName("booked_by") val bookedBy: String = "",
+    @SerialName("space_id") val spaceId: String = "",
+    @SerialName("user_name") val bookedBy: String = "",
     @SerialName("start_time") val startTime: String = "",
     @SerialName("end_time") val endTime: String = "",
     val status: String = "",
+    val title: String? = null,
+    @SerialName("checked_in_at") val checkedInAt: String? = null,
 )
 
 @Serializable
 data class AdminCard(
     val id: String,
-    val uid: String = "",
+    @SerialName("card_uid") val uid: String = "",
     @SerialName("card_number") val cardNumber: String? = null,
-    @SerialName("card_type") val cardType: String = "",
+    @SerialName("type") val cardType: String = "",
     val status: String = "",
-    @SerialName("assigned_to") val assignedTo: String? = null,
-    @SerialName("assigned_email") val assignedEmail: String? = null,
+    @SerialName("user_name") val assignedTo: String? = null,
+    @SerialName("user_email") val assignedEmail: String? = null,
     @SerialName("last_used") val lastUsed: String? = null,
     @SerialName("issued_at") val issuedAt: String? = null,
     @SerialName("expires_at") val expiresAt: String? = null,
@@ -127,7 +133,7 @@ data class AdminDigitalCredential(
     @SerialName("device_name") val deviceName: String = "",
     @SerialName("device_model") val deviceModel: String? = null,
     val platform: String = "",
-    @SerialName("credential_type") val credentialType: String = "",
+    @SerialName("type") val credentialType: String = "",
     val status: String = "",
     @SerialName("is_active") val isActive: Boolean = true,
     @SerialName("user_name") val userName: String? = null,
@@ -141,11 +147,11 @@ data class AdminDigitalCredential(
 data class Camera(
     val id: String,
     val name: String = "",
-    val vendor: String = "",
-    val model: String? = null,
+    val provider: String = "",
     val status: String = "",
-    @SerialName("ip_address") val ipAddress: String? = null,
-    @SerialName("door_name") val doorName: String? = null,
+    val host: String? = null,
+    val port: Int = 0,
+    @SerialName("door_id") val doorId: String? = null,
 )
 
 @Serializable
@@ -239,20 +245,15 @@ data class AccessRight(
 
 @Serializable
 data class OrgSettings(
-    val id: String = "",
+    @SerialName("tenant_id") val id: String = "",
     val name: String = "",
-    val domain: String? = null,
+    @SerialName("primary_domain") val domain: String? = null,
     val timezone: String? = null,
-    val language: String? = null,
-    @SerialName("send_emails") val sendEmails: Boolean = false,
-    @SerialName("email_access_assignment") val emailAccessAssignment: Boolean = false,
-    @SerialName("email_credential_assignment") val emailCredentialAssignment: Boolean = false,
-    @SerialName("email_incident_alerts") val emailIncidentAlerts: Boolean = false,
-    @SerialName("email_reports") val emailReports: Boolean = false,
+    @SerialName("email_notifications") val sendEmails: Boolean = false,
+    @SerialName("push_notifications") val pushNotifications: Boolean = false,
+    @SerialName("weekly_reports") val weeklyReports: Boolean = false,
     @SerialName("whatsapp_enabled") val whatsappEnabled: Boolean = false,
-    @SerialName("whatsapp_access_assignment") val whatsappAccessAssignment: Boolean = false,
-    @SerialName("whatsapp_credential_assignment") val whatsappCredentialAssignment: Boolean = false,
-    @SerialName("whatsapp_incident_alerts") val whatsappIncidentAlerts: Boolean = false,
+    @SerialName("enforce_mfa") val enforceMfa: Boolean = false,
     @SerialName("session_timeout_minutes") val sessionTimeoutMinutes: Int? = null,
     @SerialName("webauthn_enabled") val webauthnEnabled: Boolean = false,
 )
@@ -260,16 +261,12 @@ data class OrgSettings(
 @Serializable
 data class OrgSettingsUpdateRequest(
     val name: String? = null,
-    val domain: String? = null,
-    @SerialName("send_emails") val sendEmails: Boolean? = null,
-    @SerialName("email_access_assignment") val emailAccessAssignment: Boolean? = null,
-    @SerialName("email_credential_assignment") val emailCredentialAssignment: Boolean? = null,
-    @SerialName("email_incident_alerts") val emailIncidentAlerts: Boolean? = null,
-    @SerialName("email_reports") val emailReports: Boolean? = null,
+    @SerialName("primary_domain") val domain: String? = null,
+    @SerialName("email_notifications") val sendEmails: Boolean? = null,
+    @SerialName("push_notifications") val pushNotifications: Boolean? = null,
+    @SerialName("weekly_reports") val weeklyReports: Boolean? = null,
     @SerialName("whatsapp_enabled") val whatsappEnabled: Boolean? = null,
-    @SerialName("whatsapp_access_assignment") val whatsappAccessAssignment: Boolean? = null,
-    @SerialName("whatsapp_credential_assignment") val whatsappCredentialAssignment: Boolean? = null,
-    @SerialName("whatsapp_incident_alerts") val whatsappIncidentAlerts: Boolean? = null,
+    @SerialName("enforce_mfa") val enforceMfa: Boolean? = null,
     @SerialName("webauthn_enabled") val webauthnEnabled: Boolean? = null,
 )
 
@@ -294,12 +291,11 @@ data class GuestVisit(
 data class BookingSpace(
     val id: String,
     val name: String = "",
-    val type: String = "",
-    val capacity: Int = 0,
+    @SerialName("space_type") val type: String = "",
+    @SerialName("max_capacity") val capacity: Int = 0,
     @SerialName("current_occupancy") val currentOccupancy: Int = 0,
-    @SerialName("is_available") val isAvailable: Boolean = true,
-    @SerialName("active_bookings") val activeBookings: Int = 0,
-    @SerialName("next_available") val nextAvailable: String? = null,
+    val enabled: Boolean = true,
+    @SerialName("requires_booking") val requiresBooking: Boolean = true,
 )
 
 @Serializable
@@ -307,10 +303,25 @@ data class AlarmSchedule(
     val id: String,
     val name: String = "",
     val enabled: Boolean = true,
-    @SerialName("alarm_type") val alarmType: String = "",
+    @SerialName("alarm_types") val alarmTypes: List<String> = emptyList(),
     @SerialName("start_time") val startTime: String? = null,
     @SerialName("end_time") val endTime: String? = null,
-    val days: List<String> = emptyList(),
+    @SerialName("days_of_week") val daysOfWeek: List<Int> = emptyList(),
+    val timezone: String? = null,
+)
+
+@Serializable
+data class ScheduleTimeWindow(
+    @SerialName("start_time") val startTime: String = "",
+    @SerialName("end_time") val endTime: String = "",
+    @SerialName("day_of_week_set") val dayOfWeekSet: String = "",
+)
+
+@Serializable
+data class ScheduleWriteRequest(
+    val name: String,
+    val description: String? = null,
+    @SerialName("time_windows") val timeWindows: List<ScheduleTimeWindow> = emptyList(),
 )
 
 @Serializable
@@ -336,9 +347,13 @@ data class CreateGuestRequest(
     val company: String? = null,
     val purpose: String? = null,
     @SerialName("host_name") val hostName: String? = null,
+    @SerialName("host_email") val hostEmail: String? = null,
+    @SerialName("host_phone") val hostPhone: String? = null,
     @SerialName("id_document_type") val idDocumentType: String? = null,
     @SerialName("id_document_number") val idDocumentNumber: String? = null,
     @SerialName("expected_at") val expectedAt: String? = null,
+    @SerialName("notify_host") val notifyHost: Boolean = true,
+    @SerialName("access_ttl_hours") val accessTtlHours: Int = 24,
 )
 
 @Serializable
@@ -364,4 +379,112 @@ data class CreateBookingRequest(
 @Serializable
 data class RenameRequest(
     val name: String,
+)
+
+@Serializable
+data class GroupMember(
+    val id: String,
+    val name: String = "",
+    val email: String = "",
+    val role: String = "",
+)
+
+@Serializable
+data class GroupDoor(
+    val id: String,
+    val name: String = "",
+    val status: String = "",
+)
+
+@Serializable
+data class TeamMember(
+    val id: String,
+    val name: String = "",
+    val email: String = "",
+    val role: String = "",
+)
+
+@Serializable
+data class TeamAccessRight(
+    val id: String,
+    @SerialName("door_name") val doorName: String = "",
+    @SerialName("schedule_name") val scheduleName: String? = null,
+    @SerialName("access_type") val accessType: String = "",
+)
+
+@Serializable
+data class InviteUserRequest(
+    val email: String,
+    val role: String = "member",
+)
+
+@Serializable
+data class AssignMemberRequest(
+    @SerialName("user_id") val userId: String,
+)
+
+@Serializable
+data class AssignDoorRequest(
+    @SerialName("door_id") val doorId: String,
+)
+
+@Serializable
+data class AssignAccessRightRequest(
+    @SerialName("door_id") val doorId: String,
+    @SerialName("schedule_id") val scheduleId: String? = null,
+)
+
+@Serializable
+data class FailedAttemptEvent(
+    val id: String,
+    @SerialName("user_name") val userName: String = "",
+    @SerialName("door_name") val doorName: String = "",
+    val method: String = "",
+    val reason: String = "",
+    val timestamp: String = "",
+)
+
+@Serializable
+data class AlarmCalendarEntry(
+    val id: String,
+    val date: String = "",
+    @SerialName("alarm_count") val alarmCount: Int = 0,
+    val alarms: List<Alarm> = emptyList(),
+)
+
+@Serializable
+data class CameraSnapshotResponse(
+    @SerialName("image_url") val imageUrl: String,
+    @SerialName("captured_at") val capturedAt: String? = null,
+)
+
+@Serializable
+data class EventMedia(
+    val id: String,
+    @SerialName("event_id") val eventId: String = "",
+    @SerialName("camera_name") val cameraName: String = "",
+    @SerialName("snapshot_url") val snapshotUrl: String = "",
+    val datetime: String = "",
+)
+
+@Serializable
+data class DoorRestriction(
+    val id: String,
+    val type: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    @SerialName("radius_meters") val radiusMeters: Int? = null,
+    @SerialName("is_enabled") val isEnabled: Boolean = false,
+)
+
+@Serializable
+data class DoorSchedule(
+    val id: String,
+    val name: String,
+    val description: String = "",
+    @SerialName("schedule_type") val scheduleType: String = "",
+    @SerialName("start_time") val startTime: String = "",
+    @SerialName("end_time") val endTime: String = "",
+    @SerialName("days_of_week") val daysOfWeek: List<Int> = emptyList(),
+    @SerialName("is_enabled") val isEnabled: Boolean? = null,
 )

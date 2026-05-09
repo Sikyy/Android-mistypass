@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -20,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +50,8 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
+    var showForgotPassword by remember { mutableStateOf(false) }
+    var forgotEmail by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.loginSuccess.collect {
@@ -145,7 +149,22 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = {
+                    forgotEmail = uiState.email
+                    showForgotPassword = true
+                },
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Text(
+                    text = stringResource(R.string.login_forgot_password),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = viewModel::login,
@@ -167,5 +186,62 @@ fun LoginScreen(
                 }
             }
         }
+    }
+
+    if (showForgotPassword) {
+        AlertDialog(
+            onDismissRequest = {
+                showForgotPassword = false
+                viewModel.clearForgotPasswordState()
+            },
+            title = { Text(stringResource(R.string.login_reset_password)) },
+            text = {
+                Column {
+                    if (uiState.forgotPasswordSent) {
+                        Text(stringResource(R.string.login_reset_sent))
+                    } else {
+                        OutlinedTextField(
+                            value = forgotEmail,
+                            onValueChange = { forgotEmail = it },
+                            label = { Text(stringResource(R.string.login_email)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        )
+                        uiState.forgotPasswordError?.let { err ->
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (uiState.forgotPasswordSent) {
+                    TextButton(onClick = {
+                        showForgotPassword = false
+                        viewModel.clearForgotPasswordState()
+                    }) {
+                        Text(stringResource(R.string.ok))
+                    }
+                } else {
+                    TextButton(
+                        onClick = { viewModel.restorePassword(forgotEmail) },
+                        enabled = forgotEmail.isNotBlank(),
+                    ) {
+                        Text(stringResource(R.string.login_send_reset))
+                    }
+                }
+            },
+            dismissButton = {
+                if (!uiState.forgotPasswordSent) {
+                    TextButton(onClick = {
+                        showForgotPassword = false
+                        viewModel.clearForgotPasswordState()
+                    }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            },
+        )
     }
 }

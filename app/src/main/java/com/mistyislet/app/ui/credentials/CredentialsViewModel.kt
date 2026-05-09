@@ -7,7 +7,9 @@ import com.mistyislet.app.core.network.safeApiCall
 import com.mistyislet.app.data.api.AccessApi
 import com.mistyislet.app.data.api.UserApi
 import com.mistyislet.app.data.repository.CredentialRepository
+import com.mistyislet.app.data.repository.MobileCredentialRepository
 import com.mistyislet.app.domain.model.Credential
+import com.mistyislet.app.domain.model.MobileCredential
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,6 +21,7 @@ import javax.inject.Inject
 
 data class CredentialsUiState(
     val credentials: List<Credential> = emptyList(),
+    val mobileCredentials: List<MobileCredential> = emptyList(),
     val userId: String? = null,
     val organizationName: String = "Mistyislet",
     val placeName: String? = null,
@@ -34,6 +37,7 @@ data class CredentialsUiState(
 @HiltViewModel
 class CredentialsViewModel @Inject constructor(
     private val credentialRepository: CredentialRepository,
+    private val mobileCredentialRepository: MobileCredentialRepository,
     private val userApi: UserApi,
     private val accessApi: AccessApi,
 ) : ViewModel() {
@@ -48,6 +52,7 @@ class CredentialsViewModel @Inject constructor(
         observeCached()
         refresh()
         loadUser()
+        loadMobileCredentials()
         startQrRefreshLoop()
         startPinRefreshLoop()
     }
@@ -155,6 +160,17 @@ class CredentialsViewModel @Inject constructor(
         viewModelScope.launch { refreshPinCode() }
     }
 
+    private fun loadMobileCredentials() {
+        viewModelScope.launch {
+            when (val result = mobileCredentialRepository.listCredentials()) {
+                is ApiResult.Success -> {
+                    _uiState.value = _uiState.value.copy(mobileCredentials = result.data)
+                }
+                else -> {}
+            }
+        }
+    }
+
     private fun observeCached() {
         viewModelScope.launch {
             credentialRepository.getCachedCredentials().collect { credentials ->
@@ -172,6 +188,7 @@ class CredentialsViewModel @Inject constructor(
                 is ApiResult.Exception -> _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = result.throwable.localizedMessage)
             }
         }
+        loadMobileCredentials()
     }
 
     override fun onCleared() {

@@ -1,5 +1,8 @@
 package com.mistyislet.app.ui.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,12 +23,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Laptop
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Visibility
@@ -56,6 +62,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -69,7 +76,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.fragment.app.FragmentActivity
+import coil.compose.AsyncImage
 import com.mistyislet.app.R
+import kotlinx.coroutines.launch
 import com.mistyislet.app.domain.model.UserLogin
 import com.mistyislet.app.ui.theme.Danger
 import com.mistyislet.app.ui.theme.Success
@@ -133,6 +143,14 @@ private fun MainSettingsTab(
 ) {
     var showChangePassword by remember { mutableStateOf(false) }
     val surfaceColor = MaterialTheme.colorScheme.surface
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        uri?.let { viewModel.uploadAvatar(it) }
+    }
 
     Column(
         modifier = Modifier
@@ -157,14 +175,51 @@ private fun MainSettingsTab(
                         modifier = Modifier
                             .size(56.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center,
+                            .clickable {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                )
+                            },
                     ) {
-                        Text(
-                            text = userInitials(uiState.user.name),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
+                        if (uiState.user.avatar != null) {
+                            AsyncImage(
+                                model = uiState.user.avatar,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = userInitials(uiState.user.name),
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .align(Alignment.BottomEnd),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
@@ -206,13 +261,49 @@ private fun MainSettingsTab(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_biometric)) },
-                    supportingContent = { Text(stringResource(R.string.settings_biometric_subtitle)) },
-                    leadingContent = { Icon(Icons.Default.Fingerprint, contentDescription = null) },
+                    headlineContent = {
+                        Text(
+                            if (uiState.biometricAvailable) uiState.biometricTypeName
+                            else stringResource(R.string.settings_biometric),
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            if (uiState.biometricAvailable)
+                                stringResource(R.string.settings_biometric_subtitle)
+                            else
+                                stringResource(R.string.settings_biometric_unavailable),
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            when {
+                                uiState.biometricTypeName.contains("Face") -> Icons.Default.Face
+                                else -> Icons.Default.Fingerprint
+                            },
+                            contentDescription = null,
+                        )
+                    },
                     trailingContent = {
                         Switch(
                             checked = uiState.biometricEnabled,
-                            onCheckedChange = { viewModel.toggleBiometric(it) },
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    val activity = context as? FragmentActivity
+                                    if (activity != null) {
+                                        scope.launch {
+                                            val ok = viewModel.biometricHelper.authenticate(
+                                                activity,
+                                                title = context.getString(R.string.biometric_prompt_title),
+                                                subtitle = context.getString(R.string.biometric_prompt_subtitle),
+                                            )
+                                            if (ok) viewModel.toggleBiometric(true)
+                                        }
+                                    }
+                                } else {
+                                    viewModel.toggleBiometric(false)
+                                }
+                            },
                             enabled = uiState.biometricAvailable,
                         )
                     },
@@ -222,9 +313,15 @@ private fun MainSettingsTab(
 
                 var langExpanded by remember { mutableStateOf(false) }
                 val languages = listOf("English" to "en", "中文" to "zh", "Indonesia" to "in")
+                val currentLocale = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+                    .toLanguageTags().takeIf { it.isNotBlank() }
+                val currentLabel = languages.find { it.second == currentLocale }?.first
+                    ?: languages.find { it.second == currentLocale?.take(2) }?.first
+                    ?: "English"
                 Box {
                     ListItem(
                         headlineContent = { Text(stringResource(R.string.profile_language)) },
+                        supportingContent = { Text(currentLabel) },
                         leadingContent = { Icon(Icons.Default.Language, contentDescription = null) },
                         modifier = Modifier.clickable { langExpanded = true },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -235,7 +332,14 @@ private fun MainSettingsTab(
                     ) {
                         languages.forEach { (label, code) ->
                             DropdownMenuItem(
-                                text = { Text(label) },
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(label, modifier = Modifier.weight(1f))
+                                        if (code == currentLocale || code == currentLocale?.take(2) || (currentLocale.isNullOrBlank() && code == "en")) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp), tint = Success)
+                                        }
+                                    }
+                                },
                                 onClick = {
                                     langExpanded = false
                                     viewModel.setLanguage(code)
@@ -244,6 +348,27 @@ private fun MainSettingsTab(
                         }
                     }
                 }
+            }
+        }
+
+        // Geofence settings
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = surfaceColor),
+        ) {
+            Column {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.geofence_toggle)) },
+                    supportingContent = { Text(stringResource(R.string.geofence_description)) },
+                    leadingContent = { Icon(Icons.Default.LocationOn, contentDescription = null) },
+                    trailingContent = {
+                        Switch(
+                            checked = uiState.geofenceEnabled,
+                            onCheckedChange = { viewModel.toggleGeofence(it) },
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
             }
         }
 

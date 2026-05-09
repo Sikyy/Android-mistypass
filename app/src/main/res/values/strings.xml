@@ -19,6 +19,10 @@
     <string name="login_password">Password</string>
     <string name="login_button">Sign In</string>
     <string name="login_failed">Login failed</string>
+    <string name="login_forgot_password">Forgot password?</string>
+    <string name="login_reset_password">Reset Password</string>
+    <string name="login_send_reset">Send</string>
+    <string name="login_reset_sent">A password reset link has been sent to your email.</string>
 
     <!-- Doors -->
     <string name="doors_title">My Doors</string>
@@ -54,8 +58,16 @@
     <string name="doors_favorite">Add to favorites</string>
     <string name="doors_unfavorite">Remove from favorites</string>
     <string name="doors_lockdown">Lockdown</string>
+    <string name="doors_lockdown_active">Lockdown active</string>
+    <string name="doors_lockdown_inactive">Lockdown inactive</string>
+    <string name="doors_security">Security</string>
+    <string name="doors_restrictions">Restrictions</string>
+    <string name="doors_schedules">Schedules</string>
+    <string name="doors_last_unlocked">Last Unlocked</string>
     <string name="doors_lockdown_banner">This place is in lockdown</string>
     <string name="doors_disable_lockdown">Disable</string>
+    <string name="doors_offline_banner">You are offline</string>
+    <string name="doors_last_synced">Last synced %1$s</string>
 
     <!-- Places / Organizations -->
     <string name="places_back">Back</string>
@@ -153,6 +165,151 @@
     <string name="dashboard_timezone">Timezone</string>
 
     <!-- Analytics -->
+    <string name="admin_active_now">Active Now</string>
+    <string name="admin_online">Online</string>
+    <string name="admin_offline">Offline</string>
+    <string name="admin_total">Total</string>
+    <string name="admin_rename">Rename</string>
+    <string name="admin_enter_new_name">Enter new name</string>
+    <string name="admin_search_users">Search users</string>
+    <string name="admin_search_cards">Search cards</string>
+    <string name="admin_search_credentials">Search credentials</string>
+    <string name="admin_search_presence">Search users</string>
+    <string name="admin_role">Role</string>
+    <string name="admin_last_activity">Last Activity</string>
+    <string name="admin_joined">Joined</string>
+    <string name="admin_change_role">Change Role</string>
+    <string name="admin_apply_role">Apply Role</string>
+    <string name="admin_force_sign_out">Force Sign Out</string>
+    <string name="admin_remove_user">Remove User</string>
+    <string name="admin_confirm_sign_out">Are you sure you want to force sign out this user?</string>
+    <string name="admin_confirm_remove">Are you sure you want to remove this user? This cannot be undone.</string>
+    <string name="admin_unbind">Unbind</string>
+    <string name="admin_confirm_unbind">Are you sure you want to unbind this card?</string>
+    <string name="admin_revoke">Revoke</string>
+    <string name="admin_confirm_revoke">Are you sure you want to revoke this credential?</string>
+    <string name="admin_scope_all">All</string>
+    <string name="admin_scope_org">Org</string>
+    <string name="admin_scope_place">Place</string>
+    <string name="admin_scope_group">Group</string>
+    <string name="admin_card_uid">UID: %s</string>
+    <string name="admin_issued">Issued %s</string>
+    <string name="admin_expires">Expires %s</string>
+    <string name="admin_usage_count">%d uses</string>
+    <string name="admin_days_present">Days Present</string>
+    <string name="admin_total_unlocks">Total Unlocks</string>
+    <string name="admin_avg_days">Avg Days</string>
+    <string name="admin_sort_days_desc">Days (most)</string>
+    <string name="admin_sort_unlocks_desc">Unlocks (most)</string>
+    <string name="admin_sort_name_asc">Name (A–Z)</string>
+    <string name="admin_sort_days_asc">Days (least)</string>
+    <string name="admin_create">Create</string>
+    <string name="admin_delete">Delete</string>
+    <string name="admin_confirm_delete">Are you sure you want to delete this item?</string>
+    <string name="admin_name">Name</string>
+    <string name="admin_description">Description</string>
+    <string name="admin_type">Type</string>
+    <string name="admin_start_time">Start Time</string>
+    <string name="admin_end_time">End Time</string>
+    <string name="admin_weekdays">Weekdays</string>
+    <string name="admin_weekends">Weekends</string>
+    <string name="admin_every_day">Every Day</string>
+    <string name="admin_members_count">%d members</string>
+    <string name="admin_doors_count">%d doors</string>
+    <string name="admin_schedule_unlock">Unlock</string>
+    <string name="admin_schedule_denial">Access Denial</string>
+    <string name="admin_schedule_first">First to Arrive</string>
+    <string name="admin_schedule_holiday">Holiday</string>
+    <string name="admin_members">Members</string>
+    <string name="admin_doors">Doors</string>
+    <string name="admin_no_members">No members</string>
+    <string name="admin_no_doors">No doors</string>
+    <string name="admin_access_rights">Access Rights</string>
+    <string name="admin_no_access_rights">No access rights</string>
+    <string name="admin_add_member">Add Member</string>
+    <string name="admin_add_door">Add Door</string>
+    <string name="admin_add_access_right">Add Access Right</string>
+    <string name="admin_enter_email">Enter user email</string>
+    <string name="admin_select_door">Select a door</string>
+    <string name="admin_search">Search</string>
+    <string name="admin_edit">Edit</string>
+    <string name="admin_save">Save</string>
+    <string name="admin_invite_user">Invite User</string>
+    <string name="admin_email">Email</string>
+    <string name="admin_invite">Invite</string>
+    <string name="admin_error">Error</string>
+    <string name="export_report_type">Report Type</string>
+    <string name="export_weekly_analytics">Weekly Analytics</string>
+    <string name="export_events">Events</string>
+    <string name="export_unlock_stats">Unlock Stats</string>
+    <string name="export_user_presence">User Presence</string>
+    <string name="export_incidents">Incidents</string>
+    <string name="export_hardware">Hardware Summary</string>
+    <string name="export_date_range">Date Range</string>
+    <string name="export_from">From</string>
+    <string name="export_to">To</string>
+    <string name="alarm_open">Open</string>
+    <string name="alarm_all">All</string>
+    <string name="alarm_schedules">Schedules</string>
+    <string name="alarm_acknowledge">Acknowledge</string>
+    <string name="alarm_resolve">Resolve</string>
+    <string name="alarm_false_positive">False Positive</string>
+    <string name="alarm_all_clear">All clear</string>
+    <string name="alarm_calendar">Calendar</string>
+    <string name="alarm_critical">Critical</string>
+    <string name="alarm_high">High</string>
+    <string name="guest_expected">Expected</string>
+    <string name="guest_on_site">On-site</string>
+    <string name="guest_completed">Completed</string>
+    <string name="guest_check_in">Check In</string>
+    <string name="guest_check_out">Check Out</string>
+    <string name="guest_create">New Guest</string>
+    <string name="guest_cancel">Cancel Visit</string>
+    <string name="guest_section_visitor">Visitor Info</string>
+    <string name="guest_section_host">Host Info</string>
+    <string name="guest_section_id">ID Verification</string>
+    <string name="guest_section_schedule">Schedule</string>
+    <string name="guest_email_optional">Email (optional)</string>
+    <string name="guest_company_optional">Company (optional)</string>
+    <string name="guest_purpose_optional">Purpose (optional)</string>
+    <string name="guest_host_email_optional">Host email (optional)</string>
+    <string name="guest_host_phone_optional">Host phone (optional)</string>
+    <string name="guest_notify_host">Notify host</string>
+    <string name="guest_id_type">ID Document Type</string>
+    <string name="guest_id_none">None</string>
+    <string name="guest_id_ktp">KTP</string>
+    <string name="guest_id_sim">SIM</string>
+    <string name="guest_id_passport">Passport</string>
+    <string name="guest_id_other">Other</string>
+    <string name="guest_id_number">ID Number</string>
+    <string name="guest_set_expected_time">Set expected arrival</string>
+    <string name="guest_pick_date">Pick date</string>
+    <string name="guest_access_duration">Access duration</string>
+    <string name="booking_spaces">Spaces</string>
+    <string name="booking_active">Active</string>
+    <string name="booking_past">Past</string>
+    <string name="booking_check_in">Check In</string>
+    <string name="booking_check_out">Check Out</string>
+    <string name="booking_cancel">Cancel</string>
+    <string name="booking_create">New Booking</string>
+    <string name="booking_select_space">Select space</string>
+    <string name="booking_title_hint">Booking title (optional)</string>
+    <string name="booking_start">Start</string>
+    <string name="booking_end">End</string>
+    <string name="booking_book">Book</string>
+    <string name="org_general">General</string>
+    <string name="org_email_section">Email Notifications</string>
+    <string name="org_whatsapp_section">WhatsApp Notifications</string>
+    <string name="org_security_section">Security</string>
+    <string name="org_domain">Domain</string>
+    <string name="org_send_emails">Email Notifications</string>
+    <string name="org_push_notifications">Push Notifications</string>
+    <string name="org_email_reports">Weekly Reports</string>
+    <string name="org_whatsapp_enabled">WhatsApp Enabled</string>
+    <string name="org_enforce_mfa">Enforce MFA</string>
+    <string name="org_webauthn">WebAuthn / Passkeys</string>
+
+    <!-- Analytics -->
     <string name="analytics_total_unlocks">Total Unlocks</string>
     <string name="analytics_unique_users">Unique Users</string>
     <string name="analytics_failed_attempts">Failed Attempts</string>
@@ -161,6 +318,32 @@
     <string name="analytics_format">Format</string>
     <string name="analytics_export">Export</string>
     <string name="analytics_export_ready">Export ready</string>
+    <string name="analytics_daily_trend">Daily Trend</string>
+    <string name="analytics_heatmap">Unlock Heatmap</string>
+    <string name="analytics_unlock_methods">Unlock Methods</string>
+    <string name="analytics_weekly_users">Weekly Users</string>
+    <string name="analytics_trend_table">Daily Breakdown</string>
+    <string name="analytics_date">Date</string>
+    <string name="analytics_failed_short">Failed</string>
+    <string name="analytics_less">Less</string>
+    <string name="analytics_more">More</string>
+    <string name="analytics_user">User</string>
+    <string name="analytics_door">Door</string>
+    <string name="analytics_reason">Reason</string>
+
+    <!-- Camera Detail -->
+    <string name="camera_tap_to_stream">Tap to stream</string>
+    <string name="camera_offline">Camera offline</string>
+    <string name="camera_status">Status</string>
+    <string name="camera_vendor">Vendor</string>
+    <string name="camera_model">Model</string>
+    <string name="camera_ip">IP Address</string>
+    <string name="camera_door">Door</string>
+
+    <!-- User Presence Enhanced -->
+    <string name="presence_weekday_activity">Weekday Activity</string>
+    <string name="presence_user_heatmap">Per-User Heatmap</string>
+    <string name="presence_users_title">Users</string>
 
     <!-- History -->
     <string name="history_title">History</string>
@@ -175,6 +358,7 @@
     <string name="history_granted">Granted</string>
     <string name="history_denied">Denied</string>
     <string name="history_reason">Reason</string>
+    <string name="history_camera_snapshots">Camera Snapshots</string>
 
     <!-- Visitors -->
     <string name="visitors_title">Visitors</string>
@@ -233,6 +417,11 @@
     <string name="settings_acknowledgments">Acknowledgments</string>
     <string name="settings_biometric">Biometric Lock</string>
     <string name="settings_biometric_subtitle">Require biometric to open app</string>
+    <string name="settings_biometric_unavailable">Biometric not available on this device</string>
+    <string name="biometric_prompt_title">Verify Identity</string>
+    <string name="biometric_prompt_subtitle">Use biometric to continue</string>
+    <string name="biometric_unlock_title">Unlock Door</string>
+    <string name="biometric_unlock_subtitle">Verify to unlock %s</string>
     <string name="settings_password">Change Password</string>
     <string name="settings_avatar">Change Avatar</string>
     <string name="settings_hand_wave">Hand Wave Unlock</string>
@@ -257,6 +446,10 @@
     <string name="settings_login_last_active">Last active %s</string>
     <string name="settings_login_logout">Logout</string>
     <string name="save">Save</string>
+
+    <!-- Geofence -->
+    <string name="geofence_toggle">Geofence Auto-Unlock</string>
+    <string name="geofence_description">Automatically prepare doors for unlock when you approach your building.</string>
 
     <!-- Common -->
     <string name="loading">Loading…</string>

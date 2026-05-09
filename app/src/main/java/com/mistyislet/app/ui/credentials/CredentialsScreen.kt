@@ -143,7 +143,22 @@ fun CredentialsScreen(
                 pinExpiresAt = uiState.pinExpiresAt,
             )
 
-            // Device Credential cards
+            // Device Credential cards (this device's mobile BLE credentials only)
+            uiState.mobileCredentials.filter { it.status == "active" && it.platform == "android" }.forEach { cred ->
+                PassCard(
+                    passId = cred.id,
+                    passType = PassType.DEVICE_CREDENTIAL,
+                    organizationName = uiState.organizationName,
+                    placeName = null,
+                    holderName = cred.deviceModel ?: cred.platform,
+                    isExpanded = expandedPassId == cred.id,
+                    onTap = {
+                        expandedPassId = if (expandedPassId == cred.id) null else cred.id
+                    },
+                )
+            }
+
+            // Wallet pass cards
             uiState.credentials.filter { it.status == "active" }.forEach { cred ->
                 PassCard(
                     passId = cred.id,
