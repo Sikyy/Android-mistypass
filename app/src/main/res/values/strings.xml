@@ -127,6 +127,16 @@
     <string name="valid_duration">Valid for</string>
     <string name="create_visitor_pass">Create Visitor Pass</string>
     <string name="visitor_expired">Expired</string>
+    <string name="delivery_email">Email</string>
+    <string name="delivery_email_qr">Email + QR</string>
+    <string name="delivery_whatsapp">WhatsApp</string>
+    <string name="delivery_whatsapp_qr">WhatsApp + QR</string>
+    <string name="delivery_sms">SMS</string>
+    <string name="visitor_copy_link">Copy Link</string>
+    <string name="visitor_share_pass">Share</string>
+    <string name="visitor_share_subject">Visitor Pass</string>
+    <string name="visitor_share_title">Share Visitor Pass</string>
+    <string name="visitor_link_copied">Link copied</string>
 
     <!-- Profile -->
     <string name="profile_title">Profile</string>

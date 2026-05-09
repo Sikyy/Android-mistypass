@@ -127,6 +127,16 @@
     <string name="valid_duration">Berlaku selama</string>
     <string name="create_visitor_pass">Buat Pass Pengunjung</string>
     <string name="visitor_expired">Kedaluwarsa</string>
+    <string name="delivery_email">Email</string>
+    <string name="delivery_email_qr">Email + QR</string>
+    <string name="delivery_whatsapp">WhatsApp</string>
+    <string name="delivery_whatsapp_qr">WhatsApp + QR</string>
+    <string name="delivery_sms">SMS</string>
+    <string name="visitor_copy_link">Salin Tautan</string>
+    <string name="visitor_share_pass">Bagikan</string>
+    <string name="visitor_share_subject">Pass Pengunjung</string>
+    <string name="visitor_share_title">Bagikan Pass Pengunjung</string>
+    <string name="visitor_link_copied">Tautan disalin</string>
 
     <!-- Profile -->
     <string name="profile_title">Profil</string>

@@ -1,21 +1,28 @@
 package com.mistyislet.app.ui.visitors
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -27,10 +34,19 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.mistyislet.app.R
+
+private data class DeliveryMethodOption(
+    val key: String,
+    val labelRes: Int,
+    val icon: ImageVector,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,15 +58,20 @@ fun CreateVisitorSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var visitorName by remember { mutableStateOf("") }
-    var visitorPhone by remember { mutableStateOf("") }
-    var hostName by remember { mutableStateOf("") }
-    var selectedDurationIndex by remember { mutableIntStateOf(2) } // default 24h
-    var selectedMethod by remember { mutableStateOf("email") }
-    var methodExpanded by remember { mutableStateOf(false) }
+    var selectedDurationIndex by remember { mutableIntStateOf(2) }
+    var selectedMethod by remember { mutableStateOf("whatsapp") }
 
     val durations = listOf(4, 8, 24, 48, 72)
     val durationLabels = listOf("4h", "8h", "24h", "48h", "72h")
-    val methods = listOf("email" to "Email", "email_qr" to "Email + QR", "sms" to "SMS")
+    val methods = remember {
+        listOf(
+            DeliveryMethodOption("email", R.string.delivery_email, Icons.Default.Email),
+            DeliveryMethodOption("email_qr", R.string.delivery_email_qr, Icons.Default.QrCode),
+            DeliveryMethodOption("whatsapp", R.string.delivery_whatsapp, Icons.AutoMirrored.Filled.Chat),
+            DeliveryMethodOption("whatsapp_qr", R.string.delivery_whatsapp_qr, Icons.Default.QrCode),
+            DeliveryMethodOption("sms", R.string.delivery_sms, Icons.Default.Sms),
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = { if (!isCreating) onDismiss() },
@@ -77,31 +98,50 @@ fun CreateVisitorSheet(
                 enabled = !isCreating,
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            OutlinedTextField(
-                value = visitorPhone,
-                onValueChange = { visitorPhone = it },
-                label = { Text(stringResource(R.string.visitor_phone)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = !isCreating,
+            Text(
+                text = stringResource(R.string.delivery_method),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(modifier = Modifier.height(4.dp))
+            Column(modifier = Modifier.selectableGroup()) {
+                methods.forEach { method ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = selectedMethod == method.key,
+                                onClick = { if (!isCreating) selectedMethod = method.key },
+                                role = Role.RadioButton,
+                            )
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = selectedMethod == method.key,
+                            onClick = null,
+                            enabled = !isCreating,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = method.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(method.labelRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            OutlinedTextField(
-                value = hostName,
-                onValueChange = { hostName = it },
-                label = { Text(stringResource(R.string.visitor_host)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = !isCreating,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Duration segmented button
             Text(
                 text = stringResource(R.string.valid_duration),
                 style = MaterialTheme.typography.labelLarge,
@@ -121,40 +161,10 @@ fun CreateVisitorSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Delivery method dropdown
-            ExposedDropdownMenuBox(
-                expanded = methodExpanded,
-                onExpandedChange = { if (!isCreating) methodExpanded = it },
-            ) {
-                OutlinedTextField(
-                    value = methods.first { it.first == selectedMethod }.second,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.delivery_method)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = methodExpanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                )
-                ExposedDropdownMenu(expanded = methodExpanded, onDismissRequest = { methodExpanded = false }) {
-                    methods.forEach { (value, label) ->
-                        DropdownMenuItem(
-                            text = { Text(label) },
-                            onClick = { selectedMethod = value; methodExpanded = false },
-                        )
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = {
-                    val contact = visitorPhone.ifBlank { visitorName }
-                    onCreate(contact, selectedMethod, durations[selectedDurationIndex])
-                },
+                onClick = { onCreate(visitorName, selectedMethod, durations[selectedDurationIndex]) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = visitorName.isNotBlank() && !isCreating,
             ) {
