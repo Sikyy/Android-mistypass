@@ -1,9 +1,6 @@
 package com.mistyislet.app.ui.profile
 
-import android.app.LocaleManager
-import android.content.Context
 import android.os.Build
-import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.datastore.core.DataStore
@@ -11,15 +8,17 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mistyislet.app.BuildConfig
 import com.mistyislet.app.core.auth.BiometricHelper
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.core.network.safeApiCall
 import com.mistyislet.app.data.api.UserApi
 import com.mistyislet.app.data.repository.AuthRepository
+import com.mistyislet.app.domain.model.ChangePasswordRequest
 import com.mistyislet.app.domain.model.UserInfo
+import com.mistyislet.app.domain.model.UserLogin
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +34,11 @@ data class ProfileUiState(
     val biometricAvailable: Boolean = false,
     val biometricEnabled: Boolean = false,
     val notificationsEnabled: Boolean = true,
+    val logins: List<UserLogin> = emptyList(),
+    val isLoadingLogins: Boolean = false,
+    val passwordChangeSuccess: Boolean = false,
+    val passwordChangeError: String? = null,
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel
@@ -56,6 +60,11 @@ class ProfileViewModel @Inject constructor(
 
     private val _logoutEvent = MutableSharedFlow<Unit>()
     val logoutEvent: SharedFlow<Unit> = _logoutEvent
+
+    val appVersion: String = BuildConfig.VERSION_NAME
+    val buildNumber: String = BuildConfig.VERSION_CODE.toString()
+    val deviceModel: String = "${Build.MANUFACTURER} ${Build.MODEL}"
+    val androidVersion: String = "Android ${Build.VERSION.RELEASE}"
 
     init {
         loadUser()
@@ -104,9 +113,52 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             dataStore.edit { it[KEY_LANGUAGE] = languageCode }
         }
-        // 使用 AppCompat per-app language API
         val localeList = LocaleListCompat.forLanguageTags(languageCode)
         AppCompatDelegate.setApplicationLocales(localeList)
+    }
+
+    fun fetchLogins() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingLogins = true)
+            when (val result = safeApiCall { userApi.getMyLogins() }) {
+                is ApiResult.Success -> _uiState.value = _uiState.value.copy(
+                    logins = result.data.items,
+                    isLoadingLogins = false,
+                )
+                else -> _uiState.value = _uiState.value.copy(isLoadingLogins = false)
+            }
+        }
+    }
+
+    fun remoteLogout(login: UserLogin) {
+        viewModelScope.launch {
+            when (safeApiCall { userApi.remoteLogout(login.id) }) {
+                is ApiResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        logins = _uiState.value.logins.filter { it.id != login.id },
+                    )
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun changePassword(currentPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(passwordChangeError = null, passwordChangeSuccess = false)
+            when (safeApiCall { userApi.changePassword(ChangePasswordRequest(currentPassword, newPassword)) }) {
+                is ApiResult.Success -> {
+                    _uiState.value = _uiState.value.copy(passwordChangeSuccess = true)
+                }
+                else -> {
+                    _uiState.value = _uiState.value.copy(passwordChangeError = "Failed to change password")
+                }
+            }
+        }
+    }
+
+    fun clearPasswordState() {
+        _uiState.value = _uiState.value.copy(passwordChangeSuccess = false, passwordChangeError = null)
     }
 
     fun logout() {

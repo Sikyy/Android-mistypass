@@ -109,6 +109,9 @@
 
     <!-- Profile -->
     <string name="profile_title">Profile</string>
+    <string name="profile_tab_main">Main</string>
+    <string name="profile_tab_logins">Logins</string>
+    <string name="profile_tab_help">Help</string>
     <string name="profile_credentials">My Credentials</string>
     <string name="profile_biometric">Biometric Lock</string>
     <string name="profile_biometric_desc">Require biometric to open app</string>
@@ -117,6 +120,13 @@
     <string name="profile_visitor_passes">Visitor Passes</string>
     <string name="profile_logout">Sign Out</string>
     <string name="profile_logout_confirm">Are you sure you want to sign out?</string>
+    <string name="profile_current_password">Current Password</string>
+    <string name="profile_new_password">New Password</string>
+    <string name="profile_confirm_password">Confirm Password</string>
+    <string name="profile_passwords_mismatch">Passwords do not match</string>
+    <string name="profile_version">Version</string>
+    <string name="profile_build">Build</string>
+    <string name="profile_device">Device</string>
 
     <!-- Settings (Profile redesign) -->
     <string name="settings_sign_out">Sign Out</string>
