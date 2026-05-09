@@ -1,5 +1,6 @@
 package com.mistyislet.app.data.repository
 
+import com.mistyislet.app.core.geofence.GeofenceManager
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.core.network.safeApiCall
 import com.mistyislet.app.data.api.AccessApi
@@ -19,6 +20,7 @@ import javax.inject.Singleton
 class DoorRepository @Inject constructor(
     private val accessApi: AccessApi,
     private val doorDao: DoorDao,
+    private val geofenceManager: GeofenceManager,
 ) {
     fun getCachedDoors(): Flow<List<AccessibleDoor>> {
         return doorDao.getAll().map { cached ->
@@ -32,6 +34,7 @@ class DoorRepository @Inject constructor(
             val doors = response.items
             doorDao.deleteAll()
             doorDao.insertAll(doors.map { it.toCache() })
+            geofenceManager.syncGeofences(doors)
             doors
         }
     }
