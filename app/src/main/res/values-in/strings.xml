@@ -103,6 +103,15 @@
     <!-- History -->
     <string name="history_title">Riwayat</string>
     <string name="history_empty">Tidak ada catatan akses</string>
+    <string name="history_today">Hari Ini</string>
+    <string name="history_yesterday">Kemarin</string>
+    <string name="history_event_detail">Detail Acara</string>
+    <string name="history_door">Pintu</string>
+    <string name="history_time">Waktu</string>
+    <string name="history_result">Hasil</string>
+    <string name="history_method">Metode</string>
+    <string name="history_granted">Diizinkan</string>
+    <string name="history_denied">Ditolak</string>
 
     <!-- Visitors -->
     <string name="visitors_title">Pengunjung</string>

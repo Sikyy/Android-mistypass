@@ -103,6 +103,15 @@
     <!-- History -->
     <string name="history_title">记录</string>
     <string name="history_empty">暂无访问记录</string>
+    <string name="history_today">今天</string>
+    <string name="history_yesterday">昨天</string>
+    <string name="history_event_detail">事件详情</string>
+    <string name="history_door">门点</string>
+    <string name="history_time">时间</string>
+    <string name="history_result">结果</string>
+    <string name="history_method">方式</string>
+    <string name="history_granted">已通过</string>
+    <string name="history_denied">已拒绝</string>
 
     <!-- Visitors -->
     <string name="visitors_title">访客</string>
