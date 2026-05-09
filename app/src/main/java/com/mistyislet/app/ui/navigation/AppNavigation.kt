@@ -22,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.mistyislet.app.R
 import com.mistyislet.app.data.repository.AuthRepository
 import com.mistyislet.app.ui.admin.AdminAccessRightsScreen
@@ -164,20 +165,37 @@ private fun MainScreen(onLogout: () -> Unit) {
             startDestination = Routes.DOORS,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Routes.DOORS) { DoorsRootScreen() }
-            composable(Routes.PASS) {
+            composable(
+                Routes.DOORS,
+                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://unlock/{doorId}" }),
+            ) { DoorsRootScreen() }
+            composable(
+                Routes.PASS,
+                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://pass" }),
+            ) {
                 CredentialsScreen(
                     onNavigateToBindCard = { navController.navigate(Routes.BIND_CARD) },
                 )
             }
-            composable(Routes.DASHBOARD) {
+            composable(
+                Routes.DASHBOARD,
+                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://dashboard" }),
+            ) {
                 DashboardScreen(
                     onNavigate = { route -> navController.navigate(route) },
                 )
             }
             composable(Routes.HISTORY) { HistoryScreen() }
-            composable(Routes.VISITORS) { VisitorsScreen() }
-            composable(Routes.PROFILE) {
+            composable(
+                Routes.VISITORS,
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "https://app.mistyislet.com/visitor/{token}" },
+                ),
+            ) { VisitorsScreen() }
+            composable(
+                Routes.PROFILE,
+                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://profile" }),
+            ) {
                 ProfileScreen(onLogout = onLogout)
             }
             composable(Routes.BIND_CARD) {

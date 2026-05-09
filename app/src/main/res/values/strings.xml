@@ -450,6 +450,18 @@
     <!-- Geofence -->
     <string name="geofence_toggle">Geofence Auto-Unlock</string>
     <string name="geofence_description">Automatically prepare doors for unlock when you approach your building.</string>
+    <string name="geofence_notification_title">Door nearby</string>
+    <string name="geofence_notification_body">Tap to unlock</string>
+
+    <!-- Login Magic Link / SSO -->
+    <string name="continue_button">Continue</string>
+    <string name="looking_up_org">Looking up organization…</string>
+    <string name="send_magic_link">Send login link instead</string>
+    <string name="magic_link_sent_title">Check your email</string>
+    <string name="magic_link_sent_body">A login link has been sent to %1$s. Click the link to sign in.</string>
+    <string name="resend">Resend</string>
+    <string name="back_to_login">Back to login</string>
+    <string name="sso_redirecting">Redirecting to %1$s login…</string>
 
     <!-- Common -->
     <string name="loading">Loading…</string>

@@ -65,3 +65,19 @@ data class ApiError(
     val code: String? = null,
     val status: String? = null,
 )
+
+@Serializable
+data class OrgAuthConfig(
+    @SerialName("auth_type") val authType: String,
+    @SerialName("sso_url") val ssoUrl: String? = null,
+    @SerialName("org_name") val orgName: String? = null,
+)
+
+@Serializable
+data class MagicLinkRequest(val email: String)
+
+@Serializable
+data class MagicLinkResponse(val status: String)
+
+@Serializable
+data class VerifyMagicLinkRequest(val token: String)

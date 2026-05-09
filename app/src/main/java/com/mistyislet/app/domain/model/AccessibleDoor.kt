@@ -18,6 +18,8 @@ data class AccessibleDoor(
     @SerialName("is_favorite") val isFavorite: Boolean = false,
     @SerialName("last_unlock_at") val lastUnlockAt: String? = null,
     val kind: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 enum class DoorDisplayStatus {

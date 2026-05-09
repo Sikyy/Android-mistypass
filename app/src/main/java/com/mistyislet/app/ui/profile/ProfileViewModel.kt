@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.BuildConfig
 import com.mistyislet.app.core.auth.BiometricHelper
+import com.mistyislet.app.core.geofence.GeofenceManager
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.core.network.safeApiCall
 import com.mistyislet.app.data.api.UserApi
@@ -55,6 +56,7 @@ class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     val biometricHelper: BiometricHelper,
     private val dataStore: DataStore<Preferences>,
+    private val geofenceManager: GeofenceManager,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -120,6 +122,9 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             dataStore.edit { it[KEY_GEOFENCE_ENABLED] = enabled }
             _uiState.value = _uiState.value.copy(geofenceEnabled = enabled)
+            if (!enabled) {
+                geofenceManager.clearAll()
+            }
         }
     }
 
@@ -195,6 +200,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun logout() {
+        geofenceManager.clearAll()
         authRepository.logout()
         viewModelScope.launch {
             _logoutEvent.emit(Unit)

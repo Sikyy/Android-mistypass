@@ -446,6 +446,8 @@
     <!-- Geofence -->
     <string name="geofence_toggle">Buka Kunci Otomatis Geofence</string>
     <string name="geofence_description">Menyiapkan kunci pintu untuk dibuka secara otomatis saat Anda mendekati gedung.</string>
+    <string name="geofence_notification_title">Pintu di dekat Anda</string>
+    <string name="geofence_notification_body">Ketuk untuk membuka</string>
 
     <!-- Common -->
     <string name="loading">Memuat…</string>
@@ -454,4 +456,14 @@
     <string name="cancel">Batal</string>
     <string name="ok">OK</string>
     <string name="network_error">Kesalahan jaringan. Periksa koneksi Anda.</string>
+
+    <!-- Login Magic Link / SSO -->
+    <string name="continue_button">Lanjutkan</string>
+    <string name="looking_up_org">Mencari konfigurasi organisasi…</string>
+    <string name="send_magic_link">Kirim tautan login</string>
+    <string name="magic_link_sent_title">Periksa email Anda</string>
+    <string name="magic_link_sent_body">Tautan login telah dikirim ke %1$s. Klik tautan untuk masuk.</string>
+    <string name="resend">Kirim ulang</string>
+    <string name="back_to_login">Kembali ke login</string>
+    <string name="sso_redirecting">Mengalihkan ke login %1$s…</string>
 </resources>
