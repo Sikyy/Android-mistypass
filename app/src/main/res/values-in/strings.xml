@@ -113,9 +113,54 @@
     <string name="dashboard_manage_access_links">Kelola tautan akses</string>
     <string name="dashboard_manage_access_links_desc">Lihat dan cabut tautan aktif</string>
     <string name="dashboard_activity">Aktivitas</string>
-    <string name="dashboard_event_history">Riwayat akses</string>
+    <string name="dashboard_event_history">Riwayat Akses</string>
     <string name="dashboard_event_history_desc">Lihat semua riwayat akses</string>
     <string name="dashboard_recent_activity">Aktivitas Terbaru</string>
+    <string name="dashboard_no_place">Belum Memilih Lokasi</string>
+    <string name="dashboard_no_place_desc">Pilih lokasi dari tab Pintu untuk melihat dasbor</string>
+    <string name="dashboard_events">Peristiwa</string>
+    <string name="dashboard_incidents">Insiden</string>
+    <string name="dashboard_management">Manajemen</string>
+    <string name="dashboard_users">Pengguna</string>
+    <string name="dashboard_groups">Grup</string>
+    <string name="dashboard_teams">Tim</string>
+    <string name="dashboard_schedules">Jadwal</string>
+    <string name="dashboard_zones">Zona</string>
+    <string name="dashboard_security">Keamanan</string>
+    <string name="dashboard_alarms">Alarm</string>
+    <string name="dashboard_live_activity">Aktivitas Langsung</string>
+    <string name="dashboard_visitors_section">Pengunjung</string>
+    <string name="dashboard_guest_management">Manajemen Tamu</string>
+    <string name="dashboard_bookings_section">Pemesanan</string>
+    <string name="dashboard_bookings">Pemesanan</string>
+    <string name="dashboard_credentials_section">Kredensial</string>
+    <string name="dashboard_cards">Kartu</string>
+    <string name="dashboard_digital_credentials">Kredensial Digital</string>
+    <string name="dashboard_reports">Laporan</string>
+    <string name="dashboard_analytics">Analitik</string>
+    <string name="dashboard_user_presence">Kehadiran Pengguna</string>
+    <string name="dashboard_export_events">Ekspor Peristiwa</string>
+    <string name="dashboard_access_control">Kontrol Akses</string>
+    <string name="dashboard_access_rights">Hak Akses</string>
+    <string name="dashboard_my_device">Perangkat Saya</string>
+    <string name="dashboard_door_controllers">Kontroler Pintu</string>
+    <string name="dashboard_gateways">Gateway</string>
+    <string name="dashboard_cameras">Kamera</string>
+    <string name="dashboard_org_settings_section">Organisasi</string>
+    <string name="dashboard_org_settings">Pengaturan Organisasi</string>
+    <string name="dashboard_no_data">Tidak ada data tersedia</string>
+    <string name="dashboard_select_team_first">Pilih tim untuk melihat hak akses</string>
+    <string name="dashboard_timezone">Zona Waktu</string>
+
+    <!-- Analytics -->
+    <string name="analytics_total_unlocks">Total Buka Kunci</string>
+    <string name="analytics_unique_users">Pengguna Unik</string>
+    <string name="analytics_failed_attempts">Percobaan Gagal</string>
+    <string name="analytics_daily_avg">Rata-rata Harian</string>
+    <string name="analytics_top_doors">Pintu Terpopuler</string>
+    <string name="analytics_format">Format</string>
+    <string name="analytics_export">Ekspor</string>
+    <string name="analytics_export_ready">Ekspor siap</string>
 
     <!-- History -->
     <string name="history_title">Riwayat</string>

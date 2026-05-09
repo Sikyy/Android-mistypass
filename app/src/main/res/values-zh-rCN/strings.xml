@@ -116,6 +116,51 @@
     <string name="dashboard_event_history">事件记录</string>
     <string name="dashboard_event_history_desc">查看所有访问事件</string>
     <string name="dashboard_recent_activity">最近活动</string>
+    <string name="dashboard_no_place">未选择场所</string>
+    <string name="dashboard_no_place_desc">从门点页面选择一个场所以查看面板</string>
+    <string name="dashboard_events">事件</string>
+    <string name="dashboard_incidents">异常事件</string>
+    <string name="dashboard_management">管理</string>
+    <string name="dashboard_users">用户</string>
+    <string name="dashboard_groups">分组</string>
+    <string name="dashboard_teams">团队</string>
+    <string name="dashboard_schedules">时间表</string>
+    <string name="dashboard_zones">区域</string>
+    <string name="dashboard_security">安全</string>
+    <string name="dashboard_alarms">告警</string>
+    <string name="dashboard_live_activity">实时活动</string>
+    <string name="dashboard_visitors_section">访客</string>
+    <string name="dashboard_guest_management">访客管理</string>
+    <string name="dashboard_bookings_section">预约</string>
+    <string name="dashboard_bookings">预约</string>
+    <string name="dashboard_credentials_section">凭证</string>
+    <string name="dashboard_cards">卡片</string>
+    <string name="dashboard_digital_credentials">数字凭证</string>
+    <string name="dashboard_reports">报表</string>
+    <string name="dashboard_analytics">数据分析</string>
+    <string name="dashboard_user_presence">用户出勤</string>
+    <string name="dashboard_export_events">导出事件</string>
+    <string name="dashboard_access_control">访问控制</string>
+    <string name="dashboard_access_rights">访问权限</string>
+    <string name="dashboard_my_device">我的设备</string>
+    <string name="dashboard_door_controllers">门禁控制器</string>
+    <string name="dashboard_gateways">网关</string>
+    <string name="dashboard_cameras">摄像头</string>
+    <string name="dashboard_org_settings_section">组织</string>
+    <string name="dashboard_org_settings">组织设置</string>
+    <string name="dashboard_no_data">暂无数据</string>
+    <string name="dashboard_select_team_first">选择团队以查看访问权限</string>
+    <string name="dashboard_timezone">时区</string>
+
+    <!-- Analytics -->
+    <string name="analytics_total_unlocks">总开锁次数</string>
+    <string name="analytics_unique_users">独立用户数</string>
+    <string name="analytics_failed_attempts">失败次数</string>
+    <string name="analytics_daily_avg">日均次数</string>
+    <string name="analytics_top_doors">热门门点</string>
+    <string name="analytics_format">格式</string>
+    <string name="analytics_export">导出</string>
+    <string name="analytics_export_ready">导出已就绪</string>
 
     <!-- History -->
     <string name="history_title">记录</string>

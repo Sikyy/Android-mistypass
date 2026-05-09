@@ -12,18 +12,30 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.LinkOff
-import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.MeetingRoom
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PeopleAlt
+import androidx.compose.material.icons.filled.PersonSearch
+import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -31,9 +43,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,22 +53,42 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.R
-import com.mistyislet.app.domain.model.AccessLog
-import com.mistyislet.app.ui.theme.Danger
 import com.mistyislet.app.ui.theme.Success
-import java.time.Duration
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun DashboardScreen(
-    onNavigateToHistory: () -> Unit,
-    onNavigateToVisitors: () -> Unit,
+    onNavigate: (String) -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    if (uiState.placeId == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.MeetingRoom,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.dashboard_no_place),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.dashboard_no_place_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        return
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
@@ -68,64 +100,226 @@ fun DashboardScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            item {
-                SectionHeader(stringResource(R.string.dashboard_activity))
-            }
+            // Activity
+            item { SectionHeader(stringResource(R.string.dashboard_activity)) }
             item {
                 DashboardRow(
                     icon = Icons.Default.History,
+                    iconTint = Success,
                     title = stringResource(R.string.dashboard_event_history),
-                    subtitle = stringResource(R.string.dashboard_event_history_desc),
-                    onClick = onNavigateToHistory,
+                    onClick = { onNavigate("history") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.EventNote,
+                    iconTint = Color(0xFF4285F4),
+                    title = stringResource(R.string.dashboard_events),
+                    onClick = { onNavigate("admin_events") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Warning,
+                    iconTint = Color(0xFFD93025),
+                    title = stringResource(R.string.dashboard_incidents),
+                    onClick = { onNavigate("admin_incidents") },
                 )
             }
 
-            if (uiState.recentLogs.isNotEmpty()) {
+            // Management
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { SectionHeader(stringResource(R.string.dashboard_management)) }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.People,
+                    iconTint = Color(0xFF4285F4),
+                    title = stringResource(R.string.dashboard_users),
+                    onClick = { onNavigate("admin_users") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.PeopleAlt,
+                    iconTint = Color(0xFF2CBAA1),
+                    title = stringResource(R.string.dashboard_groups),
+                    onClick = { onNavigate("admin_groups") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Groups,
+                    iconTint = Color(0xFF5C6BC0),
+                    title = stringResource(R.string.dashboard_teams),
+                    onClick = { onNavigate("admin_teams") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Schedule,
+                    iconTint = Color(0xFF9C27B0),
+                    title = stringResource(R.string.dashboard_schedules),
+                    onClick = { onNavigate("admin_schedules") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Map,
+                    iconTint = Color(0xFF009688),
+                    title = stringResource(R.string.dashboard_zones),
+                    onClick = { onNavigate("admin_zones") },
+                )
+            }
+
+            // Security
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { SectionHeader(stringResource(R.string.dashboard_security)) }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Notifications,
+                    iconTint = Color(0xFFD93025),
+                    title = stringResource(R.string.dashboard_alarms),
+                    onClick = { onNavigate("admin_alarms") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.PersonSearch,
+                    iconTint = Success,
+                    title = stringResource(R.string.dashboard_live_activity),
+                    onClick = { onNavigate("admin_live_activity") },
+                )
+            }
+
+            // Visitors
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { SectionHeader(stringResource(R.string.dashboard_visitors_section)) }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.PeopleAlt,
+                    iconTint = Color(0xFFFF9800),
+                    title = stringResource(R.string.dashboard_guest_management),
+                    onClick = { onNavigate("visitors") },
+                )
+            }
+
+            // Bookings
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { SectionHeader(stringResource(R.string.dashboard_bookings_section)) }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.CalendarMonth,
+                    iconTint = Color(0xFF00BCD4),
+                    title = stringResource(R.string.dashboard_bookings),
+                    onClick = { onNavigate("admin_bookings") },
+                )
+            }
+
+            // Credentials
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { SectionHeader(stringResource(R.string.dashboard_credentials_section)) }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.CreditCard,
+                    iconTint = Color(0xFFFF9800),
+                    title = stringResource(R.string.dashboard_cards),
+                    onClick = { onNavigate("admin_cards") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Key,
+                    iconTint = Color(0xFF00BCD4),
+                    title = stringResource(R.string.dashboard_digital_credentials),
+                    onClick = { onNavigate("admin_credentials") },
+                )
+            }
+
+            // Reports
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { SectionHeader(stringResource(R.string.dashboard_reports)) }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.BarChart,
+                    iconTint = Color(0xFF9C27B0),
+                    title = stringResource(R.string.dashboard_analytics),
+                    onClick = { onNavigate("admin_analytics") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.PersonSearch,
+                    iconTint = Color(0xFF5C6BC0),
+                    title = stringResource(R.string.dashboard_user_presence),
+                    onClick = { onNavigate("admin_user_presence") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Upload,
+                    iconTint = Color(0xFFFF9800),
+                    title = stringResource(R.string.dashboard_export_events),
+                    onClick = { onNavigate("admin_export") },
+                )
+            }
+
+            // Access Control
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { SectionHeader(stringResource(R.string.dashboard_access_control)) }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Shield,
+                    iconTint = Color(0xFFD93025),
+                    title = stringResource(R.string.dashboard_access_rights),
+                    onClick = { onNavigate("admin_access_rights") },
+                )
+            }
+
+            // My Device
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { SectionHeader(stringResource(R.string.dashboard_my_device)) }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.MeetingRoom,
+                    iconTint = MaterialTheme.colorScheme.primary,
+                    title = stringResource(R.string.dashboard_door_controllers),
+                    onClick = { onNavigate("admin_controllers") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.Router,
+                    iconTint = Color(0xFF009688),
+                    title = stringResource(R.string.dashboard_gateways),
+                    onClick = { onNavigate("admin_gateways") },
+                )
+            }
+            item {
+                DashboardRow(
+                    icon = Icons.Default.CameraAlt,
+                    iconTint = Color(0xFF4285F4),
+                    title = stringResource(R.string.dashboard_cameras),
+                    onClick = { onNavigate("admin_cameras") },
+                )
+            }
+
+            // Org Settings (conditional)
+            if (uiState.orgId != null) {
+                item { Spacer(modifier = Modifier.height(8.dp)) }
+                item { SectionHeader(stringResource(R.string.dashboard_org_settings_section)) }
                 item {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.dashboard_recent_activity),
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
+                    DashboardRow(
+                        icon = Icons.Default.Settings,
+                        iconTint = Color(0xFF9E9E9E),
+                        title = stringResource(R.string.dashboard_org_settings),
+                        onClick = { onNavigate("admin_org_settings") },
                     )
-                }
-                items(uiState.recentLogs, key = { it.id }) { log ->
-                    RecentEventRow(log)
                 }
             }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
-
-            item {
-                SectionHeader(stringResource(R.string.dashboard_visitor_management))
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.PersonAdd,
-                    title = stringResource(R.string.dashboard_create_visitor_pass),
-                    subtitle = stringResource(R.string.dashboard_create_visitor_pass_desc),
-                    onClick = onNavigateToVisitors,
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Link,
-                    title = stringResource(R.string.dashboard_share_access_link),
-                    subtitle = stringResource(R.string.dashboard_share_access_link_desc),
-                    onClick = onNavigateToVisitors,
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.LinkOff,
-                    title = stringResource(R.string.dashboard_manage_access_links),
-                    subtitle = stringResource(R.string.dashboard_manage_access_links_desc),
-                    onClick = onNavigateToVisitors,
-                )
-            }
         }
     }
 }
@@ -143,8 +337,8 @@ private fun SectionHeader(text: String) {
 @Composable
 private fun DashboardRow(
     icon: ImageVector,
+    iconTint: Color,
     title: String,
-    subtitle: String,
     onClick: () -> Unit,
 ) {
     Card(
@@ -156,90 +350,26 @@ private fun DashboardRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier.size(40.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Spacer(modifier = Modifier.size(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = iconTint,
+            )
+            Spacer(modifier = Modifier.size(14.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-@Composable
-private fun RecentEventRow(log: AccessLog) {
-    val isSuccess = log.result == "allow" || log.result == "success" ||
-        log.result == "app_unlock" || log.displayType == "access_granted"
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = if (isSuccess) Success else Danger,
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = log.displayName,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = formatRelativeTime(log.displayTime),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-private fun formatRelativeTime(isoTime: String): String {
-    if (isoTime.isBlank()) return ""
-    return try {
-        val instant = Instant.parse(isoTime)
-        val now = ZonedDateTime.now()
-        val minutes = Duration.between(instant, now.toInstant()).toMinutes()
-        when {
-            minutes < 1 -> "Just now"
-            minutes < 60 -> "${minutes}m ago"
-            minutes < 1440 -> "${minutes / 60}h ago"
-            else -> instant.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("MMM d"))
-        }
-    } catch (_: Exception) {
-        isoTime.take(10)
     }
 }

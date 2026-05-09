@@ -113,9 +113,54 @@
     <string name="dashboard_manage_access_links">Manage access links</string>
     <string name="dashboard_manage_access_links_desc">View and revoke active links</string>
     <string name="dashboard_activity">Activity</string>
-    <string name="dashboard_event_history">Event history</string>
+    <string name="dashboard_event_history">Event History</string>
     <string name="dashboard_event_history_desc">View all access events</string>
     <string name="dashboard_recent_activity">Recent Activity</string>
+    <string name="dashboard_no_place">No Place Selected</string>
+    <string name="dashboard_no_place_desc">Select a place from the Doors tab to view dashboard</string>
+    <string name="dashboard_events">Events</string>
+    <string name="dashboard_incidents">Incidents</string>
+    <string name="dashboard_management">Management</string>
+    <string name="dashboard_users">Users</string>
+    <string name="dashboard_groups">Groups</string>
+    <string name="dashboard_teams">Teams</string>
+    <string name="dashboard_schedules">Schedules</string>
+    <string name="dashboard_zones">Zones</string>
+    <string name="dashboard_security">Security</string>
+    <string name="dashboard_alarms">Alarms</string>
+    <string name="dashboard_live_activity">Live Activity</string>
+    <string name="dashboard_visitors_section">Visitors</string>
+    <string name="dashboard_guest_management">Guest Management</string>
+    <string name="dashboard_bookings_section">Bookings</string>
+    <string name="dashboard_bookings">Bookings</string>
+    <string name="dashboard_credentials_section">Credentials</string>
+    <string name="dashboard_cards">Cards</string>
+    <string name="dashboard_digital_credentials">Digital Credentials</string>
+    <string name="dashboard_reports">Reports</string>
+    <string name="dashboard_analytics">Analytics</string>
+    <string name="dashboard_user_presence">User Presence</string>
+    <string name="dashboard_export_events">Export Events</string>
+    <string name="dashboard_access_control">Access Control</string>
+    <string name="dashboard_access_rights">Access Rights</string>
+    <string name="dashboard_my_device">My Device</string>
+    <string name="dashboard_door_controllers">Door Controllers</string>
+    <string name="dashboard_gateways">Gateways</string>
+    <string name="dashboard_cameras">Cameras</string>
+    <string name="dashboard_org_settings_section">Organization</string>
+    <string name="dashboard_org_settings">Organization Settings</string>
+    <string name="dashboard_no_data">No data available</string>
+    <string name="dashboard_select_team_first">Select a team to view access rights</string>
+    <string name="dashboard_timezone">Timezone</string>
+
+    <!-- Analytics -->
+    <string name="analytics_total_unlocks">Total Unlocks</string>
+    <string name="analytics_unique_users">Unique Users</string>
+    <string name="analytics_failed_attempts">Failed Attempts</string>
+    <string name="analytics_daily_avg">Daily Average</string>
+    <string name="analytics_top_doors">Top Doors</string>
+    <string name="analytics_format">Format</string>
+    <string name="analytics_export">Export</string>
+    <string name="analytics_export_ready">Export ready</string>
 
     <!-- History -->
     <string name="history_title">History</string>
