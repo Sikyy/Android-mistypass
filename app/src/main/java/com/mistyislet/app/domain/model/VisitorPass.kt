@@ -32,3 +32,10 @@ data class BleTokenResponse(
     @SerialName("token_type") val tokenType: String? = null,
     @SerialName("user_id") val userId: String? = null,
 )
+
+@Serializable
+data class PinCodeResponse(
+    val pin: String,
+    @SerialName("valid_until") val validUntil: String,
+    @SerialName("period_secs") val periodSecs: Int = 30,
+)

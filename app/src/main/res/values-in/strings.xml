@@ -62,6 +62,19 @@
     <string name="qr_visitor_hint">Buat pass pengunjung sementara untuk dibagikan ke tamu</string>
     <string name="tap_to_close">Ketuk di mana saja untuk menutup</string>
 
+    <!-- Pass -->
+    <string name="pass_title">Pass</string>
+    <string name="pass_refreshes_in">Diperbarui dalam</string>
+    <string name="pass_present_to_scanner">Tunjukkan ke pemindai pintu</string>
+    <string name="pass_enter_at_keypad">Masukkan di pembaca keypad</string>
+    <string name="pass_ble_active">Kredensial BLE Aktif</string>
+    <string name="pass_keystore_protected">Dilindungi Android Keystore</string>
+    <string name="pass_qr_unavailable">Kode QR tidak tersedia</string>
+    <string name="pass_pin_unavailable">PIN tidak tersedia</string>
+    <string name="pass_no_passes">Tidak Ada Pass</string>
+    <string name="pass_no_passes_desc">Pass akses dan kredensial Anda akan muncul di sini.</string>
+    <string name="pass_wallet_region_notice">Google Wallet belum tersedia di wilayah Anda. Nantikan pembaruan selanjutnya.</string>
+
     <!-- Dashboard -->
     <string name="dashboard_visitor_management">Manajemen Pengunjung</string>
     <string name="dashboard_create_visitor_pass">Buat pass pengunjung</string>
@@ -104,6 +117,40 @@
     <string name="profile_visitor_passes">Pass Pengunjung</string>
     <string name="profile_logout">Keluar</string>
     <string name="profile_logout_confirm">Apakah Anda yakin ingin keluar?</string>
+
+    <!-- Settings -->
+    <string name="settings_sign_out">Keluar</string>
+    <string name="settings_edit_name">Ubah Nama</string>
+    <string name="settings_name_label">Nama</string>
+    <string name="settings_about">Tentang</string>
+    <string name="settings_help">Bantuan</string>
+    <string name="settings_acknowledgments">Pengakuan</string>
+    <string name="settings_biometric">Kunci Biometrik</string>
+    <string name="settings_biometric_subtitle">Memerlukan biometrik untuk membuka aplikasi</string>
+    <string name="settings_password">Ubah Kata Sandi</string>
+    <string name="settings_avatar">Ubah Avatar</string>
+    <string name="settings_hand_wave">Buka dengan Lambaian</string>
+    <string name="settings_hand_wave_subtitle">Lambaikan tangan di dekat pembaca untuk membuka</string>
+    <string name="settings_introduction">Pengenalan</string>
+    <string name="settings_introduction_subtitle">Pelajari cara menggunakan aplikasi</string>
+    <string name="settings_ambassador">Program Ambassador</string>
+    <string name="settings_make_primary">Jadikan Utama</string>
+    <string name="settings_make_primary_subtitle">Atur sebagai kredensial utama</string>
+    <string name="settings_card_options">Opsi Kartu</string>
+    <string name="settings_card_status">Status</string>
+    <string name="settings_card_token">Token</string>
+    <string name="settings_card_last_used">Terakhir Digunakan</string>
+    <string name="settings_card_unused">Belum Digunakan</string>
+    <string name="settings_card_activate">Aktifkan</string>
+    <string name="settings_card_deactivate">Nonaktifkan</string>
+    <string name="settings_card_deassign">Lepas Penetapan</string>
+    <string name="settings_card_report_lost">Laporkan Hilang</string>
+    <string name="settings_no_cards">Tidak ada kartu</string>
+    <string name="settings_no_logins">Tidak ada sesi aktif</string>
+    <string name="settings_login_current">Saat Ini</string>
+    <string name="settings_login_last_active">Terakhir aktif %s</string>
+    <string name="settings_login_logout">Keluar</string>
+    <string name="save">Simpan</string>
 
     <!-- Common -->
     <string name="loading">Memuat…</string>

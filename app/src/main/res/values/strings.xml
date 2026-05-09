@@ -62,6 +62,19 @@
     <string name="qr_visitor_hint">Create a temporary visitor pass to share with guests</string>
     <string name="tap_to_close">Tap anywhere to close</string>
 
+    <!-- Pass -->
+    <string name="pass_title">Pass</string>
+    <string name="pass_refreshes_in">Refreshes in</string>
+    <string name="pass_present_to_scanner">Present to door scanner</string>
+    <string name="pass_enter_at_keypad">Enter at keypad reader</string>
+    <string name="pass_ble_active">BLE Credential Active</string>
+    <string name="pass_keystore_protected">Android Keystore protected</string>
+    <string name="pass_qr_unavailable">QR code unavailable</string>
+    <string name="pass_pin_unavailable">PIN unavailable</string>
+    <string name="pass_no_passes">No Passes</string>
+    <string name="pass_no_passes_desc">Your access passes and credentials will appear here.</string>
+    <string name="pass_wallet_region_notice">Google Wallet is not yet available in your region. Stay tuned for updates.</string>
+
     <!-- Dashboard -->
     <string name="dashboard_visitor_management">Visitor Management</string>
     <string name="dashboard_create_visitor_pass">Create visitor pass</string>
@@ -104,6 +117,40 @@
     <string name="profile_visitor_passes">Visitor Passes</string>
     <string name="profile_logout">Sign Out</string>
     <string name="profile_logout_confirm">Are you sure you want to sign out?</string>
+
+    <!-- Settings (Profile redesign) -->
+    <string name="settings_sign_out">Sign Out</string>
+    <string name="settings_edit_name">Edit Name</string>
+    <string name="settings_name_label">Name</string>
+    <string name="settings_about">About</string>
+    <string name="settings_help">Help</string>
+    <string name="settings_acknowledgments">Acknowledgments</string>
+    <string name="settings_biometric">Biometric Lock</string>
+    <string name="settings_biometric_subtitle">Require biometric to open app</string>
+    <string name="settings_password">Change Password</string>
+    <string name="settings_avatar">Change Avatar</string>
+    <string name="settings_hand_wave">Hand Wave Unlock</string>
+    <string name="settings_hand_wave_subtitle">Wave hand near reader to unlock</string>
+    <string name="settings_introduction">Introduction</string>
+    <string name="settings_introduction_subtitle">Learn how to use the app</string>
+    <string name="settings_ambassador">Ambassador Program</string>
+    <string name="settings_make_primary">Make Primary</string>
+    <string name="settings_make_primary_subtitle">Set as primary credential</string>
+    <string name="settings_card_options">Card Options</string>
+    <string name="settings_card_status">Status</string>
+    <string name="settings_card_token">Token</string>
+    <string name="settings_card_last_used">Last Used</string>
+    <string name="settings_card_unused">Unused</string>
+    <string name="settings_card_activate">Activate</string>
+    <string name="settings_card_deactivate">Deactivate</string>
+    <string name="settings_card_deassign">Deassign</string>
+    <string name="settings_card_report_lost">Report Lost</string>
+    <string name="settings_no_cards">No cards</string>
+    <string name="settings_no_logins">No active sessions</string>
+    <string name="settings_login_current">Current</string>
+    <string name="settings_login_last_active">Last active %s</string>
+    <string name="settings_login_logout">Logout</string>
+    <string name="save">Save</string>
 
     <!-- Common -->
     <string name="loading">Loading…</string>

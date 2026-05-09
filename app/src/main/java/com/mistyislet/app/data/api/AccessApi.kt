@@ -3,6 +3,7 @@ package com.mistyislet.app.data.api
 import com.mistyislet.app.domain.model.AccessLog
 import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.BleTokenResponse
+import com.mistyislet.app.domain.model.PinCodeResponse
 import com.mistyislet.app.domain.model.CreateVisitorPassRequest
 import com.mistyislet.app.domain.model.ListResponse
 import com.mistyislet.app.domain.model.QRUnlockRequest
@@ -27,6 +28,9 @@ interface AccessApi {
 
     @GET("app/access/ble-token")
     suspend fun getBleToken(): BleTokenResponse
+
+    @GET("app/access/pin-code")
+    suspend fun getPinCode(): PinCodeResponse
 
     @GET("app/access/logs")
     suspend fun getAccessLogs(
