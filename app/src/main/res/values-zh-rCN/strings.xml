@@ -34,6 +34,18 @@
     <string name="door_unlock_success">门已解锁</string>
     <string name="door_unlock_denied">拒绝访问</string>
     <string name="door_unavailable">门点当前不可用</string>
+    <string name="doors_sort">排序</string>
+    <string name="doors_sort_name">按名称</string>
+    <string name="doors_sort_status">按状态</string>
+    <string name="doors_sort_building">按楼栋</string>
+    <string name="doors_online">在线</string>
+    <string name="doors_location">位置</string>
+    <string name="doors_gateway">网关</string>
+    <string name="doors_type">门点类型</string>
+    <string name="doors_type_door">门</string>
+    <string name="doors_access">访问权限</string>
+    <string name="doors_access_allowed">已授权</string>
+    <string name="doors_access_denied">未授权</string>
 
     <!-- QR Code -->
     <string name="qrcode_title">二维码</string>

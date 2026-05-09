@@ -5,6 +5,8 @@ import android.os.Vibrator
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,23 +25,32 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.DoorFront
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.foundation.background
-import androidx.compose.ui.draw.clip
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +59,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -68,6 +81,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private enum class SortMode { NAME, STATUS, BUILDING }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DoorsScreen(
@@ -75,8 +90,11 @@ fun DoorsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
+    var sortMode by remember { mutableStateOf(SortMode.NAME) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var selectedDoor by remember { mutableStateOf<AccessibleDoor?>(null) }
 
-    val filteredDoors = remember(uiState.doors, searchQuery, uiState.selectedBuilding) {
+    val filteredDoors = remember(uiState.doors, searchQuery, uiState.selectedBuilding, sortMode) {
         uiState.doors.filter { door ->
             val matchesSearch = searchQuery.isBlank() ||
                 door.name.contains(searchQuery, ignoreCase = true) ||
@@ -84,17 +102,56 @@ fun DoorsScreen(
             val matchesBuilding = uiState.selectedBuilding == null ||
                 (door.groupName ?: door.buildingId) == uiState.selectedBuilding
             matchesSearch && matchesBuilding
+        }.let { doors ->
+            when (sortMode) {
+                SortMode.NAME -> doors.sortedBy { it.name }
+                SortMode.STATUS -> doors.sortedBy { it.displayStatus().ordinal }
+                SortMode.BUILDING -> doors.sortedBy { it.groupName ?: it.buildingId }
+            }
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Title
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-            )
+            // Title row with sort button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 4.dp, top = 16.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Box {
+                    IconButton(onClick = { showSortMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Sort,
+                            contentDescription = stringResource(R.string.doors_sort),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showSortMenu,
+                        onDismissRequest = { showSortMenu = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.doors_sort_name)) },
+                            onClick = { sortMode = SortMode.NAME; showSortMenu = false },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.doors_sort_status)) },
+                            onClick = { sortMode = SortMode.STATUS; showSortMenu = false },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.doors_sort_building)) },
+                            onClick = { sortMode = SortMode.BUILDING; showSortMenu = false },
+                        )
+                    }
+                }
+            }
 
             // Search bar
             OutlinedTextField(
@@ -188,6 +245,7 @@ fun DoorsScreen(
                                 door = door,
                                 isUnlocking = uiState.unlockingDoorId == door.id,
                                 onUnlock = { viewModel.unlock(door) },
+                                onTap = { selectedDoor = door },
                             )
                         }
                     }
@@ -214,6 +272,129 @@ fun DoorsScreen(
             )
         }
     }
+
+    // Door details bottom sheet
+    selectedDoor?.let { door ->
+        DoorDetailsSheet(
+            door = door,
+            onDismiss = { selectedDoor = null },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DoorDetailsSheet(
+    door: AccessibleDoor,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val displayStatus = door.displayStatus()
+
+    val statusColor = when (displayStatus) {
+        DoorDisplayStatus.ONLINE_UNLOCKABLE -> Success
+        DoorDisplayStatus.ONLINE_LOCKED_DOWN -> Danger
+        DoorDisplayStatus.OFFLINE -> Warning
+        DoorDisplayStatus.DISCONNECTED -> MaterialTheme.colorScheme.outlineVariant
+    }
+
+    val statusLabel = when (displayStatus) {
+        DoorDisplayStatus.ONLINE_UNLOCKABLE -> stringResource(R.string.doors_online)
+        DoorDisplayStatus.ONLINE_LOCKED_DOWN -> stringResource(R.string.door_locked_down)
+        DoorDisplayStatus.OFFLINE -> stringResource(R.string.door_offline)
+        DoorDisplayStatus.DISCONNECTED -> stringResource(R.string.door_disconnected)
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp),
+        ) {
+            // Door name + status
+            Text(
+                text = door.name,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(statusColor),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = statusLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = statusColor,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Info rows
+            door.groupName?.let {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.doors_location)) },
+                    supportingContent = { Text(it) },
+                    leadingContent = {
+                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.doors_gateway)) },
+                supportingContent = {
+                    Text(
+                        text = if (door.gatewayStatus == "online") stringResource(R.string.doors_online) else stringResource(R.string.door_offline),
+                        color = if (door.gatewayStatus == "online") Success else Warning,
+                    )
+                },
+                leadingContent = {
+                    Icon(Icons.Default.Router, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            )
+
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.doors_type)) },
+                supportingContent = { Text(stringResource(R.string.doors_type_door)) },
+                leadingContent = {
+                    Icon(Icons.Default.DoorFront, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            )
+
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.doors_access)) },
+                supportingContent = {
+                    Text(
+                        text = if (door.canUnlock) stringResource(R.string.doors_access_allowed) else stringResource(R.string.doors_access_denied),
+                        color = if (door.canUnlock) Success else Danger,
+                    )
+                },
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Default.Circle,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = if (door.canUnlock) Success else Danger,
+                    )
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            )
+        }
+    }
 }
 
 @Composable
@@ -221,6 +402,7 @@ private fun DoorListCard(
     door: AccessibleDoor,
     isUnlocking: Boolean,
     onUnlock: () -> Unit,
+    onTap: () -> Unit,
 ) {
     val displayStatus = door.displayStatus()
     val haptic = LocalHapticFeedback.current
@@ -239,7 +421,9 @@ private fun DoorListCard(
     val isUnlockable = displayStatus == DoorDisplayStatus.ONLINE_UNLOCKABLE && !isUnlocking
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onTap),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.elevatedCardColors(),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
@@ -308,7 +492,6 @@ private fun DoorListCard(
                                             targetValue = 1f,
                                             animationSpec = tween(500, easing = LinearEasing),
                                         )
-                                        // Hold threshold reached
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         val vibrator = context.getSystemService(Vibrator::class.java)
                                         vibrator?.vibrate(

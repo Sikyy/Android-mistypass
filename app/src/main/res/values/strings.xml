@@ -34,6 +34,18 @@
     <string name="door_unlock_success">Door unlocked</string>
     <string name="door_unlock_denied">Access denied</string>
     <string name="door_unavailable">Door is currently unavailable</string>
+    <string name="doors_sort">Sort</string>
+    <string name="doors_sort_name">By Name</string>
+    <string name="doors_sort_status">By Status</string>
+    <string name="doors_sort_building">By Building</string>
+    <string name="doors_online">Online</string>
+    <string name="doors_location">Location</string>
+    <string name="doors_gateway">Gateway</string>
+    <string name="doors_type">Door Type</string>
+    <string name="doors_type_door">Door</string>
+    <string name="doors_access">Access</string>
+    <string name="doors_access_allowed">Allowed</string>
+    <string name="doors_access_denied">Denied</string>
 
     <!-- QR Code -->
     <string name="qrcode_title">QR Code</string>

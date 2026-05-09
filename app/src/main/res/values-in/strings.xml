@@ -34,6 +34,18 @@
     <string name="door_unlock_success">Pintu terbuka</string>
     <string name="door_unlock_denied">Akses ditolak</string>
     <string name="door_unavailable">Pintu saat ini tidak tersedia</string>
+    <string name="doors_sort">Urutkan</string>
+    <string name="doors_sort_name">Nama</string>
+    <string name="doors_sort_status">Status</string>
+    <string name="doors_sort_building">Gedung</string>
+    <string name="doors_online">Online</string>
+    <string name="doors_location">Lokasi</string>
+    <string name="doors_gateway">Gateway</string>
+    <string name="doors_type">Jenis Pintu</string>
+    <string name="doors_type_door">Pintu</string>
+    <string name="doors_access">Akses</string>
+    <string name="doors_access_allowed">Diizinkan</string>
+    <string name="doors_access_denied">Ditolak</string>
 
     <!-- QR Code -->
     <string name="qrcode_title">Kode QR</string>
