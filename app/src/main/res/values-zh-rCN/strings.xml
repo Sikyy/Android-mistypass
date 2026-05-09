@@ -155,6 +155,8 @@
     <string name="visitor_share_subject">访客通行证</string>
     <string name="visitor_share_title">分享访客通行证</string>
     <string name="visitor_link_copied">链接已复制</string>
+    <string name="visitors_cleanup_expired">清理已过期</string>
+    <string name="visitors_temp_group">临时分组</string>
 
     <!-- Profile -->
     <string name="profile_title">我的</string>

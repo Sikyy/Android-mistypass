@@ -155,6 +155,8 @@
     <string name="visitor_share_subject">Pass Pengunjung</string>
     <string name="visitor_share_title">Bagikan Pass Pengunjung</string>
     <string name="visitor_link_copied">Tautan disalin</string>
+    <string name="visitors_cleanup_expired">Bersihkan kedaluwarsa</string>
+    <string name="visitors_temp_group">Grup Sementara</string>
 
     <!-- Profile -->
     <string name="profile_title">Profil</string>

@@ -24,6 +24,25 @@ data class VisitorPass(
 )
 
 @Serializable
+data class VisitorGroup(
+    val id: String,
+    val name: String,
+    @SerialName("place_id") val placeId: String? = null,
+    @SerialName("member_count") val memberCount: Int = 0,
+    @SerialName("auto_remove_expired") val autoRemoveExpired: Boolean = false,
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
+@Serializable
+data class VisitorGroupMember(
+    val id: String,
+    @SerialName("visitor_id") val visitorId: String? = null,
+    @SerialName("visitor_name") val visitorName: String,
+    @SerialName("expires_at") val expiresAt: String? = null,
+    @SerialName("is_active") val isActive: Boolean = true,
+)
+
+@Serializable
 data class BleTokenResponse(
     @SerialName("ble_token") val bleToken: String,
     @SerialName("tenant_id") val tenantId: String? = null,

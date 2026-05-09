@@ -8,6 +8,8 @@ import com.mistyislet.app.domain.model.Organization
 import com.mistyislet.app.domain.model.Place
 import com.mistyislet.app.domain.model.UnlockRequest
 import com.mistyislet.app.domain.model.UnlockResponse
+import com.mistyislet.app.domain.model.VisitorGroup
+import com.mistyislet.app.domain.model.VisitorGroupMember
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,5 +51,17 @@ class PlaceRepository @Inject constructor(
 
     suspend fun disableLockdown(placeId: String): ApiResult<Unit> = safeApiCall {
         placeApi.disableLockdown(placeId)
+    }
+
+    suspend fun listVisitorGroups(placeId: String): ApiResult<List<VisitorGroup>> = safeApiCall {
+        placeApi.listVisitorGroups(placeId)
+    }
+
+    suspend fun listGroupMembers(placeId: String, groupId: String): ApiResult<List<VisitorGroupMember>> = safeApiCall {
+        placeApi.listGroupMembers(placeId, groupId)
+    }
+
+    suspend fun cleanupExpiredMembers(placeId: String, groupId: String): ApiResult<Unit> = safeApiCall {
+        placeApi.cleanupExpiredMembers(placeId, groupId)
     }
 }

@@ -6,6 +6,8 @@ import com.mistyislet.app.domain.model.Organization
 import com.mistyislet.app.domain.model.Place
 import com.mistyislet.app.domain.model.UnlockRequest
 import com.mistyislet.app.domain.model.UnlockResponse
+import com.mistyislet.app.domain.model.VisitorGroup
+import com.mistyislet.app.domain.model.VisitorGroupMember
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -55,4 +57,19 @@ interface PlaceApi {
 
     @DELETE("app/places/{placeId}/lockdown")
     suspend fun disableLockdown(@Path("placeId") placeId: String)
+
+    @GET("app/places/{placeId}/visitor-groups")
+    suspend fun listVisitorGroups(@Path("placeId") placeId: String): List<VisitorGroup>
+
+    @GET("app/places/{placeId}/visitor-groups/{groupId}/members")
+    suspend fun listGroupMembers(
+        @Path("placeId") placeId: String,
+        @Path("groupId") groupId: String,
+    ): List<VisitorGroupMember>
+
+    @POST("app/places/{placeId}/visitor-groups/{groupId}/cleanup-expired")
+    suspend fun cleanupExpiredMembers(
+        @Path("placeId") placeId: String,
+        @Path("groupId") groupId: String,
+    )
 }

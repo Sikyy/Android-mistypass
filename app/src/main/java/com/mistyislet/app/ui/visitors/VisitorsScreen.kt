@@ -29,6 +29,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Schedule
@@ -43,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,6 +68,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.mistyislet.app.R
+import com.mistyislet.app.domain.model.VisitorGroupMember
 import com.mistyislet.app.domain.model.VisitorPass
 import com.mistyislet.app.ui.theme.Danger
 import com.mistyislet.app.ui.theme.Success
@@ -133,12 +137,52 @@ fun VisitorsScreen(
                 } else {
                     val activePasses = uiState.passes.filter { !isExpired(it) }
                     val expiredPasses = uiState.passes.filter { isExpired(it) }
+                    val activeMembers = uiState.groupMembers.filter { it.isActive && !isMemberExpired(it) }
+                    val expiredMembers = uiState.groupMembers.filter { !it.isActive || isMemberExpired(it) }
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        uiState.visitorGroup?.let { group ->
+                            item(key = "group_header") {
+                                VisitorGroupHeader(
+                                    group = group,
+                                    activeCount = activeMembers.size,
+                                )
+                            }
+                            if (activeMembers.isNotEmpty()) {
+                                items(activeMembers, key = { "gm_${it.id}" }) { member ->
+                                    GroupMemberRow(member = member, isActive = true)
+                                }
+                            }
+                            if (expiredMembers.isNotEmpty()) {
+                                items(expiredMembers, key = { "gm_exp_${it.id}" }) { member ->
+                                    GroupMemberRow(member = member, isActive = false)
+                                }
+                            }
+                            if (expiredMembers.isNotEmpty()) {
+                                item(key = "cleanup_btn") {
+                                    TextButton(
+                                        onClick = viewModel::cleanupExpired,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Danger,
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            stringResource(R.string.visitors_cleanup_expired),
+                                            color = Danger,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         if (activePasses.isNotEmpty()) {
                             item {
                                 Text(
@@ -404,6 +448,108 @@ private fun VisitorQRDialog(pass: VisitorPass, onDismiss: () -> Unit) {
                 color = Color.White.copy(alpha = 0.6f),
             )
         }
+    }
+}
+
+@Composable
+private fun VisitorGroupHeader(
+    group: com.mistyislet.app.domain.model.VisitorGroup,
+    activeCount: Int,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Groups,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = group.name,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            modifier = Modifier.weight(1f),
+        )
+        if (activeCount > 0) {
+            Text(
+                text = "$activeCount",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun GroupMemberRow(member: VisitorGroupMember, isActive: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive) {
+                MaterialTheme.colorScheme.surface
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            },
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = member.visitorName,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            if (isActive) {
+                member.expiresAt?.let { exp ->
+                    val remaining = getMemberRemainingTime(exp)
+                    if (remaining != null) {
+                        Text(
+                            text = remaining,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Warning,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
+                StatusBadge(
+                    text = stringResource(R.string.visitors_active),
+                    color = Success,
+                )
+            } else {
+                StatusBadge(
+                    text = stringResource(R.string.visitor_expired),
+                    color = Danger,
+                )
+            }
+        }
+    }
+}
+
+private fun getMemberRemainingTime(expiresAt: String): String? {
+    return try {
+        val expiry = Instant.parse(expiresAt)
+        val now = Instant.now()
+        if (expiry.isBefore(now)) return null
+        val duration = Duration.between(now, expiry)
+        val hours = duration.toHours()
+        when {
+            hours >= 24 -> "${hours / 24}d ${hours % 24}h"
+            hours >= 1 -> "${hours}h"
+            else -> "${duration.toMinutes()}m"
+        }
+    } catch (_: Exception) {
+        null
     }
 }
 

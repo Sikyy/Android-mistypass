@@ -4,7 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.DoorRepository
+import com.mistyislet.app.data.repository.PlaceRepository
+import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.CreateVisitorPassRequest
+import com.mistyislet.app.domain.model.VisitorGroup
+import com.mistyislet.app.domain.model.VisitorGroupMember
 import com.mistyislet.app.domain.model.VisitorPass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -18,6 +22,8 @@ import javax.inject.Inject
 
 data class VisitorsUiState(
     val passes: List<VisitorPass> = emptyList(),
+    val visitorGroup: VisitorGroup? = null,
+    val groupMembers: List<VisitorGroupMember> = emptyList(),
     val isLoading: Boolean = false,
     val isCreating: Boolean = false,
     val showCreateSheet: Boolean = false,
@@ -26,6 +32,8 @@ data class VisitorsUiState(
 @HiltViewModel
 class VisitorsViewModel @Inject constructor(
     private val doorRepository: DoorRepository,
+    private val placeRepository: PlaceRepository,
+    private val selectedPlaceRepository: SelectedPlaceRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VisitorsUiState())
@@ -34,8 +42,23 @@ class VisitorsViewModel @Inject constructor(
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage: SharedFlow<String> = _toastMessage
 
+    private var currentPlaceId: String? = null
+
     init {
+        observePlace()
         loadPasses()
+    }
+
+    private fun observePlace() {
+        viewModelScope.launch {
+            selectedPlaceRepository.scope.collect { scope ->
+                val placeId = scope.placeId
+                if (placeId != currentPlaceId) {
+                    currentPlaceId = placeId
+                    if (placeId != null) fetchVisitorGroup(placeId)
+                }
+            }
+        }
     }
 
     fun loadPasses() {
@@ -56,6 +79,41 @@ class VisitorsViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(isLoading = false)
                     _toastMessage.emit(result.throwable.localizedMessage ?: "Error")
                 }
+            }
+        }
+    }
+
+    private suspend fun fetchVisitorGroup(placeId: String) {
+        when (val result = placeRepository.listVisitorGroups(placeId)) {
+            is ApiResult.Success -> {
+                val group = result.data.firstOrNull()
+                _uiState.value = _uiState.value.copy(visitorGroup = group)
+                if (group != null) fetchGroupMembers(placeId, group.id)
+            }
+            else -> {}
+        }
+    }
+
+    private suspend fun fetchGroupMembers(placeId: String, groupId: String) {
+        when (val result = placeRepository.listGroupMembers(placeId, groupId)) {
+            is ApiResult.Success -> {
+                _uiState.value = _uiState.value.copy(groupMembers = result.data)
+            }
+            else -> {}
+        }
+    }
+
+    fun cleanupExpired() {
+        val placeId = currentPlaceId ?: return
+        val group = _uiState.value.visitorGroup ?: return
+        viewModelScope.launch {
+            when (placeRepository.cleanupExpiredMembers(placeId, group.id)) {
+                is ApiResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        groupMembers = _uiState.value.groupMembers.filter { it.isActive && !isMemberExpired(it) },
+                    )
+                }
+                else -> {}
             }
         }
     }
@@ -93,5 +151,14 @@ class VisitorsViewModel @Inject constructor(
                 }
             }
         }
+    }
+}
+
+fun isMemberExpired(member: VisitorGroupMember): Boolean {
+    val expiresAt = member.expiresAt ?: return false
+    return try {
+        Instant.parse(expiresAt).isBefore(Instant.now())
+    } catch (_: Exception) {
+        false
     }
 }

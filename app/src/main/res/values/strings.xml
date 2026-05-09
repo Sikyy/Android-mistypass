@@ -155,6 +155,8 @@
     <string name="visitor_share_subject">Visitor Pass</string>
     <string name="visitor_share_title">Share Visitor Pass</string>
     <string name="visitor_link_copied">Link copied</string>
+    <string name="visitors_cleanup_expired">Clean up expired</string>
+    <string name="visitors_temp_group">Temporary Group</string>
 
     <!-- Profile -->
     <string name="profile_title">Profile</string>
