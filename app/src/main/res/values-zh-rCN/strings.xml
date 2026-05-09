@@ -454,4 +454,14 @@
     <string name="cancel">取消</string>
     <string name="ok">确定</string>
     <string name="network_error">网络异常，请检查网络连接</string>
+
+    <!-- Login Magic Link / SSO -->
+    <string name="continue_button">继续</string>
+    <string name="looking_up_org">正在查询组织配置…</string>
+    <string name="send_magic_link">发送登录链接</string>
+    <string name="magic_link_sent_title">请查看邮箱</string>
+    <string name="magic_link_sent_body">登录链接已发送到 %1$s，点击链接即可登录。</string>
+    <string name="resend">重新发送</string>
+    <string name="back_to_login">返回登录</string>
+    <string name="sso_redirecting">正在跳转到 %1$s 登录…</string>
 </resources>
