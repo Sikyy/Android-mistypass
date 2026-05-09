@@ -19,7 +19,7 @@ import javax.inject.Singleton
 
 @Database(
     entities = [CachedDoor::class, CachedCredential::class, CachedAccessLog::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

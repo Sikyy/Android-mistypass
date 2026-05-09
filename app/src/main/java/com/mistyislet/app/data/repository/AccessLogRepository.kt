@@ -40,7 +40,9 @@ private fun CachedAccessLog.toDomain() = AccessLog(
     doorName = doorName,
     eventType = eventType,
     result = result,
+    method = method,
     credentialType = credentialType,
+    reason = reason,
     actor = actor,
     timestamp = timestamp,
 )
@@ -50,7 +52,9 @@ private fun AccessLog.toCache() = CachedAccessLog(
     doorName = doorName ?: lockName ?: doorId,
     eventType = displayType,
     result = result,
+    method = method,
     credentialType = credentialType,
+    reason = reason,
     actor = actor,
     timestamp = displayTime,
 )

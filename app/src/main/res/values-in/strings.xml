@@ -129,6 +129,7 @@
     <string name="history_method">Metode</string>
     <string name="history_granted">Diizinkan</string>
     <string name="history_denied">Ditolak</string>
+    <string name="history_reason">Alasan</string>
 
     <!-- Visitors -->
     <string name="visitors_title">Pengunjung</string>

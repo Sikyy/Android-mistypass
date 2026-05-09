@@ -129,6 +129,7 @@
     <string name="history_method">Method</string>
     <string name="history_granted">Granted</string>
     <string name="history_denied">Denied</string>
+    <string name="history_reason">Reason</string>
 
     <!-- Visitors -->
     <string name="visitors_title">Visitors</string>

@@ -12,7 +12,9 @@ data class AccessLog(
     val type: String = "",
     @SerialName("event_type") val eventType: String = "",
     val result: String,
+    val method: String? = null,
     @SerialName("credential_type") val credentialType: String? = null,
+    val reason: String? = null,
     val actor: String? = null,
     val at: String? = null,
     val timestamp: String? = null,
@@ -20,4 +22,5 @@ data class AccessLog(
     val displayType: String get() = type.ifEmpty { eventType }
     val displayTime: String get() = at ?: timestamp ?: ""
     val displayName: String get() = doorName ?: lockName ?: doorId ?: "Unknown"
+    val displayMethod: String? get() = method ?: credentialType
 }

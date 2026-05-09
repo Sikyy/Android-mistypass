@@ -129,6 +129,7 @@
     <string name="history_method">方式</string>
     <string name="history_granted">已通过</string>
     <string name="history_denied">已拒绝</string>
+    <string name="history_reason">原因</string>
 
     <!-- Visitors -->
     <string name="visitors_title">访客</string>

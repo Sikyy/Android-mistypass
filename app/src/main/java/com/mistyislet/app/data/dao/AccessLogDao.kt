@@ -14,7 +14,9 @@ data class CachedAccessLog(
     val doorName: String?,
     val eventType: String,
     val result: String,
+    val method: String? = null,
     val credentialType: String?,
+    val reason: String? = null,
     val actor: String?,
     val timestamp: String,
 )
