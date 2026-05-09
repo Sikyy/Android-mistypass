@@ -446,6 +446,8 @@
     <!-- Geofence -->
     <string name="geofence_toggle">地理围栏自动解锁</string>
     <string name="geofence_description">当您接近大楼时自动准备门锁解锁。</string>
+    <string name="geofence_notification_title">门禁就在附近</string>
+    <string name="geofence_notification_body">点击解锁</string>
 
     <!-- Common -->
     <string name="loading">加载中…</string>

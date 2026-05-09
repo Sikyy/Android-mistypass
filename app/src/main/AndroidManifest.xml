@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- NFC -->
     <uses-permission android:name="android.permission.NFC" />
@@ -84,6 +85,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/unlock_widget_info" />
         </receiver>
+
+        <receiver
+            android:name=".core.geofence.GeofenceBroadcastReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

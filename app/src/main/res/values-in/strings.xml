@@ -446,6 +446,8 @@
     <!-- Geofence -->
     <string name="geofence_toggle">Buka Kunci Otomatis Geofence</string>
     <string name="geofence_description">Menyiapkan kunci pintu untuk dibuka secara otomatis saat Anda mendekati gedung.</string>
+    <string name="geofence_notification_title">Pintu di dekat Anda</string>
+    <string name="geofence_notification_body">Ketuk untuk membuka</string>
 
     <!-- Common -->
     <string name="loading">Memuat…</string>

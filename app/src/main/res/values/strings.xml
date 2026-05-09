@@ -450,6 +450,8 @@
     <!-- Geofence -->
     <string name="geofence_toggle">Geofence Auto-Unlock</string>
     <string name="geofence_description">Automatically prepare doors for unlock when you approach your building.</string>
+    <string name="geofence_notification_title">Door nearby</string>
+    <string name="geofence_notification_body">Tap to unlock</string>
 
     <!-- Login Magic Link / SSO -->
     <string name="continue_button">Continue</string>
