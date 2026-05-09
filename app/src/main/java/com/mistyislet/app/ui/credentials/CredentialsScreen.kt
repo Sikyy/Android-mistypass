@@ -38,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -79,6 +81,24 @@ fun CredentialsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var expandedPassId by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+    DisposableEffect(expandedPassId) {
+        val window = (context as? android.app.Activity)?.window
+        if (window != null) {
+            window.attributes = window.attributes.apply {
+                screenBrightness = if (expandedPassId == "access_pass") 1.0f else -1f
+            }
+        }
+        onDispose {
+            val win = (context as? android.app.Activity)?.window
+            if (win != null) {
+                win.attributes = win.attributes.apply {
+                    screenBrightness = -1f
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
