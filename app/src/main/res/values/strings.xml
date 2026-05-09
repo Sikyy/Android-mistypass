@@ -24,6 +24,7 @@
     <string name="doors_title">My Doors</string>
     <string name="doors_empty">No doors available</string>
     <string name="search_doors">Search doors</string>
+    <string name="search_places">Search places</string>
     <string name="door_unlock">Unlock</string>
     <string name="door_hold_to_unlock">Hold to Unlock</string>
     <string name="door_unlocking">Unlocking…</string>
@@ -47,6 +48,21 @@
     <string name="doors_access">Access</string>
     <string name="doors_access_allowed">Allowed</string>
     <string name="doors_access_denied">Denied</string>
+    <string name="doors_tab_all">All</string>
+    <string name="doors_tab_favorites">Favorites</string>
+    <string name="doors_no_favorites">No favorites yet</string>
+    <string name="doors_favorite">Add to favorites</string>
+    <string name="doors_unfavorite">Remove from favorites</string>
+    <string name="doors_lockdown">Lockdown</string>
+    <string name="doors_lockdown_banner">This place is in lockdown</string>
+    <string name="doors_disable_lockdown">Disable</string>
+
+    <!-- Places / Organizations -->
+    <string name="places_back">Back</string>
+    <string name="places_no_orgs">No organizations</string>
+    <string name="places_no_orgs_desc">You aren\'t a member of any organizations yet.</string>
+    <string name="places_no_places">No places</string>
+    <string name="places_no_places_desc">This organization has no places yet.</string>
 
     <!-- QR Code -->
     <string name="qrcode_title">QR Code</string>

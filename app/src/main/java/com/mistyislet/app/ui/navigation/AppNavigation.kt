@@ -27,7 +27,7 @@ import com.mistyislet.app.data.repository.AuthRepository
 import com.mistyislet.app.ui.credentials.BindCardScreen
 import com.mistyislet.app.ui.credentials.CredentialsScreen
 import com.mistyislet.app.ui.dashboard.DashboardScreen
-import com.mistyislet.app.ui.doors.DoorsScreen
+import com.mistyislet.app.ui.doors.DoorsRootScreen
 import com.mistyislet.app.ui.history.HistoryScreen
 import com.mistyislet.app.ui.login.LoginScreen
 import com.mistyislet.app.ui.profile.ProfileScreen
@@ -121,7 +121,7 @@ private fun MainScreen(onLogout: () -> Unit) {
             startDestination = Routes.DOORS,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Routes.DOORS) { DoorsScreen() }
+            composable(Routes.DOORS) { DoorsRootScreen() }
             composable(Routes.PASS) {
                 CredentialsScreen(
                     onNavigateToBindCard = { navController.navigate(Routes.BIND_CARD) },

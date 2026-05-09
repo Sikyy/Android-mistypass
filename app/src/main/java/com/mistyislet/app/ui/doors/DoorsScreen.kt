@@ -21,24 +21,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.DoorFront
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +49,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -78,10 +82,7 @@ import com.mistyislet.app.ui.theme.Danger
 import com.mistyislet.app.ui.theme.Success
 import com.mistyislet.app.ui.theme.Warning
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-private enum class SortMode { NAME, STATUS, BUILDING }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,77 +90,68 @@ fun DoorsScreen(
     viewModel: DoorsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var searchQuery by remember { mutableStateOf("") }
-    var sortMode by remember { mutableStateOf(SortMode.NAME) }
-    var showSortMenu by remember { mutableStateOf(false) }
     var selectedDoor by remember { mutableStateOf<AccessibleDoor?>(null) }
 
-    val filteredDoors = remember(uiState.doors, searchQuery, uiState.selectedBuilding, sortMode) {
-        uiState.doors.filter { door ->
-            val matchesSearch = searchQuery.isBlank() ||
-                door.name.contains(searchQuery, ignoreCase = true) ||
-                door.groupName?.contains(searchQuery, ignoreCase = true) == true
-            val matchesBuilding = uiState.selectedBuilding == null ||
-                (door.groupName ?: door.buildingId) == uiState.selectedBuilding
-            matchesSearch && matchesBuilding
-        }.let { doors ->
-            when (sortMode) {
-                SortMode.NAME -> doors.sortedBy { it.name }
-                SortMode.STATUS -> doors.sortedBy { it.displayStatus().ordinal }
-                SortMode.BUILDING -> doors.sortedBy { it.groupName ?: it.buildingId }
+    val visibleDoors = remember(uiState.doors, uiState.tab, uiState.searchQuery) {
+        uiState.doors
+            .filter { door ->
+                if (uiState.tab == DoorsTab.FAVORITES && !door.isFavorite) return@filter false
+                val q = uiState.searchQuery
+                if (q.isBlank()) return@filter true
+                door.name.contains(q, ignoreCase = true) ||
+                    door.groupName?.contains(q, ignoreCase = true) == true
             }
-        }
+            .sortedBy { it.name }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Title row with sort button
+            // Title row with back button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 4.dp, top = 16.dp, bottom = 8.dp),
+                    .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                IconButton(onClick = viewModel::back) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.places_back),
+                    )
+                }
                 Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineLarge,
+                    text = uiState.placeName ?: stringResource(R.string.nav_doors),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                Box {
-                    IconButton(onClick = { showSortMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Sort,
-                            contentDescription = stringResource(R.string.doors_sort),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = { showSortMenu = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.doors_sort_name)) },
-                            onClick = { sortMode = SortMode.NAME; showSortMenu = false },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.doors_sort_status)) },
-                            onClick = { sortMode = SortMode.STATUS; showSortMenu = false },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.doors_sort_building)) },
-                            onClick = { sortMode = SortMode.BUILDING; showSortMenu = false },
-                        )
-                    }
-                }
+            }
+
+            // All / Favorites segmented control
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+                SegmentedButton(
+                    selected = uiState.tab == DoorsTab.ALL,
+                    onClick = { viewModel.setTab(DoorsTab.ALL) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                ) { Text(stringResource(R.string.doors_tab_all)) }
+                SegmentedButton(
+                    selected = uiState.tab == DoorsTab.FAVORITES,
+                    onClick = { viewModel.setTab(DoorsTab.FAVORITES) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) { Text(stringResource(R.string.doors_tab_favorites)) }
             }
 
             // Search bar
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+                value = uiState.searchQuery,
+                onValueChange = viewModel::setSearchQuery,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 placeholder = {
                     Text(
                         text = stringResource(R.string.search_doors),
@@ -180,76 +172,68 @@ fun DoorsScreen(
                 ),
             )
 
-            // Building filter chips
-            if (uiState.buildings.size > 1) {
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Door list
+            Box(modifier = Modifier.weight(1f)) {
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = viewModel::refresh,
+                    modifier = Modifier.fillMaxSize(),
                 ) {
-                    item {
-                        FilterChip(
-                            selected = uiState.selectedBuilding == null,
-                            onClick = { viewModel.selectBuilding(null) },
-                            label = { Text("All") },
-                        )
-                    }
-                    items(uiState.buildings) { building ->
-                        FilterChip(
-                            selected = uiState.selectedBuilding == building,
-                            onClick = { viewModel.selectBuilding(building) },
-                            label = { Text(building) },
-                        )
+                    if (visibleDoors.isEmpty() && !uiState.isRefreshing) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = if (uiState.tab == DoorsTab.FAVORITES) {
+                                        Icons.Default.StarBorder
+                                    } else {
+                                        Icons.Default.DoorFront
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = stringResource(
+                                        if (uiState.tab == DoorsTab.FAVORITES) {
+                                            R.string.doors_no_favorites
+                                        } else {
+                                            R.string.doors_empty
+                                        },
+                                    ),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(visibleDoors, key = { it.id }) { door ->
+                                DoorListCard(
+                                    door = door,
+                                    isUnlocking = uiState.unlockingDoorId == door.id,
+                                    onUnlock = { viewModel.unlock(door) },
+                                    onTap = { selectedDoor = door },
+                                    onToggleFavorite = { viewModel.toggleFavorite(door) },
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Door list
-            PullToRefreshBox(
-                isRefreshing = uiState.isRefreshing,
-                onRefresh = viewModel::refresh,
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                if (filteredDoors.isEmpty() && !uiState.isRefreshing) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.DoorFront,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.doors_empty),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(filteredDoors, key = { it.id }) { door ->
-                            DoorListCard(
-                                door = door,
-                                isUnlocking = uiState.unlockingDoorId == door.id,
-                                onUnlock = { viewModel.unlock(door) },
-                                onTap = { selectedDoor = door },
-                            )
-                        }
-                    }
-                }
+            // Lockdown banner (bottom)
+            if (uiState.isLockdown) {
+                LockdownBanner(onDisable = viewModel::toggleLockdown)
             }
         }
 
@@ -259,10 +243,10 @@ fun DoorsScreen(
         if (unlockResult != null || unlockingDoorId != null) {
             val dialogState = when {
                 unlockResult?.success == true -> UnlockDialogState.Granted(
-                    doorName = uiState.doors.find { it.id == unlockResult.doorId }?.name ?: ""
+                    doorName = uiState.doors.find { it.id == unlockResult.doorId }?.name ?: "",
                 )
                 unlockResult?.success == false -> UnlockDialogState.Denied(
-                    reason = unlockResult.message
+                    reason = unlockResult.message,
                 )
                 else -> UnlockDialogState.Loading
             }
@@ -279,6 +263,39 @@ fun DoorsScreen(
             door = door,
             onDismiss = { selectedDoor = null },
         )
+    }
+}
+
+@Composable
+private fun LockdownBanner(onDisable: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Danger)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Lock,
+            contentDescription = null,
+            tint = Color.White,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = stringResource(R.string.doors_lockdown_banner),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            modifier = Modifier.weight(1f),
+        )
+        Button(
+            onClick = onDisable,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Danger,
+            ),
+        ) {
+            Text(stringResource(R.string.doors_disable_lockdown))
+        }
     }
 }
 
@@ -315,7 +332,6 @@ private fun DoorDetailsSheet(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp),
         ) {
-            // Door name + status
             Text(
                 text = door.name,
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
@@ -340,7 +356,6 @@ private fun DoorDetailsSheet(
             HorizontalDivider()
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Info rows
             door.groupName?.let {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.doors_location)) },
@@ -403,6 +418,7 @@ private fun DoorListCard(
     isUnlocking: Boolean,
     onUnlock: () -> Unit,
     onTap: () -> Unit,
+    onToggleFavorite: () -> Unit,
 ) {
     val displayStatus = door.displayStatus()
     val haptic = LocalHapticFeedback.current
@@ -433,7 +449,6 @@ private fun DoorListCard(
                 .fillMaxWidth()
                 .padding(16.dp),
         ) {
-            // Header row: door name + status dot
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -455,6 +470,16 @@ private fun DoorListCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (door.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = stringResource(
+                            if (door.isFavorite) R.string.doors_unfavorite else R.string.doors_favorite,
+                        ),
+                        tint = if (door.isFavorite) Warning else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Default.Circle,
                     contentDescription = null,
@@ -463,7 +488,6 @@ private fun DoorListCard(
                 )
             }
 
-            // Offline status text
             if (displayStatus == DoorDisplayStatus.OFFLINE || displayStatus == DoorDisplayStatus.DISCONNECTED) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -473,7 +497,6 @@ private fun DoorListCard(
                 )
             }
 
-            // Hold to Unlock button
             if (isUnlockable) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Box(
@@ -495,7 +518,7 @@ private fun DoorListCard(
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         val vibrator = context.getSystemService(Vibrator::class.java)
                                         vibrator?.vibrate(
-                                            VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)
+                                            VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE),
                                         )
                                         onUnlock()
                                     }
@@ -530,3 +553,4 @@ private fun DoorListCard(
         }
     }
 }
+

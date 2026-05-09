@@ -24,6 +24,7 @@
     <string name="doors_title">Pintu Saya</string>
     <string name="doors_empty">Tidak ada pintu tersedia</string>
     <string name="search_doors">Cari pintu</string>
+    <string name="search_places">Cari lokasi</string>
     <string name="door_unlock">Buka Kunci</string>
     <string name="door_hold_to_unlock">Tahan untuk Buka</string>
     <string name="door_unlocking">Membuka…</string>
@@ -47,6 +48,21 @@
     <string name="doors_access">Akses</string>
     <string name="doors_access_allowed">Diizinkan</string>
     <string name="doors_access_denied">Ditolak</string>
+    <string name="doors_tab_all">Semua</string>
+    <string name="doors_tab_favorites">Favorit</string>
+    <string name="doors_no_favorites">Belum ada favorit</string>
+    <string name="doors_favorite">Tambah ke favorit</string>
+    <string name="doors_unfavorite">Hapus dari favorit</string>
+    <string name="doors_lockdown">Lockdown</string>
+    <string name="doors_lockdown_banner">Lokasi ini sedang dalam status lockdown</string>
+    <string name="doors_disable_lockdown">Nonaktifkan</string>
+
+    <!-- Places / Organizations -->
+    <string name="places_back">Kembali</string>
+    <string name="places_no_orgs">Tidak ada organisasi</string>
+    <string name="places_no_orgs_desc">Anda belum tergabung di organisasi mana pun.</string>
+    <string name="places_no_places">Tidak ada lokasi</string>
+    <string name="places_no_places_desc">Organisasi ini belum memiliki lokasi.</string>
 
     <!-- QR Code -->
     <string name="qrcode_title">Kode QR</string>

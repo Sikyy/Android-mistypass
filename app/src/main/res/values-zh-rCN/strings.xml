@@ -24,6 +24,7 @@
     <string name="doors_title">我的门点</string>
     <string name="doors_empty">暂无可用门点</string>
     <string name="search_doors">搜索门点</string>
+    <string name="search_places">搜索场所</string>
     <string name="door_unlock">开门</string>
     <string name="door_hold_to_unlock">长按开门</string>
     <string name="door_unlocking">开门中…</string>
@@ -47,6 +48,21 @@
     <string name="doors_access">访问权限</string>
     <string name="doors_access_allowed">已授权</string>
     <string name="doors_access_denied">未授权</string>
+    <string name="doors_tab_all">全部</string>
+    <string name="doors_tab_favorites">收藏</string>
+    <string name="doors_no_favorites">暂无收藏</string>
+    <string name="doors_favorite">添加到收藏</string>
+    <string name="doors_unfavorite">取消收藏</string>
+    <string name="doors_lockdown">紧急锁定</string>
+    <string name="doors_lockdown_banner">该场所处于紧急锁定状态</string>
+    <string name="doors_disable_lockdown">解除</string>
+
+    <!-- Places / Organizations -->
+    <string name="places_back">返回</string>
+    <string name="places_no_orgs">暂无组织</string>
+    <string name="places_no_orgs_desc">您尚未加入任何组织。</string>
+    <string name="places_no_places">暂无场所</string>
+    <string name="places_no_places_desc">该组织还没有场所。</string>
 
     <!-- QR Code -->
     <string name="qrcode_title">二维码</string>
