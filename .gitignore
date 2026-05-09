@@ -16,3 +16,6 @@ google-services.json
 key.properties
 .kotlin/
 image-*.webp
+
+# Claude Code workspace
+.claude/
