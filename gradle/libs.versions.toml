@@ -29,6 +29,7 @@ glance = "1.1.1"
 media3 = "1.5.1"
 browser = "1.8.0"
 playServicesLocation = "21.3.0"
+robolectric = "4.13"
 
 [libraries]
 # AndroidX Core
@@ -117,6 +118,7 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
