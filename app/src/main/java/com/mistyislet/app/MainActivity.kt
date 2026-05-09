@@ -1,5 +1,6 @@
 package com.mistyislet.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,11 +16,14 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.lifecycleScope
 import com.mistyislet.app.core.auth.BiometricHelper
+import com.mistyislet.app.core.deeplink.DeepLinkHandler
 import com.mistyislet.app.data.repository.AuthRepository
 import com.mistyislet.app.ui.navigation.AppNavigation
 import com.mistyislet.app.ui.profile.ProfileViewModel
 import com.mistyislet.app.ui.theme.MistyisletTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -38,6 +42,9 @@ class MainActivity : AppCompatActivity() {
 
     private var isAuthenticated by mutableStateOf(false)
     private var biometricRequired by mutableStateOf(false)
+
+    private val _authTokenFromDeepLink = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val authTokenFromDeepLink: SharedFlow<String> = _authTokenFromDeepLink
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +81,19 @@ class MainActivity : AppCompatActivity() {
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
                 }
             }
+        }
+        handleAuthDeepLink(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleAuthDeepLink(intent)
+    }
+
+    private fun handleAuthDeepLink(intent: Intent) {
+        val token = DeepLinkHandler.extractAuthToken(intent)
+        if (token != null) {
+            _authTokenFromDeepLink.tryEmit(token)
         }
     }
 }
