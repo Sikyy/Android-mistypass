@@ -1,6 +1,7 @@
 package com.mistyislet.app.core.auth
 
 import android.content.Context
+import android.os.Build
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -37,6 +38,22 @@ class BiometricHelper @Inject constructor(
     }
 
     fun isAvailable(): Boolean = getStatus() == BiometricStatus.AVAILABLE
+
+    fun biometricTypeName(): String {
+        val manager = BiometricManager.from(context)
+        val hasStrong = manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+        return if (hasStrong) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val pm = context.packageManager
+                when {
+                    pm.hasSystemFeature("android.hardware.fingerprint") -> "Fingerprint"
+                    pm.hasSystemFeature("android.hardware.biometrics.face") -> "Face Unlock"
+                    pm.hasSystemFeature("android.hardware.biometrics.iris") -> "Iris"
+                    else -> "Biometric"
+                }
+            } else "Fingerprint"
+        } else "PIN/Pattern"
+    }
 
     /**
      * 显示生物识别弹窗并等待结果。

@@ -4,6 +4,7 @@ import com.mistyislet.app.core.storage.TokenStore
 import com.mistyislet.app.data.api.AuthApi
 import com.mistyislet.app.domain.model.RefreshRequest
 import com.mistyislet.app.domain.model.RefreshResponse
+import com.mistyislet.app.domain.model.RestorePasswordRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -87,6 +88,7 @@ class AuthInterceptorTest {
         server.enqueue(MockResponse().setResponseCode(200).setBody("success"))
 
         val fakeAuth = object : AuthApi {
+            override suspend fun restorePassword(request: RestorePasswordRequest) = Unit
             override suspend fun login(request: com.mistyislet.app.domain.model.LoginRequest) =
                 throw UnsupportedOperationException()
             override suspend fun refresh(request: RefreshRequest): RefreshResponse {
@@ -120,6 +122,7 @@ class AuthInterceptorTest {
         tokenStore._expiresAt = 0L
 
         val fakeAuth = object : AuthApi {
+            override suspend fun restorePassword(request: RestorePasswordRequest) = Unit
             override suspend fun login(request: com.mistyislet.app.domain.model.LoginRequest) =
                 throw UnsupportedOperationException()
             override suspend fun refresh(request: RefreshRequest): RefreshResponse {
@@ -174,6 +177,7 @@ class AuthInterceptorTest {
         server.enqueue(MockResponse().setResponseCode(200).setBody("login page"))
 
         val fakeAuth = object : AuthApi {
+            override suspend fun restorePassword(request: RestorePasswordRequest) = Unit
             override suspend fun login(request: com.mistyislet.app.domain.model.LoginRequest) =
                 throw UnsupportedOperationException()
             override suspend fun refresh(request: RefreshRequest): RefreshResponse {
@@ -218,6 +222,7 @@ class AuthInterceptorTest {
         server.enqueue(MockResponse().setResponseCode(200).setBody("success"))
 
         val fakeAuth = object : AuthApi {
+            override suspend fun restorePassword(request: RestorePasswordRequest) = Unit
             override suspend fun login(request: com.mistyislet.app.domain.model.LoginRequest) =
                 throw UnsupportedOperationException()
             override suspend fun refresh(request: RefreshRequest): RefreshResponse {
@@ -249,6 +254,7 @@ class AuthInterceptorTest {
             throw UnsupportedOperationException()
         override suspend fun refresh(request: RefreshRequest): RefreshResponse =
             throw UnsupportedOperationException()
+        override suspend fun restorePassword(request: RestorePasswordRequest) = Unit
     }
 }
 

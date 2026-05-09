@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,7 +11,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +19,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,47 +27,52 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.Wallet
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.mistyislet.app.R
+import kotlinx.coroutines.delay
+import java.time.Instant
 
-private val AccessPassGradient = listOf(Color(0xFF4F55FF), Color(0xFF6C63FF))
-private val GoogleWalletGradient = listOf(Color(0xFF1A1A2E), Color(0xFF16213E))
-private val VisitorPassGradient = listOf(Color(0xFF0F9D58), Color(0xFF0B8043))
-private val PhysicalCardGradient = listOf(Color(0xFF37474F), Color(0xFF263238))
+private val AccessPassBg = Color(0xFF1A1F36)
+private val PinPassBg = Color(0xFF0F2027)
+private val DeviceCredentialBg = Color(0xFF2C3E50)
+private val CardFg = Color.White
+private val CardLabel = Color.White.copy(alpha = 0.6f)
+
+enum class PassType { ACCESS_PASS, PIN_PASS, DEVICE_CREDENTIAL }
 
 @Composable
 fun CredentialsScreen(
@@ -78,396 +80,167 @@ fun CredentialsScreen(
     viewModel: CredentialsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var expandedCardIndex by remember { mutableStateOf<Int?>(null) }
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val hasNfc = remember { android.nfc.NfcAdapter.getDefaultAdapter(context) != null }
-    val isGoogleWalletAvailable = remember {
-        val tm = context.getSystemService(android.content.Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
-        val simCountry = tm?.simCountryIso?.lowercase() ?: ""
-        val networkCountry = tm?.networkCountryIso?.lowercase() ?: ""
-        simCountry != "id" && networkCountry != "id"
+    var expandedPassId by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+    DisposableEffect(expandedPassId) {
+        val window = (context as? android.app.Activity)?.window
+        if (window != null) {
+            window.attributes = window.attributes.apply {
+                screenBrightness = if (expandedPassId == "access_pass") 1.0f else -1f
+            }
+        }
+        onDispose {
+            val win = (context as? android.app.Activity)?.window
+            if (win != null) {
+                win.attributes = win.attributes.apply {
+                    screenBrightness = -1f
+                }
+            }
+        }
     }
 
-    val walletCards = remember(uiState.userId, uiState.credentials, uiState.dynamicQrContent) {
-        buildWalletCards(uiState.userId, uiState.dynamicQrContent, uiState.credentials)
-    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
+        Text(
+            text = stringResource(R.string.pass_title),
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+        )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Main scrollable content
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = stringResource(R.string.credentials_title),
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
+            // Access Pass card
+            PassCard(
+                passId = "access_pass",
+                passType = PassType.ACCESS_PASS,
+                organizationName = uiState.organizationName,
+                placeName = uiState.placeName,
+                isExpanded = expandedPassId == "access_pass",
+                onTap = {
+                    expandedPassId = if (expandedPassId == "access_pass") null else "access_pass"
+                },
+                qrToken = uiState.dynamicQrContent,
+                qrExpiresAt = uiState.qrExpiresAt,
             )
 
-            // Stacked wallet view
-            WalletStack(
-                cards = walletCards,
-                onCardTap = { index -> expandedCardIndex = index },
+            // PIN Pass card
+            PassCard(
+                passId = "pin_pass",
+                passType = PassType.PIN_PASS,
+                organizationName = uiState.organizationName,
+                placeName = uiState.placeName,
+                isExpanded = expandedPassId == "pin_pass",
+                onTap = {
+                    expandedPassId = if (expandedPassId == "pin_pass") null else "pin_pass"
+                },
+                pinCode = uiState.pinCode,
+                pinExpiresAt = uiState.pinExpiresAt,
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Bind Physical Card button (only if device has NFC)
-            if (hasNfc) {
-                OutlinedButton(
-                    onClick = onNavigateToBindCard,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Icon(Icons.Default.CreditCard, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.bind_physical_card), style = MaterialTheme.typography.labelLarge)
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            // Google Wallet button — hidden in regions where Google Wallet is unavailable (e.g. Indonesia)
-            if (isGoogleWalletAvailable) {
-                OutlinedButton(
-                    onClick = { /* TODO: Google Wallet integration */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.add_to_google_wallet), style = MaterialTheme.typography.labelLarge)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-        }
-
-        // Overlay when card is expanded
-        AnimatedVisibility(
-            visible = expandedCardIndex != null,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(200)),
-        ) {
-            // Scrim - tap anywhere to dismiss
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) {
-                        expandedCardIndex = null
+            // Device Credential cards (this device's mobile BLE credentials only)
+            uiState.mobileCredentials.filter { it.status == "active" && it.platform == "android" }.forEach { cred ->
+                PassCard(
+                    passId = cred.id,
+                    passType = PassType.DEVICE_CREDENTIAL,
+                    organizationName = uiState.organizationName,
+                    placeName = null,
+                    holderName = cred.deviceModel ?: cred.platform,
+                    isExpanded = expandedPassId == cred.id,
+                    onTap = {
+                        expandedPassId = if (expandedPassId == cred.id) null else cred.id
                     },
-            )
-        }
-
-        // Expanded card overlay
-        AnimatedVisibility(
-            visible = expandedCardIndex != null,
-            enter = fadeIn(tween(250)) + expandVertically(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessMediumLow,
-                ),
-                expandFrom = Alignment.CenterVertically,
-            ),
-            exit = fadeOut(tween(200)) + shrinkVertically(
-                animationSpec = tween(250),
-                shrinkTowards = Alignment.CenterVertically,
-            ),
-            modifier = Modifier.align(Alignment.Center),
-        ) {
-            expandedCardIndex?.let { index ->
-                if (index < walletCards.size) {
-                    ExpandedWalletCard(
-                        card = walletCards[index],
-                        onCollapse = { expandedCardIndex = null },
-                    )
-                }
+                )
             }
+
+            // Wallet pass cards
+            uiState.credentials.filter { it.status == "active" }.forEach { cred ->
+                PassCard(
+                    passId = cred.id,
+                    passType = PassType.DEVICE_CREDENTIAL,
+                    organizationName = uiState.organizationName,
+                    placeName = null,
+                    holderName = cred.cardNumber ?: cred.credentialKind,
+                    isExpanded = expandedPassId == cred.id,
+                    onTap = {
+                        expandedPassId = if (expandedPassId == cred.id) null else cred.id
+                    },
+                )
+            }
+
+            // Add to Google Wallet section
+            GoogleWalletSection()
         }
+
+        Spacer(modifier = Modifier.height(100.dp))
     }
-}
-
-data class WalletCard(
-    val id: String,
-    val title: String,
-    val subtitle: String,
-    val gradient: List<Color>,
-    val qrContent: String?,
-    val type: CardType,
-)
-
-enum class CardType { ACCESS_PASS, GOOGLE_WALLET, VISITOR_PASS, PHYSICAL_CARD }
-
-private fun buildWalletCards(
-    userId: String?,
-    dynamicQrContent: String?,
-    credentials: List<com.mistyislet.app.domain.model.Credential>,
-): List<WalletCard> {
-    val cards = mutableListOf<WalletCard>()
-
-    cards.add(
-        WalletCard(
-            id = "access_pass",
-            title = "Mistyislet Pass",
-            subtitle = userId ?: "Access Pass",
-            gradient = AccessPassGradient,
-            qrContent = dynamicQrContent ?: "mistyislet://access/${userId ?: "unknown"}",
-            type = CardType.ACCESS_PASS,
-        )
-    )
-
-    credentials.forEach { cred ->
-        cards.add(
-            WalletCard(
-                id = cred.id,
-                title = when (cred.credentialKind) {
-                    "google_wallet" -> "Google Wallet Pass"
-                    "physical_card" -> "Physical Card"
-                    else -> "Access Link"
-                },
-                subtitle = cred.cardNumber ?: cred.status,
-                gradient = when (cred.credentialKind) {
-                    "google_wallet" -> GoogleWalletGradient
-                    "physical_card" -> PhysicalCardGradient
-                    else -> VisitorPassGradient
-                },
-                qrContent = cred.saveLink,
-                type = when (cred.credentialKind) {
-                    "google_wallet" -> CardType.GOOGLE_WALLET
-                    "physical_card" -> CardType.PHYSICAL_CARD
-                    else -> CardType.VISITOR_PASS
-                },
-            )
-        )
-    }
-
-    return cards
 }
 
 @Composable
-private fun WalletStack(
-    cards: List<WalletCard>,
-    onCardTap: (Int) -> Unit,
+private fun PassCard(
+    passId: String,
+    passType: PassType,
+    organizationName: String,
+    placeName: String?,
+    holderName: String? = null,
+    isExpanded: Boolean,
+    onTap: () -> Unit,
+    qrToken: String? = null,
+    qrExpiresAt: Instant? = null,
+    pinCode: String? = null,
+    pinExpiresAt: Instant? = null,
 ) {
-    val stackOffset = 56
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .height(((cards.size - 1) * stackOffset + 200).dp),
-    ) {
-        cards.forEachIndexed { index, card ->
-            val yOffset = index * stackOffset
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset { IntOffset(0, (yOffset * density).toInt()) }
-                    .zIndex((cards.size - index).toFloat())
-                    .clickable { onCardTap(index) },
-            ) {
-                WalletCardCompact(card = card)
-            }
-        }
+    val bgColor = when (passType) {
+        PassType.ACCESS_PASS -> AccessPassBg
+        PassType.PIN_PASS -> PinPassBg
+        PassType.DEVICE_CREDENTIAL -> DeviceCredentialBg
     }
-}
 
-@Composable
-private fun WalletCardCompact(card: WalletCard) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .shadow(8.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        onClick = onTap,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(brush = Brush.linearGradient(card.gradient)),
-        ) {
+        Column {
+            // Pass body
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.padding(20.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = when (card.type) {
-                                CardType.ACCESS_PASS -> Icons.Default.QrCode2
-                                CardType.GOOGLE_WALLET -> Icons.Default.Wallet
-                                CardType.VISITOR_PASS -> Icons.Default.Person
-                                CardType.PHYSICAL_CARD -> Icons.Default.CreditCard
-                            },
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = card.title,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = Color.White,
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = card.subtitle,
-                        style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 1.sp),
-                        color = Color.White.copy(alpha = 0.7f),
-                    )
-                    if (card.type == CardType.ACCESS_PASS) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "TAP TO SHOW QR",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                letterSpacing = 2.sp,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                            color = Color.White.copy(alpha = 0.5f),
-                        )
-                    }
-                }
+                // Header row: icon + org name + type badge
+                HeaderRow(passType, organizationName)
+                Spacer(modifier = Modifier.height(24.dp))
+                // Primary field
+                PrimaryField(passType, holderName)
+                Spacer(modifier = Modifier.height(12.dp))
+                // Secondary row
+                SecondaryRow(passType, placeName)
             }
-        }
-    }
-}
 
-@Composable
-private fun ExpandedWalletCard(
-    card: WalletCard,
-    onCollapse: () -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { /* consume click so scrim doesn't trigger */ },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(brush = Brush.linearGradient(card.gradient)),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            // Barcode strip (expanded)
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    ),
+                ) + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
             ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = when (card.type) {
-                                CardType.ACCESS_PASS -> Icons.Default.QrCode2
-                                CardType.GOOGLE_WALLET -> Icons.Default.Wallet
-                                CardType.VISITOR_PASS -> Icons.Default.Person
-                                CardType.PHYSICAL_CARD -> Icons.Default.CreditCard
-                            },
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = card.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color.White,
-                        )
-                        Text(
-                            text = card.subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.7f),
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // QR Code
-                if (card.qrContent != null) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White)
-                            .padding(16.dp),
-                    ) {
-                        QRCodeImage(content = card.qrContent, size = 220)
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = when (card.type) {
-                            CardType.ACCESS_PASS -> stringResource(R.string.qr_my_code_hint)
-                            else -> card.subtitle
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f),
-                        textAlign = TextAlign.Center,
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.QrCode2,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = Color.White.copy(alpha = 0.3f),
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "No QR code available",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.6f),
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = stringResource(R.string.tap_to_close),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.4f),
+                BarcodeStrip(
+                    passType = passType,
+                    bgColor = bgColor,
+                    qrToken = qrToken,
+                    qrExpiresAt = qrExpiresAt,
+                    pinCode = pinCode,
+                    pinExpiresAt = pinExpiresAt,
                 )
             }
         }
@@ -475,13 +248,357 @@ private fun ExpandedWalletCard(
 }
 
 @Composable
-private fun QRCodeImage(content: String, size: Int) {
-    val bitmap = remember(content, size) { generateQRCode(content, size) }
-    if (bitmap != null) {
-        Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = "QR Code",
-            modifier = Modifier.size(size.dp),
+private fun HeaderRow(passType: PassType, organizationName: String) {
+    val icon: ImageVector = when (passType) {
+        PassType.ACCESS_PASS -> Icons.Default.QrCode2
+        PassType.PIN_PASS -> Icons.Default.Pin
+        PassType.DEVICE_CREDENTIAL -> Icons.Default.PhoneAndroid
+    }
+    val badge = when (passType) {
+        PassType.ACCESS_PASS -> "ACCESS"
+        PassType.PIN_PASS -> "PIN"
+        PassType.DEVICE_CREDENTIAL -> "DEVICE"
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = CardFg,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = organizationName,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = CardFg,
+                maxLines = 1,
+            )
+        }
+
+        Text(
+            text = badge,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+            color = CardFg.copy(alpha = 0.8f),
+            modifier = Modifier
+                .background(CardFg.copy(alpha = 0.15f), CircleShape)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun PrimaryField(passType: PassType, holderName: String?) {
+    val label = when (passType) {
+        PassType.ACCESS_PASS -> "ACCESS PASS"
+        PassType.PIN_PASS -> "PIN CODE"
+        PassType.DEVICE_CREDENTIAL -> "CREDENTIAL"
+    }
+    val value = when (passType) {
+        PassType.ACCESS_PASS -> "Mistyislet Pass"
+        PassType.PIN_PASS -> "Door PIN"
+        PassType.DEVICE_CREDENTIAL -> holderName ?: "Device Credential"
+    }
+
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = CardLabel,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = CardFg,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun SecondaryRow(passType: PassType, placeName: String?) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        if (!placeName.isNullOrBlank()) {
+            FieldColumn(label = "LOCATION", value = placeName)
+        }
+
+        when (passType) {
+            PassType.ACCESS_PASS -> FieldColumn(label = "TYPE", value = "QR Access")
+            PassType.PIN_PASS -> FieldColumn(label = "TYPE", value = "PIN Code")
+            PassType.DEVICE_CREDENTIAL -> {}
+        }
+
+        FieldColumn(label = "STATUS", value = "Active")
+    }
+}
+
+@Composable
+private fun FieldColumn(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.5.sp,
+            ),
+            color = CardLabel,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+            color = CardFg,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun BarcodeStrip(
+    passType: PassType,
+    bgColor: Color,
+    qrToken: String?,
+    qrExpiresAt: Instant?,
+    pinCode: String?,
+    pinExpiresAt: Instant?,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor)
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        HorizontalDivider(color = CardFg.copy(alpha = 0.1f))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        when (passType) {
+            PassType.ACCESS_PASS -> {
+                if (qrToken != null) {
+                    val bitmap = remember(qrToken) { generateQRCode(qrToken, 200) }
+                    if (bitmap != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White)
+                                .padding(12.dp),
+                        ) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "QR Code",
+                                modifier = Modifier.size(200.dp),
+                            )
+                        }
+                    }
+
+                    if (qrExpiresAt != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        ExpiryTimer(expiresAt = qrExpiresAt)
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.QrCode2,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = CardFg.copy(alpha = 0.3f),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.pass_qr_unavailable),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = CardLabel,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.pass_present_to_scanner),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = CardLabel,
+                )
+            }
+
+            PassType.PIN_PASS -> {
+                if (pinCode != null) {
+                    PinDisplay(pin = pinCode)
+
+                    if (pinExpiresAt != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        ExpiryTimer(expiresAt = pinExpiresAt)
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Pin,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = CardFg.copy(alpha = 0.3f),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.pass_pin_unavailable),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = CardLabel,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.pass_enter_at_keypad),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = CardLabel,
+                )
+            }
+
+            PassType.DEVICE_CREDENTIAL -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Security,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = Color(0xFF4CAF50),
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = stringResource(R.string.pass_ble_active),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                            color = CardFg,
+                        )
+                        Text(
+                            text = stringResource(R.string.pass_keystore_protected),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = CardLabel,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpiryTimer(expiresAt: Instant) {
+    var remaining by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(expiresAt) {
+        while (true) {
+            remaining = ((expiresAt.toEpochMilli() - System.currentTimeMillis()) / 1000)
+                .toInt().coerceAtLeast(0)
+            delay(1000)
+        }
+    }
+
+    val dotColor = when {
+        remaining > 15 -> Color(0xFF4CAF50)
+        remaining > 5 -> Color(0xFFFFC107)
+        else -> Color(0xFFF44336)
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(dotColor),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = "${stringResource(R.string.pass_refreshes_in)} ${remaining}s",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Normal,
+            ),
+            color = CardFg.copy(alpha = 0.7f),
+        )
+    }
+}
+
+@Composable
+private fun PinDisplay(pin: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.padding(vertical = 12.dp),
+    ) {
+        pin.forEach { digit ->
+            Box(
+                modifier = Modifier
+                    .size(width = 42.dp, height = 54.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = digit.toString(),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    color = Color.Black,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoogleWalletSection() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isInIndonesia = remember {
+        val tm = context.getSystemService(android.content.Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
+        val simCountry = tm?.simCountryIso?.lowercase() ?: ""
+        val networkCountry = tm?.networkCountryIso?.lowercase() ?: ""
+        simCountry == "id" || networkCountry == "id"
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        Box(
+            modifier = Modifier
+                .width(250.dp)
+                .height(50.dp)
+                .clip(RoundedCornerShape(25.dp))
+                .background(Color.Black.copy(alpha = if (isInIndonesia) 0.2f else 0.8f))
+                .clickable(enabled = !isInIndonesia) { },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.add_to_google_wallet),
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                color = Color.White,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = stringResource(R.string.pass_wallet_region_notice),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 24.dp),
         )
     }
 }
@@ -500,7 +617,7 @@ private fun generateQRCode(content: String, size: Int): Bitmap? {
             }
         }
         bitmap
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }

@@ -1,5 +1,6 @@
 package com.mistyislet.app.core.network
 
+import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 
 sealed class ApiResult<out T> {
@@ -13,6 +14,8 @@ suspend fun <T> safeApiCall(block: suspend () -> T): ApiResult<T> {
         ApiResult.Success(block())
     } catch (e: HttpException) {
         ApiResult.Error(e.code(), e.message())
+    } catch (e: SerializationException) {
+        ApiResult.Error(0, "Service unavailable")
     } catch (e: kotlin.Exception) {
         ApiResult.Exception(e)
     }

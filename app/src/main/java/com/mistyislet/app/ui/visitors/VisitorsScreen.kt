@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,14 +25,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,8 +42,10 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,7 +68,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.mistyislet.app.R
+import com.mistyislet.app.domain.model.VisitorGroupMember
 import com.mistyislet.app.domain.model.VisitorPass
+import com.mistyislet.app.ui.theme.Danger
+import com.mistyislet.app.ui.theme.Success
+import com.mistyislet.app.ui.theme.Warning
 import java.time.Duration
 import java.time.Instant
 
@@ -73,7 +83,7 @@ fun VisitorsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var qrDialogPassId by remember { mutableStateOf<String?>(null) }
+    var qrDialogPass by remember { mutableStateOf<VisitorPass?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.toastMessage.collect { message ->
@@ -127,36 +137,80 @@ fun VisitorsScreen(
                 } else {
                     val activePasses = uiState.passes.filter { !isExpired(it) }
                     val expiredPasses = uiState.passes.filter { isExpired(it) }
+                    val activeMembers = uiState.groupMembers.filter { it.isActive && !isMemberExpired(it) }
+                    val expiredMembers = uiState.groupMembers.filter { !it.isActive || isMemberExpired(it) }
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                        contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        uiState.visitorGroup?.let { group ->
+                            item(key = "group_header") {
+                                VisitorGroupHeader(
+                                    group = group,
+                                    activeCount = activeMembers.size,
+                                )
+                            }
+                            if (activeMembers.isNotEmpty()) {
+                                items(activeMembers, key = { "gm_${it.id}" }) { member ->
+                                    GroupMemberRow(member = member, isActive = true)
+                                }
+                            }
+                            if (expiredMembers.isNotEmpty()) {
+                                items(expiredMembers, key = { "gm_exp_${it.id}" }) { member ->
+                                    GroupMemberRow(member = member, isActive = false)
+                                }
+                            }
+                            if (expiredMembers.isNotEmpty()) {
+                                item(key = "cleanup_btn") {
+                                    TextButton(
+                                        onClick = viewModel::cleanupExpired,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Danger,
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            stringResource(R.string.visitors_cleanup_expired),
+                                            color = Danger,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         if (activePasses.isNotEmpty()) {
                             item {
                                 Text(
-                                    text = stringResource(R.string.visitors_active).uppercase(),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    text = stringResource(R.string.visitors_active),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
                                 )
                             }
                             items(activePasses, key = { it.id }) { pass ->
-                                VisitorPassCard(pass, isActive = true, onShowQR = { qrDialogPassId = it })
+                                VisitorPassCard(
+                                    pass = pass,
+                                    isActive = true,
+                                    onShowQR = { qrDialogPass = it },
+                                )
                             }
                         }
                         if (expiredPasses.isNotEmpty()) {
                             item {
                                 Text(
-                                    text = stringResource(R.string.visitors_expired).uppercase(),
-                                    style = MaterialTheme.typography.labelLarge,
+                                    text = stringResource(R.string.visitors_expired),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                                 )
                             }
                             items(expiredPasses, key = { it.id }) { pass ->
-                                VisitorPassCard(pass, isActive = false)
+                                VisitorPassCard(pass = pass, isActive = false)
                             }
                         }
                     }
@@ -175,50 +229,30 @@ fun VisitorsScreen(
         )
     }
 
-    // QR Code full-screen dialog
-    qrDialogPassId?.let { passId ->
-        val passLink = "https://app.mistyislet.com/access-link/$passId"
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.85f))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) { qrDialogPassId = null },
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(280.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White)
-                        .padding(16.dp),
-                ) {
-                    val bitmap = remember(passLink) { generateVisitorQR(passLink, 512) }
-                    if (bitmap != null) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Visitor QR",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Tap anywhere to close",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.6f),
-                )
-            }
-        }
+    qrDialogPass?.let { pass ->
+        VisitorQRDialog(
+            pass = pass,
+            onDismiss = { qrDialogPass = null },
+        )
     }
 }
 
 @Composable
-private fun VisitorPassCard(pass: VisitorPass, isActive: Boolean, onShowQR: (String) -> Unit = {}) {
+private fun StatusBadge(text: String, color: Color) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+        color = color,
+        modifier = Modifier
+            .background(color.copy(alpha = 0.15f), RoundedCornerShape(50))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+    )
+}
+
+@Composable
+private fun VisitorPassCard(pass: VisitorPass, isActive: Boolean, onShowQR: (VisitorPass) -> Unit = {}) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -234,63 +268,64 @@ private fun VisitorPassCard(pass: VisitorPass, isActive: Boolean, onShowQR: (Str
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = pass.visitor,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
-                    )
-                    pass.host?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                if (isActive) {
-                    val remaining = getRemainingTime(pass)
-                    if (remaining != null) {
-                        AssistChip(
-                            onClick = {},
-                            label = {
-                                Text(
-                                    text = remaining,
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            },
-                        )
-                    }
-                } else {
-                    Text(
-                        text = stringResource(R.string.visitor_expired),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    text = pass.visitor,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                StatusBadge(
+                    text = if (isActive) stringResource(R.string.visitors_active) else stringResource(R.string.visitor_expired),
+                    color = if (isActive) Success else Danger,
+                )
+            }
+
+            pass.host?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             if (isActive) {
-                val context = LocalContext.current
-                val passLink = "https://app.mistyislet.com/access-link/${pass.id}"
+                getRemainingTime(pass)?.let { remaining ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = Warning,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.visitors_remaining, remaining),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Warning,
+                        )
+                    }
+                }
 
+                val passLink = "https://app.mistyislet.com/access-link/${pass.id}"
                 Spacer(modifier = Modifier.height(8.dp))
                 Row {
-                    IconButton(onClick = { onShowQR(pass.id) }) {
+                    IconButton(onClick = { onShowQR(pass) }) {
                         Icon(Icons.Default.QrCode, contentDescription = "QR", modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         clipboard.setPrimaryClip(ClipData.newPlainText("Visitor Pass", passLink))
-                        Toast.makeText(context, "Copied!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.visitor_link_copied), Toast.LENGTH_SHORT).show()
                     }) {
                         Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "Your visitor pass: $passLink")
+                            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.visitor_share_subject))
+                            putExtra(Intent.EXTRA_TEXT, passLink)
                         }
-                        context.startActivity(Intent.createChooser(shareIntent, "Share Visitor Pass"))
+                        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.visitor_share_title)))
                     }) {
                         Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(20.dp))
                     }
@@ -300,11 +335,229 @@ private fun VisitorPassCard(pass: VisitorPass, isActive: Boolean, onShowQR: (Str
     }
 }
 
+@Composable
+private fun VisitorQRDialog(pass: VisitorPass, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val passLink = "https://app.mistyislet.com/access-link/${pass.id}"
+    val remaining = getRemainingTime(pass)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.85f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { onDismiss() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 32.dp),
+        ) {
+            Text(
+                text = pass.visitor,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = Color.White,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(280.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .padding(16.dp),
+            ) {
+                val bitmap = remember(passLink) { generateVisitorQR(passLink, 512) }
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Visitor QR",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+            }
+
+            if (remaining != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.visitors_remaining, remaining),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Warning,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Visitor Pass", passLink))
+                        Toast.makeText(context, context.getString(R.string.visitor_link_copied), Toast.LENGTH_SHORT).show()
+                    },
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                ) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.White,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.visitor_copy_link),
+                        color = Color.White,
+                    )
+                }
+                OutlinedButton(
+                    onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.visitor_share_subject))
+                            putExtra(Intent.EXTRA_TEXT, passLink)
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.visitor_share_title)))
+                    },
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                ) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.White,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.visitor_share_pass),
+                        color = Color.White,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = stringResource(R.string.tap_to_close),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.6f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun VisitorGroupHeader(
+    group: com.mistyislet.app.domain.model.VisitorGroup,
+    activeCount: Int,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Groups,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = group.name,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            modifier = Modifier.weight(1f),
+        )
+        if (activeCount > 0) {
+            Text(
+                text = "$activeCount",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun GroupMemberRow(member: VisitorGroupMember, isActive: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive) {
+                MaterialTheme.colorScheme.surface
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            },
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = member.visitorName,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            if (isActive) {
+                member.expiresAt?.let { exp ->
+                    val remaining = getMemberRemainingTime(exp)
+                    if (remaining != null) {
+                        Text(
+                            text = remaining,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Warning,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
+                StatusBadge(
+                    text = stringResource(R.string.visitors_active),
+                    color = Success,
+                )
+            } else {
+                StatusBadge(
+                    text = stringResource(R.string.visitor_expired),
+                    color = Danger,
+                )
+            }
+        }
+    }
+}
+
+private fun getMemberRemainingTime(expiresAt: String): String? {
+    return try {
+        val expiry = Instant.parse(expiresAt)
+        val now = Instant.now()
+        if (expiry.isBefore(now)) return null
+        val duration = Duration.between(now, expiry)
+        val hours = duration.toHours()
+        when {
+            hours >= 24 -> "${hours / 24}d ${hours % 24}h"
+            hours >= 1 -> "${hours}h"
+            else -> "${duration.toMinutes()}m"
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+
 private fun isExpired(pass: VisitorPass): Boolean {
     val expiresAt = pass.expiresAt ?: return false
     return try {
         Instant.parse(expiresAt).isBefore(Instant.now())
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         false
     }
 }
@@ -320,7 +573,7 @@ private fun generateVisitorQR(content: String, size: Int): Bitmap? {
             }
         }
         bitmap
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }
@@ -338,7 +591,7 @@ private fun getRemainingTime(pass: VisitorPass): String? {
             hours >= 1 -> "${hours}h"
             else -> "${duration.toMinutes()}m"
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }

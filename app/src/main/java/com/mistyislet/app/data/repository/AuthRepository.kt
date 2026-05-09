@@ -6,6 +6,7 @@ import com.mistyislet.app.core.storage.TokenStore
 import com.mistyislet.app.data.api.AuthApi
 import com.mistyislet.app.domain.model.LoginRequest
 import com.mistyislet.app.domain.model.LoginResponse
+import com.mistyislet.app.domain.model.RestorePasswordRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +24,9 @@ class AuthRepository @Inject constructor(
             response
         }
     }
+
+    suspend fun restorePassword(email: String): ApiResult<Unit> =
+        safeApiCall { authApi.restorePassword(RestorePasswordRequest(email)) }
 
     fun isLoggedIn(): Boolean = tokenStore.isValid()
 

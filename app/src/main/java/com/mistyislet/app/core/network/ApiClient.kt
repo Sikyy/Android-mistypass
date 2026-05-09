@@ -6,6 +6,8 @@ import com.mistyislet.app.data.api.AccessApi
 import com.mistyislet.app.data.api.AuthApi
 import com.mistyislet.app.data.api.CredentialApi
 import com.mistyislet.app.data.api.MobileCredentialApi
+import com.mistyislet.app.data.api.AdminApi
+import com.mistyislet.app.data.api.PlaceApi
 import com.mistyislet.app.data.api.UserApi
 import dagger.Module
 import dagger.Provides
@@ -117,5 +119,17 @@ object ApiClientModule {
     @Singleton
     fun provideMobileCredentialApi(retrofit: Retrofit): MobileCredentialApi {
         return retrofit.create(MobileCredentialApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePlaceApi(retrofit: Retrofit): PlaceApi {
+        return retrofit.create(PlaceApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAdminApi(retrofit: Retrofit): AdminApi {
+        return retrofit.create(AdminApi::class.java)
     }
 }

@@ -1,21 +1,18 @@
 package com.mistyislet.app
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.mistyislet.app.core.auth.BiometricHelper
 import com.mistyislet.app.data.repository.AuthRepository
@@ -28,7 +25,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
@@ -55,8 +52,8 @@ class MainActivity : FragmentActivity() {
                 biometricRequired = true
                 val success = biometricHelper.authenticate(
                     activity = this@MainActivity,
-                    title = "Mistyislet",
-                    subtitle = "Verify to access your doors",
+                    title = getString(R.string.biometric_prompt_title),
+                    subtitle = getString(R.string.biometric_prompt_subtitle),
                 )
                 isAuthenticated = success
                 if (!success) {
