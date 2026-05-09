@@ -2,9 +2,13 @@ package com.mistyislet.app.core.network
 
 import com.mistyislet.app.core.storage.TokenStore
 import com.mistyislet.app.data.api.AuthApi
+import com.mistyislet.app.domain.model.MagicLinkRequest
+import com.mistyislet.app.domain.model.MagicLinkResponse
+import com.mistyislet.app.domain.model.OrgAuthConfig
 import com.mistyislet.app.domain.model.RefreshRequest
 import com.mistyislet.app.domain.model.RefreshResponse
 import com.mistyislet.app.domain.model.RestorePasswordRequest
+import com.mistyislet.app.domain.model.VerifyMagicLinkRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -99,6 +103,9 @@ class AuthInterceptorTest {
                     expiresIn = 3600,
                 )
             }
+            override suspend fun orgLookup(domain: String) = throw UnsupportedOperationException()
+            override suspend fun requestMagicLink(request: MagicLinkRequest) = throw UnsupportedOperationException()
+            override suspend fun verifyMagicLink(request: VerifyMagicLinkRequest) = throw UnsupportedOperationException()
         }
 
         val client = buildClient(fakeAuth)
@@ -134,6 +141,9 @@ class AuthInterceptorTest {
                     expiresIn = 3600,
                 )
             }
+            override suspend fun orgLookup(domain: String) = throw UnsupportedOperationException()
+            override suspend fun requestMagicLink(request: MagicLinkRequest) = throw UnsupportedOperationException()
+            override suspend fun verifyMagicLink(request: VerifyMagicLinkRequest) = throw UnsupportedOperationException()
         }
 
         // All requests return 401, then 200 on retry
@@ -183,6 +193,9 @@ class AuthInterceptorTest {
             override suspend fun refresh(request: RefreshRequest): RefreshResponse {
                 throw RuntimeException("refresh failed")
             }
+            override suspend fun orgLookup(domain: String) = throw UnsupportedOperationException()
+            override suspend fun requestMagicLink(request: MagicLinkRequest) = throw UnsupportedOperationException()
+            override suspend fun verifyMagicLink(request: VerifyMagicLinkRequest) = throw UnsupportedOperationException()
         }
 
         val client = buildClient(fakeAuth)
@@ -233,6 +246,9 @@ class AuthInterceptorTest {
                     expiresIn = 3600,
                 )
             }
+            override suspend fun orgLookup(domain: String) = throw UnsupportedOperationException()
+            override suspend fun requestMagicLink(request: MagicLinkRequest) = throw UnsupportedOperationException()
+            override suspend fun verifyMagicLink(request: VerifyMagicLinkRequest) = throw UnsupportedOperationException()
         }
 
         // Simulate: another thread already refreshed the token before we get the mutex
@@ -255,6 +271,9 @@ class AuthInterceptorTest {
         override suspend fun refresh(request: RefreshRequest): RefreshResponse =
             throw UnsupportedOperationException()
         override suspend fun restorePassword(request: RestorePasswordRequest) = Unit
+        override suspend fun orgLookup(domain: String) = throw UnsupportedOperationException()
+        override suspend fun requestMagicLink(request: MagicLinkRequest) = throw UnsupportedOperationException()
+        override suspend fun verifyMagicLink(request: VerifyMagicLinkRequest) = throw UnsupportedOperationException()
     }
 }
 
