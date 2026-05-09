@@ -77,7 +77,6 @@ import com.mistyislet.app.ui.theme.Success
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
-    onNavigateToCredentials: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -120,7 +119,7 @@ fun ProfileScreen(
         }
 
         when (selectedTab) {
-            0 -> MainSettingsTab(uiState, viewModel, onNavigateToCredentials)
+            0 -> MainSettingsTab(uiState, viewModel)
             1 -> LoginsTab(uiState, viewModel)
             2 -> HelpTab(viewModel)
         }
@@ -131,7 +130,6 @@ fun ProfileScreen(
 private fun MainSettingsTab(
     uiState: ProfileUiState,
     viewModel: ProfileViewModel,
-    onNavigateToCredentials: () -> Unit,
 ) {
     var showChangePassword by remember { mutableStateOf(false) }
     val surfaceColor = MaterialTheme.colorScheme.surface
@@ -200,14 +198,6 @@ private fun MainSettingsTab(
             colors = CardDefaults.cardColors(containerColor = surfaceColor),
         ) {
             Column {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.profile_credentials)) },
-                    leadingContent = { Icon(Icons.Default.Key, contentDescription = null) },
-                    modifier = Modifier.clickable(onClick = onNavigateToCredentials),
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_password)) },
                     leadingContent = { Icon(Icons.Default.Key, contentDescription = null) },

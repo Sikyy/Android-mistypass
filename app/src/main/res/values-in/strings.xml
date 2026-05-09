@@ -9,6 +9,7 @@
     <string name="nav_visitors">Pengunjung</string>
     <string name="nav_credentials">Kredensial</string>
     <string name="nav_dashboard">Dasbor</string>
+    <string name="nav_pass">Pass</string>
     <string name="nav_profile">Profil</string>
 
     <!-- Login -->

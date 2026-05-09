@@ -2,11 +2,10 @@ package com.mistyislet.app.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.DoorFront
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -27,22 +26,22 @@ import com.mistyislet.app.R
 import com.mistyislet.app.data.repository.AuthRepository
 import com.mistyislet.app.ui.credentials.BindCardScreen
 import com.mistyislet.app.ui.credentials.CredentialsScreen
+import com.mistyislet.app.ui.dashboard.DashboardScreen
 import com.mistyislet.app.ui.doors.DoorsScreen
 import com.mistyislet.app.ui.history.HistoryScreen
 import com.mistyislet.app.ui.login.LoginScreen
 import com.mistyislet.app.ui.profile.ProfileScreen
-import com.mistyislet.app.ui.scanner.ScannerScreen
 import com.mistyislet.app.ui.visitors.VisitorsScreen
 
 object Routes {
     const val LOGIN = "login"
     const val MAIN = "main"
     const val DOORS = "doors"
-    const val SCANNER = "scanner"
+    const val PASS = "pass"
+    const val DASHBOARD = "dashboard"
     const val HISTORY = "history"
     const val VISITORS = "visitors"
     const val PROFILE = "profile"
-    const val CREDENTIALS = "credentials"
     const val BIND_CARD = "bind_card"
 }
 
@@ -54,9 +53,8 @@ data class BottomNavItem(
 
 val bottomNavItems = listOf(
     BottomNavItem(Routes.DOORS, Icons.Default.DoorFront, R.string.nav_doors),
-    BottomNavItem(Routes.SCANNER, Icons.Default.QrCodeScanner, R.string.nav_scanner),
-    BottomNavItem(Routes.HISTORY, Icons.Default.Schedule, R.string.nav_history),
-    BottomNavItem(Routes.VISITORS, Icons.Default.PersonAdd, R.string.nav_visitors),
+    BottomNavItem(Routes.PASS, Icons.Default.Wallet, R.string.nav_pass),
+    BottomNavItem(Routes.DASHBOARD, Icons.Default.Dashboard, R.string.nav_dashboard),
     BottomNavItem(Routes.PROFILE, Icons.Default.Person, R.string.nav_profile),
 )
 
@@ -124,21 +122,21 @@ private fun MainScreen(onLogout: () -> Unit) {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Routes.DOORS) { DoorsScreen() }
-            composable(Routes.SCANNER) { ScannerScreen() }
-            composable(Routes.HISTORY) { HistoryScreen() }
-            composable(Routes.VISITORS) { VisitorsScreen() }
-            composable(Routes.PROFILE) {
-                ProfileScreen(
-                    onLogout = onLogout,
-                    onNavigateToCredentials = {
-                        navController.navigate(Routes.CREDENTIALS)
-                    },
-                )
-            }
-            composable(Routes.CREDENTIALS) {
+            composable(Routes.PASS) {
                 CredentialsScreen(
                     onNavigateToBindCard = { navController.navigate(Routes.BIND_CARD) },
                 )
+            }
+            composable(Routes.DASHBOARD) {
+                DashboardScreen(
+                    onNavigateToHistory = { navController.navigate(Routes.HISTORY) },
+                    onNavigateToVisitors = { navController.navigate(Routes.VISITORS) },
+                )
+            }
+            composable(Routes.HISTORY) { HistoryScreen() }
+            composable(Routes.VISITORS) { VisitorsScreen() }
+            composable(Routes.PROFILE) {
+                ProfileScreen(onLogout = onLogout)
             }
             composable(Routes.BIND_CARD) {
                 BindCardScreen(onBindSuccess = { navController.popBackStack() })

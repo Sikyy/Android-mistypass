@@ -9,6 +9,7 @@
     <string name="nav_visitors">Visitors</string>
     <string name="nav_credentials">Credentials</string>
     <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_pass">Pass</string>
     <string name="nav_profile">Profile</string>
 
     <!-- Login -->

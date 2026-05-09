@@ -9,6 +9,7 @@
     <string name="nav_visitors">访客</string>
     <string name="nav_credentials">凭证</string>
     <string name="nav_dashboard">面板</string>
+    <string name="nav_pass">通行证</string>
     <string name="nav_profile">我的</string>
 
     <!-- Login -->
