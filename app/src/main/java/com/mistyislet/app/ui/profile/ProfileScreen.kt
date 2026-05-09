@@ -160,11 +160,10 @@ private fun MainSettingsTab(
                             .background(MaterialTheme.colorScheme.primary),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                        Text(
+                            text = userInitials(uiState.user.name),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
@@ -585,5 +584,15 @@ private fun AboutRow(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+private fun userInitials(name: String): String {
+    val trimmed = name.trim()
+    if (trimmed.isEmpty()) return "?"
+    val parts = trimmed.split(Regex("\\s+")).filter { it.isNotEmpty() }
+    return when {
+        parts.size >= 2 -> "${parts[0].first().uppercaseChar()}${parts[1].first().uppercaseChar()}"
+        else -> parts[0].take(2).uppercase()
     }
 }
