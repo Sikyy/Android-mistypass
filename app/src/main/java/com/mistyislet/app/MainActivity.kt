@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.mistyislet.app.core.auth.BiometricHelper
 import com.mistyislet.app.core.deeplink.DeepLinkHandler
 import com.mistyislet.app.data.repository.AuthRepository
+import com.mistyislet.app.data.repository.MobileCredentialRepository
 import com.mistyislet.app.ui.navigation.AppNavigation
 import com.mistyislet.app.ui.profile.ProfileViewModel
 import com.mistyislet.app.ui.theme.MistyisletTheme
@@ -36,6 +37,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var biometricHelper: BiometricHelper
+
+    @Inject
+    lateinit var mobileCredentialRepository: MobileCredentialRepository
 
     @Inject
     lateinit var dataStore: DataStore<Preferences>
@@ -83,6 +87,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
         handleAuthDeepLink(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            if (authRepository.isLoggedIn()) {
+                mobileCredentialRepository.renewIfNeeded()
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

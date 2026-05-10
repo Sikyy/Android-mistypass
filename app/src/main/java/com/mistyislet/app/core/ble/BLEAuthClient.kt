@@ -19,8 +19,8 @@ import javax.inject.Singleton
  * 1. TCP Simulator (debug): connects to Gateway via TCP (same protocol as BLE GATT)
  * 2. Real BLE GATT (production): connects via Bluetooth Low Energy using Nordic library
  *
- * Protocol (identical for both transports):
- *   1. Read CHALLENGE:     48 bytes [32 nonce][8 issued_at][8 expires_at]
+ * Protocol v2 (identical for both transports):
+ *   1. Read CHALLENGE:     52 bytes [32 nonce][8 issued_at][8 expires_at][4 gateway_id]
  *   2. Write AUTH_RESPONSE: [1 byte userId_len][userId bytes][signature bytes]
  *   3. Read AUTH_RESULT:   [1 byte code][reason string]
  */
@@ -75,7 +75,7 @@ class BLEAuthClient @Inject constructor(
             val input = socket.getInputStream()
             val output = socket.getOutputStream()
 
-            // Step 1: read 48-byte challenge
+            // Step 1: read 52-byte v2 challenge, validate expiry
             val nonce = readChallenge(input) ?: return AuthResult.Error("Failed to read challenge")
 
             // Step 2: sign nonce with Keystore private key
@@ -99,6 +99,12 @@ class BLEAuthClient @Inject constructor(
             if (n <= 0) return null
             read += n
         }
+        // Validate challenge expiry (bytes 40..48 = expires_at big-endian uint64)
+        var expiresAtUnix: Long = 0
+        for (i in 40 until 48) {
+            expiresAtUnix = (expiresAtUnix shl 8) or (buf[i].toLong() and 0xFF)
+        }
+        if (System.currentTimeMillis() > expiresAtUnix * 1000) return null
         // Return only the 32-byte nonce (first part of the challenge)
         return buf.copyOfRange(0, 32)
     }
