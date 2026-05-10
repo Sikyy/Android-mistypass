@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,6 +50,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.R
+import com.mistyislet.app.core.network.AlarmStreamManager
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.domain.model.Alarm
@@ -60,6 +62,7 @@ import com.mistyislet.app.ui.admin.components.SeverityDot
 import com.mistyislet.app.ui.admin.components.StatusBadge
 import com.mistyislet.app.ui.admin.components.StatusSummaryRow
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -68,6 +71,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminAlarmsViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
+    private val alarmStreamManager: AlarmStreamManager,
 ) : ViewModel() {
     private val _alarms = MutableStateFlow<List<Alarm>>(emptyList())
     val alarms: StateFlow<List<Alarm>> = _alarms
@@ -81,9 +85,16 @@ class AdminAlarmsViewModel @Inject constructor(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+    private val _isStreaming = MutableStateFlow(false)
+    val isStreaming: StateFlow<Boolean> = _isStreaming
+
+    private var streamJob: Job? = null
 
     init {
-        viewModelScope.launch { loadData() }
+        viewModelScope.launch {
+            loadData()
+            startStreaming()
+        }
     }
 
     fun refresh() {
@@ -99,6 +110,35 @@ class AdminAlarmsViewModel @Inject constructor(
             adminRepository.updateAlarmStatus(alarmId, status)
             loadData()
         }
+    }
+
+    fun startStreaming() {
+        if (streamJob?.isActive == true) return
+        streamJob = viewModelScope.launch {
+            _isStreaming.value = true
+            alarmStreamManager.alarmEvents().collect { alarm ->
+                val current = _alarms.value.toMutableList()
+                val index = current.indexOfFirst { it.id == alarm.id }
+                if (index >= 0) {
+                    current[index] = alarm
+                } else {
+                    current.add(0, alarm)
+                }
+                _alarms.value = current
+            }
+            _isStreaming.value = false
+        }
+    }
+
+    fun stopStreaming() {
+        streamJob?.cancel()
+        streamJob = null
+        _isStreaming.value = false
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopStreaming()
     }
 
     private suspend fun loadData() {
@@ -130,7 +170,13 @@ fun AdminAlarmsScreen(
     val calendar by viewModel.calendar.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val isStreaming by viewModel.isStreaming.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+
+    DisposableEffect(Unit) {
+        viewModel.startStreaming()
+        onDispose { viewModel.stopStreaming() }
+    }
 
     val tabs = listOf(
         stringResource(R.string.alarm_open),
@@ -153,7 +199,7 @@ fun AdminAlarmsScreen(
                     }
                 },
                 actions = {
-                    if (openAlarms.isNotEmpty()) {
+                    if (isStreaming) {
                         Row(
                             modifier = Modifier
                                 .padding(end = 12.dp)
