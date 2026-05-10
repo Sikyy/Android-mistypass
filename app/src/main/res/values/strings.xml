@@ -448,6 +448,17 @@
     <string name="settings_login_logout">Logout</string>
     <string name="save">Save</string>
 
+    <!-- Primary Device -->
+    <string name="settings_primary_device">Primary Device</string>
+    <string name="settings_primary_device_subtitle">Register this device as your primary access device.</string>
+    <string name="settings_primary_device_active">This device is set as primary.</string>
+    <string name="settings_set_primary">Set Primary</string>
+
+    <!-- Admin Credential Lifecycle -->
+    <string name="admin_suspend">Suspend</string>
+    <string name="admin_activate">Activate</string>
+    <string name="admin_confirm_suspend">Are you sure you want to suspend this credential? The user will lose access until it is reactivated.</string>
+
     <!-- Geofence -->
     <string name="geofence_toggle">Geofence Auto-Unlock</string>
     <string name="geofence_description">Automatically prepare doors for unlock when you approach your building.</string>

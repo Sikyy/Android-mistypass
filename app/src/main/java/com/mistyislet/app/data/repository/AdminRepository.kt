@@ -240,6 +240,12 @@ class AdminRepository @Inject constructor(
     suspend fun revokeCredential(placeId: String, credentialId: String): ApiResult<Unit> =
         safeApiCall { adminApi.revokeCredential(placeId, credentialId) }
 
+    suspend fun suspendCredential(placeId: String, credentialId: String): ApiResult<Unit> =
+        safeApiCall { adminApi.suspendCredential(placeId, credentialId) }
+
+    suspend fun activateCredential(placeId: String, credentialId: String): ApiResult<Unit> =
+        safeApiCall { adminApi.activateCredential(placeId, credentialId) }
+
     // Camera streaming
     suspend fun getCameraStream(cameraId: String): ApiResult<CameraVideoLink> =
         safeApiCall { adminApi.getCameraStream(cameraId) }

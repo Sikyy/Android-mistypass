@@ -444,6 +444,17 @@
     <string name="settings_login_logout">Keluar</string>
     <string name="save">Simpan</string>
 
+    <!-- Primary Device -->
+    <string name="settings_primary_device">Perangkat Utama</string>
+    <string name="settings_primary_device_subtitle">Daftarkan perangkat ini sebagai perangkat akses utama Anda.</string>
+    <string name="settings_primary_device_active">Perangkat ini telah ditetapkan sebagai utama.</string>
+    <string name="settings_set_primary">Tetapkan Utama</string>
+
+    <!-- Admin Credential Lifecycle -->
+    <string name="admin_suspend">Tangguhkan</string>
+    <string name="admin_activate">Aktifkan</string>
+    <string name="admin_confirm_suspend">Apakah Anda yakin ingin menangguhkan kredensial ini? Pengguna tidak dapat mengakses sampai diaktifkan kembali.</string>
+
     <!-- Geofence -->
     <string name="geofence_toggle">Buka Kunci Otomatis Geofence</string>
     <string name="geofence_description">Menyiapkan kunci pintu untuk dibuka secara otomatis saat Anda mendekati gedung.</string>

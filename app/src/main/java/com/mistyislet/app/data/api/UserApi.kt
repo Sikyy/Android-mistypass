@@ -13,6 +13,12 @@ import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
 
+@kotlinx.serialization.Serializable
+data class SetPrimaryDeviceResponse(
+    val status: String = "",
+    @kotlinx.serialization.SerialName("device_id") val deviceId: String = "",
+)
+
 interface UserApi {
 
     @GET("app/me")
@@ -30,4 +36,7 @@ interface UserApi {
     @Multipart
     @POST("app/me/avatar")
     suspend fun uploadAvatar(@Part file: MultipartBody.Part): UserInfo
+
+    @POST("app/me/primary-device")
+    suspend fun setPrimaryDevice(): SetPrimaryDeviceResponse
 }

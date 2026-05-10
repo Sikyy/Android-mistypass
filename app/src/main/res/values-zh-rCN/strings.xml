@@ -444,6 +444,17 @@
     <string name="settings_login_logout">登出</string>
     <string name="save">保存</string>
 
+    <!-- Primary Device -->
+    <string name="settings_primary_device">主设备</string>
+    <string name="settings_primary_device_subtitle">将此设备注册为主要门禁设备。</string>
+    <string name="settings_primary_device_active">此设备已设为主设备。</string>
+    <string name="settings_set_primary">设为主设备</string>
+
+    <!-- Admin Credential Lifecycle -->
+    <string name="admin_suspend">暂停</string>
+    <string name="admin_activate">激活</string>
+    <string name="admin_confirm_suspend">确定要暂停此凭证吗？用户将在重新激活之前无法使用。</string>
+
     <!-- Geofence -->
     <string name="geofence_toggle">地理围栏自动解锁</string>
     <string name="geofence_description">当您接近大楼时自动准备门锁解锁。</string>

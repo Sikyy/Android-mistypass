@@ -13,7 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.AlertDialog
@@ -25,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -117,6 +120,22 @@ class AdminDigitalCredentialsViewModel @Inject constructor(
         }
     }
 
+    fun suspendCredential(credentialId: String) {
+        val pid = placeId ?: return
+        viewModelScope.launch {
+            adminRepository.suspendCredential(pid, credentialId)
+            loadData()
+        }
+    }
+
+    fun activateCredential(credentialId: String) {
+        val pid = placeId ?: return
+        viewModelScope.launch {
+            adminRepository.activateCredential(pid, credentialId)
+            loadData()
+        }
+    }
+
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getCredentials(pid)) {
@@ -154,6 +173,7 @@ fun AdminDigitalCredentialsScreen(
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var credToRevoke by remember { mutableStateOf<AdminDigitalCredential?>(null) }
+    var credToSuspend by remember { mutableStateOf<AdminDigitalCredential?>(null) }
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_digital_credentials),
@@ -187,6 +207,11 @@ fun AdminDigitalCredentialsScreen(
             CredentialGroupDetailSheet(
                 group = group,
                 onRevoke = { cred -> credToRevoke = cred },
+                onSuspend = { cred -> credToSuspend = cred },
+                onActivate = { cred ->
+                    viewModel.activateCredential(cred.id)
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { selectedGroup = null }
+                },
             )
         }
     }
@@ -208,12 +233,32 @@ fun AdminDigitalCredentialsScreen(
             },
         )
     }
+
+    credToSuspend?.let { cred ->
+        AlertDialog(
+            onDismissRequest = { credToSuspend = null },
+            title = { Text(stringResource(R.string.admin_suspend)) },
+            text = { Text(stringResource(R.string.admin_confirm_suspend)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.suspendCredential(cred.id)
+                    credToSuspend = null
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { selectedGroup = null }
+                }) { Text(stringResource(R.string.admin_suspend), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { credToSuspend = null }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
 }
 
 @Composable
 private fun CredentialGroupDetailSheet(
     group: CredentialUserGroup,
     onRevoke: (AdminDigitalCredential) -> Unit,
+    onSuspend: (AdminDigitalCredential) -> Unit,
+    onActivate: (AdminDigitalCredential) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -237,14 +282,27 @@ private fun CredentialGroupDetailSheet(
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(group.credentials, key = { it.id }) { cred ->
-                CredentialDetailRow(credential = cred, onRevoke = { onRevoke(cred) })
+                CredentialDetailRow(
+                    credential = cred,
+                    onRevoke = { onRevoke(cred) },
+                    onSuspend = { onSuspend(cred) },
+                    onActivate = { onActivate(cred) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CredentialDetailRow(credential: AdminDigitalCredential, onRevoke: () -> Unit) {
+private fun CredentialDetailRow(
+    credential: AdminDigitalCredential,
+    onRevoke: () -> Unit,
+    onSuspend: () -> Unit,
+    onActivate: () -> Unit,
+) {
+    val isSuspended = credential.status.equals("suspended", ignoreCase = true)
+    val isRevoked = credential.status.equals("revoked", ignoreCase = true)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
@@ -277,26 +335,45 @@ private fun CredentialDetailRow(credential: AdminDigitalCredential, onRevoke: ()
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    if (credential.usageCount > 0) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.admin_usage_count, credential.usageCount),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    credential.issuedAt?.let {
-                        Text(
-                            text = stringResource(R.string.admin_issued, it.take(10)),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+            Column {
+                if (credential.usageCount > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.admin_usage_count, credential.usageCount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-                if (credential.isActive) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                credential.issuedAt?.let {
+                    Text(
+                        text = stringResource(R.string.admin_issued, it.take(10)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (!isRevoked) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isSuspended) {
+                        OutlinedButton(onClick = onActivate) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.admin_activate))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    } else {
+                        OutlinedButton(onClick = onSuspend) {
+                            Icon(Icons.Default.Pause, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.admin_suspend))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
                     Button(
                         onClick = onRevoke,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),

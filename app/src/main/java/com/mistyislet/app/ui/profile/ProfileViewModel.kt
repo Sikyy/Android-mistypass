@@ -48,6 +48,8 @@ data class ProfileUiState(
     val passwordChangeSuccess: Boolean = false,
     val passwordChangeError: String? = null,
     val errorMessage: String? = null,
+    val isPrimaryDeviceSet: Boolean = false,
+    val isSettingPrimaryDevice: Boolean = false,
 )
 
 @HiltViewModel
@@ -191,6 +193,23 @@ class ProfileViewModel @Inject constructor(
             when (val result = safeApiCall { userApi.uploadAvatar(part) }) {
                 is ApiResult.Success -> _uiState.value = _uiState.value.copy(user = result.data)
                 else -> {}
+            }
+        }
+    }
+
+    fun setPrimaryDevice() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSettingPrimaryDevice = true)
+            when (safeApiCall { userApi.setPrimaryDevice() }) {
+                is ApiResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isPrimaryDeviceSet = true,
+                        isSettingPrimaryDevice = false,
+                    )
+                }
+                else -> {
+                    _uiState.value = _uiState.value.copy(isSettingPrimaryDevice = false)
+                }
             }
         }
     }
