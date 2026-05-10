@@ -129,6 +129,9 @@ class AdminRepository @Inject constructor(
     suspend fun deleteGroup(placeId: String, groupId: String): ApiResult<Unit> =
         safeApiCall { adminApi.deleteGroup(placeId, groupId) }
 
+    suspend fun updateGroup(placeId: String, groupId: String, name: String, description: String?): ApiResult<AdminGroup> =
+        safeApiCall { adminApi.updateGroup(placeId, groupId, CreateGroupRequest(name, description)) }
+
     // Group members
     suspend fun getGroupMembers(placeId: String, groupId: String): ApiResult<List<GroupMember>> =
         safeApiCall { adminApi.listGroupMembers(placeId, groupId).items }
