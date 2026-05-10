@@ -482,4 +482,8 @@
     <string name="resend">Kirim ulang</string>
     <string name="back_to_login">Kembali ke login</string>
     <string name="sso_redirecting">Mengalihkan ke login %1$s…</string>
+
+    <!-- NFC HCE -->
+    <string name="hce_service_description">Buka kunci pintu NFC Mistyislet</string>
+    <string name="hce_aid_group_description">Kredensial akses Mistyislet</string>
 </resources>

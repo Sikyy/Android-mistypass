@@ -30,7 +30,7 @@ class BLEAuthClient @Inject constructor(
     private val keystoreManager: KeystoreManager,
 ) {
     companion object {
-        private const val CHALLENGE_SIZE = 48
+        private const val CHALLENGE_SIZE = 52 // v2: 32B nonce + 8B issued + 8B expires + 4B gateway_id
         private const val RESULT_GRANTED: Byte = 0x01
         private const val TIMEOUT_MS = 10_000L
     }
@@ -79,7 +79,7 @@ class BLEAuthClient @Inject constructor(
             val nonce = readChallenge(input) ?: return AuthResult.Error("Failed to read challenge")
 
             // Step 2: sign nonce with Keystore private key
-            val signature = keystoreManager.signChallenge(nonce, userId)
+            val signature = keystoreManager.signChallengeV2(nonce, userId, "BLE")
 
             // Step 3: send auth response
             sendAuthResponse(output, userId, signature)

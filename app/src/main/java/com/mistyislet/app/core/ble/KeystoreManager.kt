@@ -6,6 +6,7 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.security.PrivateKey
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import javax.inject.Inject
@@ -86,6 +87,29 @@ class KeystoreManager @Inject constructor() {
         val message = nonce + userId.toByteArray(Charsets.UTF_8)
         return Signature.getInstance(SIGNATURE_ALGORITHM).run {
             initSign(entry.privateKey)
+            update(message)
+            sign()
+        }
+    }
+
+    /**
+     * V2 signing: SHA256(nonce || userId || transportTag)
+     * Transport tag binds signature to a specific channel ("BLE" or "NFC_HCE").
+     */
+    fun signChallengeV2(nonce: ByteArray, userId: String, transportTag: String): ByteArray {
+        require(nonce.size == 32) { "Nonce must be 32 bytes" }
+        require(transportTag == "BLE" || transportTag == "NFC_HCE") { "Invalid transport tag" }
+
+        val userIdBytes = userId.toByteArray(Charsets.UTF_8)
+        val tagBytes = transportTag.toByteArray(Charsets.UTF_8)
+        val message = nonce + userIdBytes + tagBytes
+
+        val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
+        val privateKey = keyStore.getKey(KEY_ALIAS, null) as? PrivateKey
+            ?: throw IllegalStateException("BLE credential key not found")
+
+        return Signature.getInstance(SIGNATURE_ALGORITHM).run {
+            initSign(privateKey)
             update(message)
             sign()
         }

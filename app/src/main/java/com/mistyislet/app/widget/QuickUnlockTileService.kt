@@ -1,5 +1,6 @@
 package com.mistyislet.app.widget
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.service.quicksettings.Tile
@@ -58,6 +59,7 @@ class QuickUnlockTileService : TileService() {
             ))
         } else {
             @Suppress("DEPRECATION")
+            @SuppressLint("StartActivityAndCollapseDeprecated")
             startActivityAndCollapse(intent)
         }
     }
