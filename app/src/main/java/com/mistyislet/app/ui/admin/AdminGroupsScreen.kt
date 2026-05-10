@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DoorFront
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -116,6 +117,14 @@ class AdminGroupsViewModel @Inject constructor(
         val pid = placeId ?: return
         viewModelScope.launch {
             adminRepository.deleteGroup(pid, groupId)
+            loadData()
+        }
+    }
+
+    fun updateGroup(groupId: String, name: String, description: String?) {
+        val pid = placeId ?: return
+        viewModelScope.launch {
+            adminRepository.updateGroup(pid, groupId, name, description)
             loadData()
         }
     }
@@ -299,6 +308,9 @@ private fun GroupDetailSheet(
     var showAddMember by remember { mutableStateOf(false) }
     var addMemberEmail by remember { mutableStateOf("") }
     var showAddDoor by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf(group.name) }
+    var editDescription by remember { mutableStateOf(group.description ?: "") }
     val tabs = listOf(
         stringResource(R.string.admin_members),
         stringResource(R.string.admin_doors),
@@ -332,6 +344,13 @@ private fun GroupDetailSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+            IconButton(onClick = {
+                editName = group.name
+                editDescription = group.description ?: ""
+                showEditDialog = true
+            }) {
+                Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
             IconButton(onClick = onDelete) {
                 Icon(
@@ -433,6 +452,44 @@ private fun GroupDetailSheet(
             },
             confirmButton = {
                 TextButton(onClick = { showAddDoor = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text(stringResource(R.string.admin_edit)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text(stringResource(R.string.admin_name)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = editDescription,
+                        onValueChange = { editDescription = it },
+                        label = { Text(stringResource(R.string.admin_description)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.updateGroup(group.id, editName.trim(), editDescription.trim().ifBlank { null })
+                        showEditDialog = false
+                    },
+                    enabled = editName.isNotBlank(),
+                ) { Text(stringResource(R.string.admin_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text(stringResource(R.string.cancel)) }
             },
         )
     }

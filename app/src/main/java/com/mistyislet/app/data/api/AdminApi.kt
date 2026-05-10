@@ -161,6 +161,13 @@ interface AdminApi {
         @Path("groupId") groupId: String,
     )
 
+    @PATCH("app/places/{placeId}/groups/{groupId}")
+    suspend fun updateGroup(
+        @Path("placeId") placeId: String,
+        @Path("groupId") groupId: String,
+        @Body request: CreateGroupRequest,
+    ): AdminGroup
+
     // Group members
     @GET("app/places/{placeId}/groups/{groupId}/members")
     suspend fun listGroupMembers(
