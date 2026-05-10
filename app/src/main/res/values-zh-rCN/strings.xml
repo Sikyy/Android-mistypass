@@ -462,6 +462,10 @@
     <string name="geofence_notification_body">点击解锁</string>
 
     <!-- Common -->
+    <!-- Widgets -->
+    <string name="widget_quick_unlock_description">快速解锁 — 点击打开最近的门禁。</string>
+    <string name="widget_quick_unlock_tile">快速解锁</string>
+
     <string name="loading">加载中…</string>
     <string name="retry">重试</string>
     <string name="error">错误</string>

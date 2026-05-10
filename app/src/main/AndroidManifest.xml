@@ -87,6 +87,28 @@
         </receiver>
 
         <receiver
+            android:name=".widget.QuickUnlockWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_unlock_widget_info" />
+        </receiver>
+
+        <service
+            android:name=".widget.QuickUnlockTileService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/widget_quick_unlock_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <receiver
             android:name=".core.geofence.GeofenceBroadcastReceiver"
             android:exported="false" />
     </application>

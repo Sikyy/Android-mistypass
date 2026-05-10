@@ -475,6 +475,10 @@
     <string name="back_to_login">Back to login</string>
     <string name="sso_redirecting">Redirecting to %1$s login…</string>
 
+    <!-- Widgets -->
+    <string name="widget_quick_unlock_description">Quick unlock — tap to open the nearest door.</string>
+    <string name="widget_quick_unlock_tile">Quick Unlock</string>
+
     <!-- Common -->
     <string name="loading">Loading…</string>
     <string name="retry">Retry</string>
