@@ -486,4 +486,8 @@
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="network_error">Network error. Please check your connection.</string>
+
+    <!-- NFC HCE -->
+    <string name="hce_service_description">Mistyislet NFC door unlock</string>
+    <string name="hce_aid_group_description">Mistyislet access credential</string>
 </resources>

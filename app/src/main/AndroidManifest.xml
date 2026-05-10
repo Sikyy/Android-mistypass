@@ -18,6 +18,7 @@
     <!-- NFC -->
     <uses-permission android:name="android.permission.NFC" />
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
+    <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
 
     <!-- Foreground service for BLE scanning -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -111,6 +112,18 @@
         <receiver
             android:name=".core.geofence.GeofenceBroadcastReceiver"
             android:exported="false" />
+
+        <service
+            android:name=".core.nfc.HceService"
+            android:exported="true"
+            android:permission="android.permission.BIND_NFC_SERVICE">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.nfc.cardemulation.host_apdu_service"
+                android:resource="@xml/hce_apdu_service" />
+        </service>
     </application>
 
 </manifest>
