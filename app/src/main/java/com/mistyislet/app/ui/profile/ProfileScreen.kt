@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.PhonelinkSetup
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -351,12 +352,35 @@ private fun MainSettingsTab(
             }
         }
 
-        // Geofence settings
+        // Primary device + Geofence settings
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = surfaceColor),
         ) {
             Column {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_primary_device)) },
+                    supportingContent = {
+                        Text(
+                            if (uiState.isPrimaryDeviceSet) stringResource(R.string.settings_primary_device_active)
+                            else stringResource(R.string.settings_primary_device_subtitle),
+                        )
+                    },
+                    leadingContent = { Icon(Icons.Default.PhonelinkSetup, contentDescription = null) },
+                    trailingContent = {
+                        if (uiState.isSettingPrimaryDevice) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        } else if (uiState.isPrimaryDeviceSet) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Success)
+                        } else {
+                            OutlinedButton(onClick = viewModel::setPrimaryDevice) {
+                                Text(stringResource(R.string.settings_set_primary))
+                            }
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.geofence_toggle)) },
                     supportingContent = { Text(stringResource(R.string.geofence_description)) },

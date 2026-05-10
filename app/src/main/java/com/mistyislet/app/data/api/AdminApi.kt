@@ -361,6 +361,18 @@ interface AdminApi {
         @Path("credentialId") credentialId: String,
     )
 
+    @POST("app/places/{placeId}/credentials/{credentialId}/suspend")
+    suspend fun suspendCredential(
+        @Path("placeId") placeId: String,
+        @Path("credentialId") credentialId: String,
+    )
+
+    @POST("app/places/{placeId}/credentials/{credentialId}/activate")
+    suspend fun activateCredential(
+        @Path("placeId") placeId: String,
+        @Path("credentialId") credentialId: String,
+    )
+
     // Camera streaming
     @GET("app/cameras/{cameraId}/video-link")
     suspend fun getCameraStream(@Path("cameraId") cameraId: String): CameraVideoLink
