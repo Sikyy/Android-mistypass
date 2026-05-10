@@ -81,7 +81,7 @@ Offset  Size       Field
 1+len   variable   signature (ECDSA ASN.1 DER, typically 70-72 bytes)
 ```
 
-Maximum total size: 1 + 255 + 72 = 328 bytes (well within NFC and BLE MTU limits).
+Maximum total size: 1 + 255 + 72 = 328 bytes. However, ISO-DEP with `Le=0x00` limits responses to 256 bytes. Since userId is a UUID (36 bytes), actual responses are ~111 bytes — well within the limit. **Implementation must enforce `userId_len <= 180` bytes** (assertion) to guarantee responses stay under 256 bytes without requiring extended APDU.
 
 ### 1.4 Auth Result Format
 
@@ -239,7 +239,25 @@ class HceService : HostApduService() {
 </host-apdu-service>
 ```
 
-`requireDeviceUnlock` is `false` by default (single-factor). When the user enables 2FA in settings, the app sets `requireDeviceUnlock="true"` dynamically via `CardEmulation.setPreferredService()` and Keystore's `setUserAuthenticationRequired(true)`.
+`requireDeviceUnlock` is permanently `false` in XML — this is a static attribute and cannot be changed at runtime.
+
+**2FA is implemented entirely through Android Keystore**, not the XML attribute:
+
+- **Single-factor (default):** Keystore key generated with `setUserAuthenticationRequired(false)`. HceService signs freely, NFC tap works even with locked screen.
+- **2FA enabled:** User toggles 2FA in settings → app regenerates the Keystore key with `setUserAuthenticationRequired(true)` and `setUserAuthenticationValidityDurationSeconds(-1)` (require auth on every sign). The key is re-registered with the backend (new public key).
+- **HceService behavior with 2FA:** The APDU is always received (XML allows it), but `keystoreManager.sign()` throws `UserNotAuthenticatedException` when device is locked. HceService catches this and returns SW `69 82` (security status not satisfied).
+
+```kotlin
+// In HceService.handleAuthenticate():
+try {
+    val sig = keystoreManager.sign(payload)
+    return buildSuccessResponse(userId, sig)
+} catch (e: UserNotAuthenticatedException) {
+    return HceProtocol.SW_SECURITY_NOT_SATISFIED  // 69 82
+}
+```
+
+This means the NFC service is always listening, but signing only succeeds when the device is unlocked (biometric/PIN verified). The user must unlock their phone before tapping the reader — matching Kisi's optional 2FA behavior.
 
 ### 3.5 Credential Store
 
@@ -325,16 +343,30 @@ offline:
 
 ### 4.4 Unified Verification
 
-After any ReaderAdapter returns an AuthResponse, the gateway runs the same verification:
+After any ReaderAdapter returns an AuthResponse, the gateway runs the same verification. **Check order is fast-to-slow: nonce cache → gateway_id → credential lookup → status → expiry → ECDSA verify (most expensive last).**
 
 ```go
 func (g *Gateway) verify(resp *AuthResponse, challenge []byte, transport string) VerifyResult {
+    nonce := challenge[:32]
+
+    // 1. Nonce reuse check (fast, in-memory LRU, prevents replay within 30s window)
+    if g.nonceCache.Contains(nonce) {
+        return VerifyResult{Code: ResultDenied, Reason: "nonce_reuse"}
+    }
+
+    // 2. Gateway ID check (fast, prevents cross-gateway replay)
+    gatewayID := binary.BigEndian.Uint32(challenge[48:52])
+    if gatewayID != g.config.GatewayID {
+        return VerifyResult{Code: ResultDenied, Reason: "gateway_id_mismatch"}
+    }
+
+    // 3. Credential lookup
     cred := g.credentialCache.FindByUserID(resp.UserID)
     if cred == nil {
         return VerifyResult{Code: ResultUnknownUser}
     }
 
-    // Revocation check (hard deny, no grace period)
+    // 4. Revocation check (hard deny, no grace period ever)
     if cred.RevokedAt != nil {
         return VerifyResult{Code: ResultCredentialRevoked}
     }
@@ -342,33 +374,17 @@ func (g *Gateway) verify(resp *AuthResponse, challenge []byte, transport string)
         return VerifyResult{Code: ResultCredentialSuspended}
     }
 
-    // Expiry check (with grace period for natural expiration only)
+    // 5. Expiry check (grace period for natural expiration only)
     if time.Now().Unix() > cred.ExpiresAt {
         elapsed := time.Since(time.Unix(cred.ExpiresAt, 0))
         if elapsed <= g.config.Offline.GracePeriodExpired {
-            // Allow with flag
+            // Allow with grace_period flag (logged in audit)
         } else {
             return VerifyResult{Code: ResultCredentialExpired}
         }
     }
 
-    // Signature verification
-    nonce := challenge[:32]
-    message := append(nonce, []byte(resp.UserID)...)
-    message = append(message, []byte(transport)...)  // "BLE" or "NFC_HCE"
-    hash := sha256.Sum256(message)
-
-    if !verifyECDSA(cred.PublicKeyPEM, hash[:], resp.Signature) {
-        return VerifyResult{Code: ResultInvalidSignature}
-    }
-
-    // Gateway ID check
-    gatewayID := binary.BigEndian.Uint32(challenge[48:52])
-    if gatewayID != g.config.GatewayID {
-        return VerifyResult{Code: ResultDenied, Reason: "gateway_id_mismatch"}
-    }
-
-    // Offline limits check
+    // 6. Offline limits check
     if g.isOffline() {
         if g.offlineDuration() > g.config.Offline.MaxOfflineDuration {
             return VerifyResult{Code: ResultGatewayOfflineLimit}
@@ -378,9 +394,23 @@ func (g *Gateway) verify(resp *AuthResponse, challenge []byte, transport string)
         }
     }
 
+    // 7. ECDSA signature verification (most expensive, last)
+    message := append(nonce, []byte(resp.UserID)...)
+    message = append(message, []byte(transport)...)  // "BLE" or "NFC_HCE"
+    hash := sha256.Sum256(message)
+
+    if !verifyECDSA(cred.PublicKeyPEM, hash[:], resp.Signature) {
+        return VerifyResult{Code: ResultInvalidSignature}
+    }
+
+    // 8. Mark nonce as used (TTL=30s, LRU max 10000 entries)
+    g.nonceCache.Add(nonce, 30*time.Second)
+
     return VerifyResult{Code: ResultGranted}
 }
 ```
+
+**nonceCache** is an in-memory LRU with 30-second TTL per entry and a maximum of 10,000 entries. Memory footprint: ~320KB (32 bytes per nonce × 10,000). Entries auto-evict after TTL, so the cache self-cleans. The nonce is marked as used only AFTER successful verification to avoid locking out legitimate retries on transient failures.
 
 ---
 
@@ -508,9 +538,11 @@ pcsc_scan
 ```
 
 Supported readers:
-- ACS WalletMate 2 (ACR1255U-J1, demo/dev)
-- Any PC/SC compatible contactless reader (generic driver)
+- ACS WalletMate II (ACR1552U, USB CCID, Apple MFi + Google Smart Tap certified, demo/dev)
+- Any PC/SC compatible USB contactless reader (generic CCID driver)
 - TCP simulator (no hardware needed, for development)
+
+Note: ACS ACR1255U-J1 is a *Bluetooth* NFC reader and requires BLE GATT communication, NOT PC/SC. The WalletMate II (ACR1552U) connects via USB and is detected by `pcscd` as a standard CCID device — this is the correct driver path.
 
 ### 7.2 Android Requirements
 
@@ -536,7 +568,7 @@ Supported readers:
 | Cross-transport replay| Transport tag in signature ("BLE" vs "NFC_HCE")     | Exceeds     |
 | Cross-gateway replay  | gateway_id in challenge, verified on receipt          | Exceeds     |
 | NFC relay attack      | 30s window + 4cm physical distance                   | Equivalent  |
-| Token replay          | Random nonce per challenge, single use                | Equivalent  |
+| Token replay          | Random nonce per challenge + nonce cache (30s TTL LRU)| Exceeds     |
 | Phone root/reverse    | TEE/StrongBox, private key not exportable             | Equivalent  |
 | Phone lost            | Cloud revoke -> NATS push -> gateway hard deny        | Equivalent  |
 | Gateway long offline  | 72h hard limit + 100 unlock limit                    | Exceeds     |
