@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -493,7 +494,7 @@ private fun BarcodeStrip(
 }
 
 @Composable
-private fun ExpiryTimer(expiresAt: Instant) {
+private fun ExpiryTimer(expiresAt: Instant, totalSeconds: Int = 30) {
     var remaining by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(expiresAt) {
@@ -504,7 +505,8 @@ private fun ExpiryTimer(expiresAt: Instant) {
         }
     }
 
-    val dotColor = when {
+    val progress = if (totalSeconds > 0) remaining.toFloat() / totalSeconds else 0f
+    val color = when {
         remaining > 15 -> Color(0xFF4CAF50)
         remaining > 5 -> Color(0xFFFFC107)
         else -> Color(0xFFF44336)
@@ -514,18 +516,25 @@ private fun ExpiryTimer(expiresAt: Instant) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(dotColor),
-        )
-        Spacer(modifier = Modifier.width(6.dp))
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp)) {
+            CircularProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier.size(28.dp),
+                color = color,
+                trackColor = CardFg.copy(alpha = 0.1f),
+                strokeWidth = 3.dp,
+            )
+            Text(
+                text = "${remaining}",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = CardFg.copy(alpha = 0.7f),
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "${stringResource(R.string.pass_refreshes_in)} ${remaining}s",
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Normal,
-            ),
+            text = if (remaining > 0) stringResource(R.string.pass_refreshes_in) + " ${remaining}s"
+                   else stringResource(R.string.pass_refreshing),
+            style = MaterialTheme.typography.labelSmall,
             color = CardFg.copy(alpha = 0.7f),
         )
     }

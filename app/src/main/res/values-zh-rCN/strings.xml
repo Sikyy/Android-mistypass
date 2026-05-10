@@ -106,6 +106,7 @@
     <!-- Pass -->
     <string name="pass_title">通行证</string>
     <string name="pass_refreshes_in">刷新倒计时</string>
+    <string name="pass_refreshing">刷新中…</string>
     <string name="pass_present_to_scanner">出示给门禁扫描器</string>
     <string name="pass_enter_at_keypad">在键盘读卡器上输入</string>
     <string name="pass_ble_active">BLE 凭证已激活</string>

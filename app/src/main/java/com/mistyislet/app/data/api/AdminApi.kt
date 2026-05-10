@@ -17,6 +17,7 @@ import com.mistyislet.app.domain.model.AlarmStatusUpdateRequest
 import com.mistyislet.app.domain.model.AnalyticsSummary
 import com.mistyislet.app.domain.model.Booking
 import com.mistyislet.app.domain.model.BookingSpace
+import com.mistyislet.app.domain.model.BookingSpaceStatus
 import com.mistyislet.app.domain.model.AssignAccessRightRequest
 import com.mistyislet.app.domain.model.AssignDoorRequest
 import com.mistyislet.app.domain.model.AssignMemberRequest
@@ -299,6 +300,7 @@ interface AdminApi {
     suspend fun listAlarmCalendar(
         @Query("from") from: String? = null,
         @Query("to") to: String? = null,
+        @Query("timezone") timezone: String? = java.util.TimeZone.getDefault().id,
     ): PaginatedResponse<AlarmCalendarEntry>
 
     // Guest management
@@ -327,6 +329,11 @@ interface AdminApi {
     // Booking spaces & actions
     @GET("app/bookable-spaces")
     suspend fun listBookingSpaces(): PaginatedResponse<BookingSpace>
+
+    @GET("app/bookable-spaces/{spaceId}/status")
+    suspend fun getBookableSpaceStatus(
+        @Path("spaceId") spaceId: String,
+    ): BookingSpaceStatus
 
     @POST("app/bookings")
     suspend fun createBooking(@Body request: CreateBookingRequest): Booking

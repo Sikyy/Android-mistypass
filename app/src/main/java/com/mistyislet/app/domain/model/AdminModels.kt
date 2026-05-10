@@ -299,6 +299,15 @@ data class BookingSpace(
 )
 
 @Serializable
+data class BookingSpaceStatus(
+    val id: String = "",
+    @SerialName("space_id") val spaceId: String = "",
+    val status: String = "",  // "available", "occupied", "upcoming"
+    @SerialName("current_booking") val currentBooking: String? = null,
+    @SerialName("next_available_at") val nextAvailableAt: String? = null,
+)
+
+@Serializable
 data class AlarmSchedule(
     val id: String,
     val name: String = "",
