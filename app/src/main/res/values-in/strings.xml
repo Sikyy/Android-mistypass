@@ -106,6 +106,7 @@
     <!-- Pass -->
     <string name="pass_title">Pass</string>
     <string name="pass_refreshes_in">Diperbarui dalam</string>
+    <string name="pass_refreshing">Memperbarui…</string>
     <string name="pass_present_to_scanner">Tunjukkan ke pemindai pintu</string>
     <string name="pass_enter_at_keypad">Masukkan di pembaca keypad</string>
     <string name="pass_ble_active">Kredensial BLE Aktif</string>

@@ -106,6 +106,7 @@
     <!-- Pass -->
     <string name="pass_title">Pass</string>
     <string name="pass_refreshes_in">Refreshes in</string>
+    <string name="pass_refreshing">Refreshing…</string>
     <string name="pass_present_to_scanner">Present to door scanner</string>
     <string name="pass_enter_at_keypad">Enter at keypad reader</string>
     <string name="pass_ble_active">BLE Credential Active</string>

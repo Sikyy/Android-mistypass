@@ -21,6 +21,7 @@ import com.mistyislet.app.domain.model.AlarmStatusUpdateRequest
 import com.mistyislet.app.domain.model.AnalyticsSummary
 import com.mistyislet.app.domain.model.Booking
 import com.mistyislet.app.domain.model.BookingSpace
+import com.mistyislet.app.domain.model.BookingSpaceStatus
 import com.mistyislet.app.domain.model.AssignAccessRightRequest
 import com.mistyislet.app.domain.model.AssignDoorRequest
 import com.mistyislet.app.domain.model.AssignMemberRequest
@@ -215,6 +216,9 @@ class AdminRepository @Inject constructor(
     // Booking spaces & actions
     suspend fun getBookingSpaces(): ApiResult<List<BookingSpace>> =
         safeApiCall { adminApi.listBookingSpaces().items }
+
+    suspend fun getBookableSpaceStatus(spaceId: String): ApiResult<BookingSpaceStatus> =
+        safeApiCall { adminApi.getBookableSpaceStatus(spaceId) }
 
     suspend fun createBooking(request: CreateBookingRequest): ApiResult<Booking> =
         safeApiCall { adminApi.createBooking(request) }

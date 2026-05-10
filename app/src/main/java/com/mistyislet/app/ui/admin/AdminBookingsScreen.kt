@@ -1,5 +1,6 @@
 package com.mistyislet.app.ui.admin
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -59,6 +62,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +76,7 @@ import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.domain.model.Booking
 import com.mistyislet.app.domain.model.BookingSpace
+import com.mistyislet.app.domain.model.BookingSpaceStatus
 import com.mistyislet.app.domain.model.CreateBookingRequest
 import com.mistyislet.app.ui.admin.components.AdminTabPicker
 import com.mistyislet.app.ui.admin.components.StatusBadge
@@ -89,6 +94,8 @@ class AdminBookingsViewModel @Inject constructor(
     val bookings: StateFlow<List<Booking>> = _bookings
     private val _spaces = MutableStateFlow<List<BookingSpace>>(emptyList())
     val spaces: StateFlow<List<BookingSpace>> = _spaces
+    private val _spaceStatuses = MutableStateFlow<Map<String, BookingSpaceStatus>>(emptyMap())
+    val spaceStatuses: StateFlow<Map<String, BookingSpaceStatus>> = _spaceStatuses
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
     private val _isRefreshing = MutableStateFlow(false)
@@ -129,7 +136,18 @@ class AdminBookingsViewModel @Inject constructor(
             is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
         }
         when (val result = adminRepository.getBookingSpaces()) {
-            is ApiResult.Success -> _spaces.value = result.data
+            is ApiResult.Success -> {
+                _spaces.value = result.data
+                // Fetch statuses for all spaces concurrently
+                val statuses = mutableMapOf<String, BookingSpaceStatus>()
+                result.data.forEach { space ->
+                    when (val statusResult = adminRepository.getBookableSpaceStatus(space.id)) {
+                        is ApiResult.Success -> statuses[space.id] = statusResult.data
+                        else -> {}
+                    }
+                }
+                _spaceStatuses.value = statuses
+            }
             else -> {}
         }
         _isLoading.value = false
@@ -144,6 +162,7 @@ fun AdminBookingsScreen(
 ) {
     val bookings by viewModel.bookings.collectAsStateWithLifecycle()
     val spaces by viewModel.spaces.collectAsStateWithLifecycle()
+    val spaceStatuses by viewModel.spaceStatuses.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -198,7 +217,7 @@ fun AdminBookingsScreen(
                         when (selectedTab) {
                             0 -> {
                                 items(spaces, key = { it.id }) { space ->
-                                    SpaceRow(space)
+                                    SpaceRow(space, spaceStatuses[space.id])
                                 }
                             }
                             1 -> {
@@ -402,13 +421,28 @@ private fun EmptyBox() {
 }
 
 @Composable
-private fun SpaceRow(space: BookingSpace) {
+private fun SpaceRow(space: BookingSpace, status: BookingSpaceStatus? = null) {
+    val statusDotColor = when (status?.status?.lowercase()) {
+        "available" -> Color(0xFF4CAF50)
+        "occupied" -> Color(0xFFF44336)
+        "upcoming" -> Color(0xFFFFC107)
+        else -> null
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (statusDotColor != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(statusDotColor),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(space.name, style = MaterialTheme.typography.bodyLarge)
                     Text(
