@@ -11,17 +11,19 @@ import no.nordicsemi.android.ble.BleManager
 import no.nordicsemi.android.ble.data.Data
 import no.nordicsemi.android.ble.ktx.suspend
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.util.UUID
 
 /**
  * Nordic BLE Manager for Mistyislet Reader GATT communication.
  *
- * Protocol:
+ * Protocol v2:
  *   1. Connect to Reader advertising SERVICE_UUID
- *   2. Read CHALLENGE (48 bytes): [32B nonce][8B issued_at][8B expires_at]
- *   3. Sign: SHA256withECDSA(nonce || userId) with Keystore private key
- *   4. Write AUTH_RESPONSE: [1B userIdLen][userId bytes][signature bytes]
- *   5. Receive AUTH_RESULT notification: [1B code][reason string]
+ *   2. Read CHALLENGE (52 bytes): [32B nonce][8B issued_at][8B expires_at][4B gateway_id]
+ *   3. Validate: expiry + gateway_id match reader identity
+ *   4. Sign: SHA256withECDSA(nonce || userId || "BLE") with Keystore private key
+ *   5. Write AUTH_RESPONSE: [1B userIdLen][userId bytes][signature bytes]
+ *   6. Receive AUTH_RESULT notification: [1B code][reason string]
  */
 class MistyisletBleManager(
     context: Context,
@@ -111,10 +113,11 @@ class MistyisletBleManager(
                 // 64 leaves only 61 usable bytes after ATT overhead — always truncates.
                 requestMtu(256).suspend()
 
-                // Step 0: Read reader identity (if available) for audit trail
+                // Step 0: Read reader identity (if available) for gateway_id validation
+                var readerId: String? = null
                 readerIdentityChar?.let { idChar ->
                     val idData = readCharacteristic(idChar).suspend()
-                    val readerId = idData.value?.let { String(it, Charsets.UTF_8) }
+                    readerId = idData.value?.let { String(it, Charsets.UTF_8) }
                     if (!readerId.isNullOrBlank()) {
                         Log.d(TAG, "Reader identity: $readerId")
                     }
@@ -134,6 +137,16 @@ class MistyisletBleManager(
                 val expiresAtMs = expiresAtUnix * 1000
                 if (System.currentTimeMillis() > expiresAtMs) {
                     throw Exception("Challenge expired")
+                }
+
+                // Validate gateway_id (bytes 48..52) matches reader identity
+                readerId?.let { rid ->
+                    val challengeGatewayId = ByteBuffer.wrap(challengeBytes, 48, 4).int
+                    val digest = MessageDigest.getInstance("SHA-256").digest(rid.toByteArray(Charsets.UTF_8))
+                    val expectedGatewayId = ByteBuffer.wrap(digest, 0, 4).int
+                    if (challengeGatewayId != expectedGatewayId) {
+                        throw Exception("Gateway ID mismatch: challenge from wrong reader")
+                    }
                 }
 
                 // Extract 32-byte nonce

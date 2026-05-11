@@ -74,25 +74,6 @@ class KeystoreManager @Inject constructor() {
     }
 
     /**
-     * Signs a BLE challenge nonce. The message is SHA256(nonce || userId),
-     * but we let the Signature object handle the hashing internally.
-     *
-     * @param nonce 32-byte challenge from the reader.
-     * @param userId User ID appended to the nonce before signing.
-     * @return ECDSA signature in ASN.1 DER format.
-     */
-    fun signChallenge(nonce: ByteArray, userId: String): ByteArray {
-        require(nonce.size == 32) { "Nonce must be exactly 32 bytes" }
-        val entry = keyStore.getEntry(KEY_ALIAS, null) as KeyStore.PrivateKeyEntry
-        val message = nonce + userId.toByteArray(Charsets.UTF_8)
-        return Signature.getInstance(SIGNATURE_ALGORITHM).run {
-            initSign(entry.privateKey)
-            update(message)
-            sign()
-        }
-    }
-
-    /**
      * V2 signing: SHA256(nonce || userId || transportTag)
      * Transport tag binds signature to a specific channel ("BLE" or "NFC_HCE").
      */
