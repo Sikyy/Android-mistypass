@@ -1,12 +1,15 @@
 package com.mistyislet.app.data.repository
 
 import android.os.Build
+import android.util.Log
 import com.mistyislet.app.core.ble.KeystoreManager
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.core.network.safeApiCall
 import com.mistyislet.app.data.api.MobileCredentialApi
 import com.mistyislet.app.data.api.RegisterMobileCredentialRequest
 import com.mistyislet.app.domain.model.MobileCredential
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -80,4 +83,38 @@ class MobileCredentialRepository @Inject constructor(
 
     /** Whether a local keypair exists in Keystore. */
     fun hasLocalKeyPair(): Boolean = keystoreManager.hasKeyPair()
+
+    /**
+     * Checks if any active credential is expiring soon (within 24h) and re-registers if needed.
+     * Call on app launch and foreground resume.
+     */
+    suspend fun renewIfNeeded() {
+        if (!hasLocalKeyPair()) return
+        when (val result = listCredentials()) {
+            is ApiResult.Success -> {
+                val hasValid = result.data.any { cred ->
+                    cred.status == "active" && !isExpiringSoon(cred)
+                }
+                if (!hasValid) {
+                    Log.i(TAG, "BLE credential expired or expiring soon, re-registering")
+                    registerCredential()
+                }
+            }
+            else -> Log.w(TAG, "Credential renewal check failed: could not fetch credentials")
+        }
+    }
+
+    private fun isExpiringSoon(credential: MobileCredential): Boolean {
+        val expiresAt = credential.expiresAt ?: return false
+        return try {
+            val expiry = Instant.parse(expiresAt)
+            Instant.now().plus(24, ChronoUnit.HOURS).isAfter(expiry)
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    companion object {
+        private const val TAG = "MobileCredRepo"
+    }
 }

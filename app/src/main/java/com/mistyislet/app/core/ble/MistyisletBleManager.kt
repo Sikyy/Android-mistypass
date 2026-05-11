@@ -10,6 +10,7 @@ import kotlinx.coroutines.withTimeout
 import no.nordicsemi.android.ble.BleManager
 import no.nordicsemi.android.ble.data.Data
 import no.nordicsemi.android.ble.ktx.suspend
+import java.nio.ByteBuffer
 import java.util.UUID
 
 /**
@@ -37,9 +38,10 @@ class MistyisletBleManager(
         val READER_IDENTITY_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-524541444552")
         val AUTH_RESULT_UUID: UUID = UUID.fromString("4d495354-5950-4153-532d-524553554c54")
 
-        private const val CHALLENGE_SIZE = 48
+        private const val CHALLENGE_V2_SIZE = 52 // 32B nonce + 8B issued + 8B expires + 4B gateway_id
         private const val NONCE_SIZE = 32
         private const val RESULT_GRANTED: Byte = 0x01
+        private const val TRANSPORT_TAG = "BLE"
 
         private const val AUTH_TIMEOUT_MS = 10_000L
     }
@@ -118,21 +120,28 @@ class MistyisletBleManager(
                     }
                 }
 
-                // Step 1: Read challenge
+                // Step 1: Read v2 challenge (52 bytes)
                 val challengeData = readCharacteristic(challengeChar).suspend()
                 val challengeBytes = challengeData.value ?: throw Exception("Empty challenge")
-                if (challengeBytes.size < CHALLENGE_SIZE) {
-                    throw Exception("Challenge too short: ${challengeBytes.size} bytes")
+                if (challengeBytes.size < CHALLENGE_V2_SIZE) {
+                    throw Exception("Challenge too short: ${challengeBytes.size} bytes, expected $CHALLENGE_V2_SIZE")
                 }
 
                 Log.d(TAG, "Challenge received: ${challengeBytes.size} bytes")
 
-                // Extract 32-byte nonce (first part of 48-byte challenge)
+                // Validate challenge expiry (bytes 40..48 = expires_at as big-endian uint64)
+                val expiresAtUnix = challengeBytes.sliceArray(40 until 48).toLong()
+                val expiresAtMs = expiresAtUnix * 1000
+                if (System.currentTimeMillis() > expiresAtMs) {
+                    throw Exception("Challenge expired")
+                }
+
+                // Extract 32-byte nonce
                 val nonce = challengeBytes.copyOfRange(0, NONCE_SIZE)
 
-                // Step 2: Sign with Keystore
-                val signature = keystoreManager.signChallenge(nonce, userId)
-                Log.d(TAG, "Signature generated: ${signature.size} bytes")
+                // Step 2: Sign with Keystore using v2 (includes transport tag)
+                val signature = keystoreManager.signChallengeV2(nonce, userId, TRANSPORT_TAG)
+                Log.d(TAG, "Signature generated: ${signature.size} bytes (v2 with transport tag)")
 
                 // Step 3: Write auth response [1B len][userId][signature]
                 val userIdBytes = userId.toByteArray(Charsets.UTF_8)
@@ -184,3 +193,5 @@ class MistyisletBleManager(
         authResultDeferred?.complete(result)
     }
 }
+
+private fun ByteArray.toLong(): Long = ByteBuffer.wrap(this).long

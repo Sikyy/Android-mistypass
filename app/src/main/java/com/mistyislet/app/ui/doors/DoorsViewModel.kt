@@ -66,7 +66,7 @@ class DoorsViewModel @Inject constructor(
     private val mobileCredentialRepo: MobileCredentialRepository,
     val biometricHelper: BiometricHelper,
     private val dataStore: DataStore<Preferences>,
-    @ApplicationContext appContext: Context,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     companion object {
@@ -138,15 +138,41 @@ class DoorsViewModel @Inject constructor(
     private fun ensureBLECredential() {
         if (mobileCredentialRepo.hasLocalKeyPair()) {
             Log.i("DoorsVM", "BLE credential already exists in Keystore")
+            // Ensure NFC HCE has the userId (may be missing if registered before HCE was added)
+            ensureHCEUserId()
             return
         }
         viewModelScope.launch {
             delay(2000)
             Log.i("DoorsVM", "No BLE credential found, registering...")
             when (val result = mobileCredentialRepo.registerCredential()) {
-                is ApiResult.Success -> Log.i("DoorsVM", "BLE credential registered: ${result.data.id}")
+                is ApiResult.Success -> {
+                    Log.i("DoorsVM", "BLE credential registered: ${result.data.id}")
+                    result.data.userId?.let { uid ->
+                        com.mistyislet.app.core.nfc.HceService.saveUserId(appContext, uid)
+                        Log.i("DoorsVM", "NFC HCE userId saved: $uid")
+                    }
+                }
                 is ApiResult.Error -> Log.e("DoorsVM", "BLE credential registration failed: ${result.message}")
                 is ApiResult.Exception -> Log.e("DoorsVM", "BLE credential registration error", result.throwable)
+            }
+        }
+    }
+
+    /** Backfill userId into NFC HCE prefs for devices that registered before HCE was added. */
+    private fun ensureHCEUserId() {
+        val prefs = appContext.getSharedPreferences("mistyislet_credential", android.content.Context.MODE_PRIVATE)
+        if (prefs.getString("credential_user_id", null) != null) return
+        viewModelScope.launch {
+            when (val result = mobileCredentialRepo.listCredentials()) {
+                is ApiResult.Success -> {
+                    val active = result.data.firstOrNull { it.status == "active" }
+                    active?.userId?.let { uid ->
+                        com.mistyislet.app.core.nfc.HceService.saveUserId(appContext, uid)
+                        Log.i("DoorsVM", "NFC HCE userId backfilled: $uid")
+                    }
+                }
+                else -> Log.d("DoorsVM", "Could not fetch credentials for HCE backfill")
             }
         }
     }

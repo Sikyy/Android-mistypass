@@ -87,6 +87,17 @@ class HceService : HostApduService() {
 
         return try {
             val challenge = HceProtocol.extractChallenge(apdu)
+
+            // Validate challenge expiry (bytes 40..48 = expires_at big-endian uint64)
+            var expiresAtUnix: Long = 0
+            for (i in 40 until 48) {
+                expiresAtUnix = (expiresAtUnix shl 8) or (challenge[i].toLong() and 0xFF)
+            }
+            if (System.currentTimeMillis() > expiresAtUnix * 1000) {
+                Log.w(TAG, "Challenge expired, rejecting")
+                return HceProtocol.buildErrorResponse(HceProtocol.SW_SECURITY_NOT_SATISFIED)
+            }
+
             val nonce = challenge.sliceArray(0 until 32)
 
             val signature = keystoreManager.signChallengeV2(
