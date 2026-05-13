@@ -53,6 +53,7 @@ import com.mistyislet.app.ui.doors.DoorsRootScreen
 import com.mistyislet.app.ui.history.HistoryScreen
 import com.mistyislet.app.ui.login.LoginScreen
 import com.mistyislet.app.ui.profile.ProfileScreen
+import com.mistyislet.app.ui.profile.TCPAuthTestScreen
 import com.mistyislet.app.ui.visitors.VisitorsScreen
 
 object Routes {
@@ -87,6 +88,7 @@ object Routes {
     const val ADMIN_CAMERAS = "admin_cameras"
     const val ADMIN_GUEST_MANAGEMENT = "admin_guest_management"
     const val ADMIN_ORG_SETTINGS = "admin_org_settings"
+    const val TCP_AUTH_TEST = "tcp_auth_test"
 }
 
 data class BottomNavItem(
@@ -196,7 +198,10 @@ private fun MainScreen(onLogout: () -> Unit) {
                 Routes.PROFILE,
                 deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://profile" }),
             ) {
-                ProfileScreen(onLogout = onLogout)
+                ProfileScreen(
+                    onLogout = onLogout,
+                    onNavigateToTCPTest = { navController.navigate(Routes.TCP_AUTH_TEST) },
+                )
             }
             composable(Routes.BIND_CARD) {
                 BindCardScreen(onBindSuccess = { navController.popBackStack() })
@@ -224,6 +229,9 @@ private fun MainScreen(onLogout: () -> Unit) {
             composable(Routes.ADMIN_CAMERAS) { AdminCamerasScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_GUEST_MANAGEMENT) { AdminGuestManagementScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_ORG_SETTINGS) { AdminOrgSettingsScreen(onBack = { navController.popBackStack() }) }
+
+            // Debug screens
+            composable(Routes.TCP_AUTH_TEST) { TCPAuthTestScreen(onBack = { navController.popBackStack() }) }
         }
     }
 }

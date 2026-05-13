@@ -124,6 +124,10 @@
                 android:name="android.nfc.cardemulation.host_apdu_service"
                 android:resource="@xml/hce_apdu_service" />
         </service>
+        <activity
+            android:name=".ui.profile.TCPAuthTestActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Mistyislet" />
     </application>
 
 </manifest>

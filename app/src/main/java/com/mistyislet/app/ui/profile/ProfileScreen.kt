@@ -88,6 +88,7 @@ import com.mistyislet.app.ui.theme.Success
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
+    onNavigateToTCPTest: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -132,7 +133,7 @@ fun ProfileScreen(
         when (selectedTab) {
             0 -> MainSettingsTab(uiState, viewModel)
             1 -> LoginsTab(uiState, viewModel)
-            2 -> HelpTab(viewModel)
+            2 -> HelpTab(viewModel, onNavigateToTCPTest)
         }
     }
 }
@@ -669,9 +670,11 @@ private fun LoginSessionRow(login: UserLogin, onLogout: () -> Unit) {
 }
 
 @Composable
-private fun HelpTab(viewModel: ProfileViewModel) {
+private fun HelpTab(viewModel: ProfileViewModel, onNavigateToTCPTest: (() -> Unit)? = null) {
     val surfaceColor = MaterialTheme.colorScheme.surface
     var showAbout by remember { mutableStateOf(false) }
+    var versionTapCount by remember { mutableIntStateOf(0) }
+    var showDevOptions by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -693,7 +696,26 @@ private fun HelpTab(viewModel: ProfileViewModel) {
 
                 if (showAbout) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        AboutRow(label = stringResource(R.string.profile_version), value = viewModel.appVersion)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    versionTapCount++
+                                    if (versionTapCount >= 7) {
+                                        showDevOptions = true
+                                        versionTapCount = 0
+                                    }
+                                }
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(text = stringResource(R.string.profile_version), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = viewModel.appVersion,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         AboutRow(label = stringResource(R.string.profile_build), value = viewModel.buildNumber)
                         AboutRow(label = stringResource(R.string.profile_device), value = viewModel.deviceModel)
                         AboutRow(label = "Android", value = viewModel.androidVersion)
@@ -714,6 +736,29 @@ private fun HelpTab(viewModel: ProfileViewModel) {
                     leadingContent = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
+            }
+        }
+
+        if (showDevOptions && com.mistyislet.app.BuildConfig.DEBUG && onNavigateToTCPTest != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = surfaceColor),
+            ) {
+                Column {
+                    Text(
+                        text = "Developer Options",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 12.dp),
+                    )
+                    ListItem(
+                        headlineContent = { Text("TCP Auth Test") },
+                        supportingContent = { Text("Test BLE auth via Gateway TCP simulator") },
+                        leadingContent = { Icon(Icons.Default.PhonelinkSetup, contentDescription = null) },
+                        modifier = Modifier.clickable { onNavigateToTCPTest() },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    )
+                }
             }
         }
     }
