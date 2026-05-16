@@ -24,6 +24,8 @@ class MobileCredentialRepository @Inject constructor(
     private val api: MobileCredentialApi,
     private val keystoreManager: KeystoreManager,
 ) {
+    private val deviceId: String =
+        "${Build.BOARD}_${Build.FINGERPRINT.hashCode().toUInt()}"
     /**
      * Full registration flow:
      * 1. Generate EC P-256 keypair in Android Keystore (StrongBox if available)
@@ -37,7 +39,6 @@ class MobileCredentialRepository @Inject constructor(
         val publicKeyPem = keystoreManager.getPublicKeyPEM()
         val attestationChain = keystoreManager.getAttestationChain()
         val keystoreLevel = keystoreManager.getKeystoreLevel()
-        val deviceId = "${Build.BOARD}_${Build.FINGERPRINT.hashCode().toUInt()}"
         val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
 
         val request = RegisterMobileCredentialRequest(
@@ -93,7 +94,9 @@ class MobileCredentialRepository @Inject constructor(
         when (val result = listCredentials()) {
             is ApiResult.Success -> {
                 val hasValid = result.data.any { cred ->
-                    cred.status == "active" && !isExpiringSoon(cred)
+                    cred.deviceId == deviceId &&
+                        cred.status == "active" &&
+                        !isExpiringSoon(cred)
                 }
                 if (!hasValid) {
                     Log.i(TAG, "BLE credential expired or expiring soon, re-registering")
