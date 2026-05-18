@@ -63,6 +63,7 @@ class KeystoreManager @Inject constructor() {
         }
 
         // Request attestation challenge (API 24+)
+        // TODO: Replace static challenge with a server-provided nonce when server-side attestation verification is implemented
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             builder.setAttestationChallenge("mistyislet-attest".toByteArray())
         }

@@ -25,7 +25,7 @@ class GeofenceManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private val client by lazy { LocationServices.getGeofencingClient(context) }
-    private val activeGeofenceIds = mutableSetOf<String>()
+    private val activeGeofenceIds: MutableSet<String> = java.util.Collections.synchronizedSet(mutableSetOf())
 
     companion object {
         private const val TAG = "GeofenceManager"
@@ -115,6 +115,6 @@ class GeofenceManager @Inject constructor(
 
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(context, GeofenceBroadcastReceiver::class.java)
-        PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+        PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 }
