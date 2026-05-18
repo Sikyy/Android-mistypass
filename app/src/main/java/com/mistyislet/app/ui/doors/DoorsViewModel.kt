@@ -161,8 +161,32 @@ class DoorsViewModel @Inject constructor(
 
     /** Backfill userId into NFC HCE prefs for devices that registered before HCE was added. */
     private fun ensureHCEUserId() {
-        val prefs = appContext.getSharedPreferences("mistyislet_credential", android.content.Context.MODE_PRIVATE)
-        if (prefs.getString("credential_user_id", null) != null) return
+        // Migrate: clear any leftover plaintext prefs from before encrypted storage
+        val legacyPrefs = appContext.getSharedPreferences("mistyislet_credential", android.content.Context.MODE_PRIVATE)
+        val legacyUserId = legacyPrefs.getString("credential_user_id", null)
+        if (legacyUserId != null) {
+            com.mistyislet.app.core.nfc.HceService.saveUserId(appContext, legacyUserId)
+            legacyPrefs.edit().clear().apply()
+            Log.i("DoorsVM", "Migrated HCE userId from plaintext to encrypted storage")
+            return
+        }
+
+        // Check encrypted prefs — if userId already present, nothing to do
+        try {
+            val masterKey = androidx.security.crypto.MasterKey.Builder(appContext)
+                .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            val encPrefs = androidx.security.crypto.EncryptedSharedPreferences.create(
+                appContext,
+                "mistyislet_credential_enc",
+                masterKey,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+            if (encPrefs.getString("credential_user_id", null) != null) return
+        } catch (e: Exception) {
+            Log.w("DoorsVM", "Could not read encrypted HCE prefs for backfill check", e)
+        }
         viewModelScope.launch {
             when (val result = mobileCredentialRepo.listCredentials()) {
                 is ApiResult.Success -> {

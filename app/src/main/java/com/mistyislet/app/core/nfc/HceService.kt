@@ -1,10 +1,13 @@
 package com.mistyislet.app.core.nfc
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.nfc.cardemulation.HostApduService
 import android.os.Bundle
 import android.security.keystore.UserNotAuthenticatedException
 import android.util.Log
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.mistyislet.app.core.ble.KeystoreManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -26,19 +29,32 @@ class HceService : HostApduService() {
 
     companion object {
         private const val TAG = "HceService"
-        private const val PREFS_NAME = "mistyislet_credential"
+        private const val PREFS_NAME = "mistyislet_credential_enc"
         private const val KEY_USER_ID = "credential_user_id"
+
+        private fun encryptedPrefs(context: Context): SharedPreferences {
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            return EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
 
         /** Store the userId for HCE to read. Call after credential registration. */
         fun saveUserId(context: Context, userId: String) {
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            encryptedPrefs(context)
                 .edit()
                 .putString(KEY_USER_ID, userId)
                 .apply()
         }
 
         fun clearUserId(context: Context) {
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            encryptedPrefs(context)
                 .edit()
                 .remove(KEY_USER_ID)
                 .apply()
@@ -48,7 +64,7 @@ class HceService : HostApduService() {
     @Inject lateinit var keystoreManager: KeystoreManager
 
     private val userId: String?
-        get() = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        get() = encryptedPrefs(applicationContext)
             .getString(KEY_USER_ID, null)
 
     override fun processCommandApdu(commandApdu: ByteArray, extras: Bundle?): ByteArray {

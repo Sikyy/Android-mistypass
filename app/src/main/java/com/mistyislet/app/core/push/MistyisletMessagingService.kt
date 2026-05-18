@@ -27,6 +27,7 @@ import javax.inject.Inject
 class MistyisletMessagingService : FirebaseMessagingService() {
 
     @Inject lateinit var tokenStore: TokenStore
+    @Inject lateinit var httpClient: OkHttpClient
 
     companion object {
         private const val TAG = "FCM"
@@ -69,10 +70,9 @@ class MistyisletMessagingService : FirebaseMessagingService() {
                 val body = json.toRequestBody("application/json".toMediaType())
                 val httpRequest = Request.Builder()
                     .url("${com.mistyislet.app.BuildConfig.API_BASE_URL}app/devices/register")
-                    .header("Authorization", "Bearer ${tokenStore.accessToken}")
                     .post(body)
                     .build()
-                val response = OkHttpClient().newCall(httpRequest).execute()
+                val response = httpClient.newCall(httpRequest).execute()
                 if (response.isSuccessful) {
                     Log.i(TAG, "FCM token registered with backend")
                 } else {
