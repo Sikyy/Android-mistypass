@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,7 +55,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -174,8 +172,6 @@ fun CredentialsScreen(
                 )
             }
 
-            // Add to Google Wallet section
-            GoogleWalletSection()
         }
 
         Spacer(modifier = Modifier.height(100.dp))
@@ -563,52 +559,6 @@ private fun PinDisplay(pin: String) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun GoogleWalletSection() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val isInIndonesia = remember {
-        val tm = context.getSystemService(android.content.Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
-        val simCountry = tm?.simCountryIso?.lowercase() ?: ""
-        val networkCountry = tm?.networkCountryIso?.lowercase() ?: ""
-        simCountry == "id" || networkCountry == "id"
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-        Box(
-            modifier = Modifier
-                .width(250.dp)
-                .height(50.dp)
-                .clip(RoundedCornerShape(25.dp))
-                .background(Color.Black.copy(alpha = if (isInIndonesia) 0.2f else 0.8f))
-                .clickable(enabled = !isInIndonesia) { },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.add_to_google_wallet),
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                color = Color.White,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = stringResource(R.string.pass_wallet_region_notice),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 24.dp),
-        )
     }
 }
 
