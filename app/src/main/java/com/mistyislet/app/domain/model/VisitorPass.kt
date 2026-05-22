@@ -8,7 +8,9 @@ data class CreateVisitorPassRequest(
     @SerialName("building_id") val buildingId: String? = null,
     val visitor: String,
     @SerialName("delivery_method") val deliveryMethod: String,
-    @SerialName("expires_at") val expiresAt: String,
+    @SerialName("ttl_hours") val ttlHours: Double? = null,
+    @SerialName("valid_until") val validUntil: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
 )
 
 @Serializable

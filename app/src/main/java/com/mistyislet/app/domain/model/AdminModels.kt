@@ -362,6 +362,7 @@ data class CreateGuestRequest(
     @SerialName("id_document_number") val idDocumentNumber: String? = null,
     @SerialName("expected_at") val expectedAt: String? = null,
     @SerialName("notify_host") val notifyHost: Boolean = true,
+    @SerialName("door_ids") val doorIds: List<String> = emptyList(),
     @SerialName("access_ttl_hours") val accessTtlHours: Int = 24,
 )
 

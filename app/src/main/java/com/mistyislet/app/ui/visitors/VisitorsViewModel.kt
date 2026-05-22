@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 data class VisitorsUiState(
@@ -129,11 +128,10 @@ class VisitorsViewModel @Inject constructor(
     fun createPass(visitor: String, method: String, hours: Int) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isCreating = true)
-            val expiresAt = Instant.now().plus(hours.toLong(), ChronoUnit.HOURS).toString()
             val request = CreateVisitorPassRequest(
                 visitor = visitor,
                 deliveryMethod = method,
-                expiresAt = expiresAt,
+                ttlHours = hours.toDouble(),
             )
             when (val result = doorRepository.createVisitorPass(request)) {
                 is ApiResult.Success -> {
