@@ -3,6 +3,7 @@ package com.mistyislet.app.ui.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.core.network.ApiResult
+import com.mistyislet.app.core.push.PushTokenRegistrar
 import com.mistyislet.app.data.repository.AuthRepository
 import com.mistyislet.app.domain.model.OrgAuthConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,6 +38,7 @@ data class LoginUiState(
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val pushTokenRegistrar: PushTokenRegistrar,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -96,6 +98,7 @@ class LoginViewModel @Inject constructor(
             when (val result = authRepository.login(state.email, state.password, nextMfaCode)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(isLoading = false, mfaCode = "")
+                    pushTokenRegistrar.registerCurrentToken()
                     _loginSuccess.emit(Unit)
                 }
                 is ApiResult.Error -> {
@@ -146,6 +149,7 @@ class LoginViewModel @Inject constructor(
             when (authRepository.verifyMagicLink(token)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(isLoading = false)
+                    pushTokenRegistrar.registerCurrentToken()
                     _loginSuccess.emit(Unit)
                 }
                 is ApiResult.Error -> {

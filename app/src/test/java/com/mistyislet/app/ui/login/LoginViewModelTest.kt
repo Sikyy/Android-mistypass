@@ -1,6 +1,7 @@
 package com.mistyislet.app.ui.login
 
 import com.mistyislet.app.core.network.ApiResult
+import com.mistyislet.app.core.push.PushTokenRegistrar
 import com.mistyislet.app.data.repository.AuthRepository
 import com.mistyislet.app.domain.model.*
 import kotlinx.coroutines.Dispatchers
@@ -15,13 +16,15 @@ class LoginViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeRepo: FakeAuthRepository
+    private lateinit var fakePushTokenRegistrar: FakePushTokenRegistrar
     private lateinit var vm: LoginViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeAuthRepository()
-        vm = LoginViewModel(fakeRepo)
+        fakePushTokenRegistrar = FakePushTokenRegistrar()
+        vm = LoginViewModel(fakeRepo, fakePushTokenRegistrar)
     }
 
     @org.junit.After
@@ -109,6 +112,53 @@ class LoginViewModelTest {
         advanceUntilIdle()
 
         assertEquals("654321", fakeRepo.lastMfaCode)
+    }
+
+    @Test
+    fun `login success registers current push token`() = runTest {
+        fakeRepo.loginResult = ApiResult.Success(LoginResponse("a", "r", 3600, UserInfo("1", "u@t.com", "U", "t1")))
+        vm.onEmailChange("user@test.com")
+        vm.onPasswordChange("admin123")
+
+        vm.login()
+        advanceUntilIdle()
+
+        assertEquals(1, fakePushTokenRegistrar.registerCurrentTokenCount)
+    }
+
+    @Test
+    fun `mfa required does not register push token`() = runTest {
+        fakeRepo.loginResult = ApiResult.Error(401, "admin mfa code is required", "mfa_required")
+        vm.onEmailChange("admin@test.com")
+        vm.onPasswordChange("admin123")
+
+        vm.login()
+        advanceUntilIdle()
+
+        assertEquals(0, fakePushTokenRegistrar.registerCurrentTokenCount)
+    }
+
+    @Test
+    fun `verify magic link success registers current push token`() = runTest {
+        fakeRepo.verifyResult = ApiResult.Success(LoginResponse("a", "r", 3600, UserInfo("1", "u@t.com", "U", "t1")))
+
+        vm.verifyMagicLink("magic-token")
+        advanceUntilIdle()
+
+        assertEquals(1, fakePushTokenRegistrar.registerCurrentTokenCount)
+    }
+}
+
+class FakePushTokenRegistrar : PushTokenRegistrar {
+    var registerCurrentTokenCount = 0
+    var lastRegisteredToken: String? = null
+
+    override fun registerCurrentToken() {
+        registerCurrentTokenCount += 1
+    }
+
+    override fun registerToken(token: String) {
+        lastRegisteredToken = token
     }
 }
 
