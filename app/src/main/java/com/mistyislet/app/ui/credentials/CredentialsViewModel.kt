@@ -10,6 +10,7 @@ import com.mistyislet.app.data.repository.CredentialRepository
 import com.mistyislet.app.data.repository.MobileCredentialRepository
 import com.mistyislet.app.domain.model.Credential
 import com.mistyislet.app.domain.model.MobileCredential
+import com.mistyislet.app.domain.model.QRTokenRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -104,6 +105,24 @@ class CredentialsViewModel @Inject constructor(
     }
 
     private suspend fun refreshQrToken() {
+        when (val result = safeApiCall { accessApi.getQrToken(QRTokenRequest()) }) {
+            is ApiResult.Success -> {
+                val token = result.data
+                val expiresAt = try {
+                    Instant.parse(token.expiresAt)
+                } catch (_: Exception) {
+                    Instant.now().plusSeconds(300)
+                }
+                _uiState.value = _uiState.value.copy(
+                    dynamicQrContent = token.token,
+                    qrExpiresAt = expiresAt,
+                )
+            }
+            else -> refreshBleQrFallback()
+        }
+    }
+
+    private suspend fun refreshBleQrFallback() {
         when (val result = safeApiCall { accessApi.getBleToken() }) {
             is ApiResult.Success -> {
                 val token = result.data

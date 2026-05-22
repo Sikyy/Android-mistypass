@@ -6,6 +6,8 @@ import com.mistyislet.app.domain.model.BleTokenResponse
 import com.mistyislet.app.domain.model.PinCodeResponse
 import com.mistyislet.app.domain.model.CreateVisitorPassRequest
 import com.mistyislet.app.domain.model.ListResponse
+import com.mistyislet.app.domain.model.QRTokenRequest
+import com.mistyislet.app.domain.model.QRTokenResponse
 import com.mistyislet.app.domain.model.QRUnlockRequest
 import com.mistyislet.app.domain.model.UnlockRequest
 import com.mistyislet.app.domain.model.UnlockResponse
@@ -28,6 +30,9 @@ interface AccessApi {
 
     @GET("app/access/ble-token")
     suspend fun getBleToken(): BleTokenResponse
+
+    @POST("app/qr-token")
+    suspend fun getQrToken(@Body request: QRTokenRequest = QRTokenRequest()): QRTokenResponse
 
     @GET("app/access/pin-code")
     suspend fun getPinCode(): PinCodeResponse

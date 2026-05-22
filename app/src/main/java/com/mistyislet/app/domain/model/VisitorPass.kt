@@ -55,6 +55,17 @@ data class BleTokenResponse(
 )
 
 @Serializable
+data class QRTokenRequest(
+    @SerialName("door_id") val doorId: String? = null,
+)
+
+@Serializable
+data class QRTokenResponse(
+    val token: String,
+    @SerialName("expires_at") val expiresAt: String,
+)
+
+@Serializable
 data class PinCodeResponse(
     val pin: String,
     @SerialName("valid_until") val validUntil: String,
