@@ -1,8 +1,6 @@
 package com.mistyislet.app.ui.credentials
 
 import android.app.Activity
-import android.nfc.NfcAdapter
-import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -41,9 +39,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.core.nfc.NFCReader
 import com.mistyislet.app.ui.theme.Success
-import kotlinx.coroutines.launch
 
 enum class BindCardStep {
     WAITING,
@@ -57,11 +56,12 @@ enum class BindCardStep {
 @Composable
 fun BindCardScreen(
     onBindSuccess: () -> Unit = {},
+    viewModel: BindCardViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
     val nfcReader = remember { NFCReader() }
-    val scope = rememberCoroutineScope()
+    val bindState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var step by remember { mutableStateOf(BindCardStep.WAITING) }
     var cardUid by remember { mutableStateOf("") }
@@ -92,9 +92,23 @@ fun BindCardScreen(
     LaunchedEffect(Unit) {
         nfcReader.tagEvents.collect { event ->
             if (step == BindCardStep.WAITING) {
+                viewModel.reset()
                 cardUid = event.uid
                 step = BindCardStep.DETECTED
             }
+        }
+    }
+
+    LaunchedEffect(bindState.boundCard, bindState.errorMessage) {
+        bindState.boundCard?.let {
+            step = BindCardStep.SUCCESS
+            if (it.cardUid != null) {
+                cardUid = it.cardUid
+            }
+        }
+        bindState.errorMessage?.let {
+            errorMsg = it
+            step = BindCardStep.ERROR
         }
     }
 
@@ -176,19 +190,14 @@ fun BindCardScreen(
                 Button(
                     onClick = {
                         step = BindCardStep.BINDING
-                        scope.launch {
-                            // TODO: 后端 API 就绪后替换为真实调用
-                            // POST /app/credentials/bind-card { "card_uid": cardUid }
-                            kotlinx.coroutines.delay(1000) // 模拟网络延迟
-                            step = BindCardStep.SUCCESS
-                        }
+                        viewModel.bindCard(cardUid)
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Bind This Card")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                TextButton(onClick = { step = BindCardStep.WAITING; cardUid = "" }) {
+                TextButton(onClick = { viewModel.reset(); step = BindCardStep.WAITING; cardUid = "" }) {
                     Text("Try Another Card")
                 }
             }
@@ -236,7 +245,7 @@ fun BindCardScreen(
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = { step = BindCardStep.WAITING; errorMsg = "" }) {
+                Button(onClick = { viewModel.reset(); step = BindCardStep.WAITING; errorMsg = "" }) {
                     Text("Try Again")
                 }
             }

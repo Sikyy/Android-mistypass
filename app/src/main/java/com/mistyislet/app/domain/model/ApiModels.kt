@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 data class LoginRequest(
     val email: String,
     val password: String,
+    @SerialName("mfa_code") val mfaCode: String? = null,
 )
 
 @Serializable

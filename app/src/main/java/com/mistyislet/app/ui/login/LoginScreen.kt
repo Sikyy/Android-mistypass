@@ -51,6 +51,7 @@ fun LoginScreen(
             AuthStep.EmailInput -> EmailInputStep(uiState, viewModel)
             AuthStep.OrgLookupLoading -> OrgLookupLoadingStep()
             AuthStep.PasswordInput -> PasswordInputStep(uiState, viewModel)
+            AuthStep.MfaInput -> MfaInputStep(uiState, viewModel)
             AuthStep.MagicLinkSent -> MagicLinkSentStep(uiState, viewModel)
             AuthStep.SSORedirect -> SSORedirectStep(uiState, viewModel)
         }
@@ -185,6 +186,56 @@ private fun PasswordInputStep(state: LoginUiState, vm: LoginViewModel) {
             },
             dismissButton = { TextButton(onClick = { showForgotPassword = false; vm.clearForgotPasswordState() }) { Text(stringResource(R.string.cancel)) } },
         )
+    }
+}
+
+@Composable
+private fun MfaInputStep(state: LoginUiState, vm: LoginViewModel) {
+    val focusManager = LocalFocusManager.current
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        IconButton(onClick = vm::goBack, modifier = Modifier.align(Alignment.Start)) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+        }
+
+        Text(stringResource(R.string.login_mfa_title), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            stringResource(R.string.login_mfa_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = state.mfaCode,
+            onValueChange = vm::onMfaCodeChange,
+            label = { Text(stringResource(R.string.login_mfa_code)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus(); vm.login() }),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(16.dp))
+
+        Button(
+            onClick = { focusManager.clearFocus(); vm.login() },
+            enabled = state.mfaCode.isNotBlank() && !state.isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (state.isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            else Text(stringResource(R.string.login_mfa_verify))
+        }
+
+        state.errorMessage?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
 

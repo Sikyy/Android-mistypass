@@ -81,6 +81,35 @@ class LoginViewModelTest {
         vm.goBack()
         assertEquals(AuthStep.EmailInput, vm.uiState.value.authStep)
     }
+
+    @Test
+    fun `login mfa required transitions to MfaInput`() = runTest {
+        fakeRepo.loginResult = ApiResult.Error(401, "admin mfa code is required", "mfa_required")
+        vm.onEmailChange("admin@test.com")
+        vm.onPasswordChange("admin123")
+        vm.login()
+        advanceUntilIdle()
+        assertEquals(AuthStep.MfaInput, vm.uiState.value.authStep)
+        assertNull(vm.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `login from MfaInput forwards mfa code`() = runTest {
+        fakeRepo.loginResult = ApiResult.Success(LoginResponse("a", "r", 3600, UserInfo("1", "u@t.com", "U", "t1")))
+        vm.onEmailChange("admin@test.com")
+        vm.onPasswordChange("admin123")
+        vm.onMfaCodeChange("123456")
+        fakeRepo.loginResult = ApiResult.Error(401, "admin mfa code is required", "mfa_required")
+        vm.login()
+        advanceUntilIdle()
+
+        fakeRepo.loginResult = ApiResult.Success(LoginResponse("a", "r", 3600, UserInfo("1", "u@t.com", "U", "t1")))
+        vm.onMfaCodeChange("654321")
+        vm.login()
+        advanceUntilIdle()
+
+        assertEquals("654321", fakeRepo.lastMfaCode)
+    }
 }
 
 // --- Test Double ---
@@ -107,8 +136,12 @@ class FakeAuthRepository : AuthRepository(
     var lookupOrgResult: ApiResult<OrgAuthConfig> = ApiResult.Error(0, "not set")
     var magicLinkResult: ApiResult<MagicLinkResponse> = ApiResult.Error(0, "not set")
     var verifyResult: ApiResult<LoginResponse> = ApiResult.Error(0, "not set")
+    var lastMfaCode: String? = null
 
-    override suspend fun login(email: String, password: String) = loginResult
+    override suspend fun login(email: String, password: String, mfaCode: String?): ApiResult<LoginResponse> {
+        lastMfaCode = mfaCode
+        return loginResult
+    }
     override suspend fun lookupOrg(domain: String) = lookupOrgResult
     override suspend fun requestMagicLink(email: String) = magicLinkResult
     override suspend fun verifyMagicLink(token: String) = verifyResult

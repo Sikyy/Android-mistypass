@@ -23,6 +23,10 @@
     <string name="login_reset_password">重置密码</string>
     <string name="login_send_reset">发送</string>
     <string name="login_reset_sent">密码重置链接已发送到您的邮箱。</string>
+    <string name="login_mfa_title">输入验证码</string>
+    <string name="login_mfa_body">请输入身份验证器应用中的验证码以完成登录。</string>
+    <string name="login_mfa_code">验证码</string>
+    <string name="login_mfa_verify">验证</string>
 
     <!-- Doors -->
     <string name="doors_title">我的门点</string>

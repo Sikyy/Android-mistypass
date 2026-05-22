@@ -23,6 +23,10 @@
     <string name="login_reset_password">Reset Password</string>
     <string name="login_send_reset">Send</string>
     <string name="login_reset_sent">A password reset link has been sent to your email.</string>
+    <string name="login_mfa_title">Enter verification code</string>
+    <string name="login_mfa_body">Enter the code from your authenticator app to complete sign in.</string>
+    <string name="login_mfa_code">Verification code</string>
+    <string name="login_mfa_verify">Verify</string>
 
     <!-- Doors -->
     <string name="doors_title">My Doors</string>

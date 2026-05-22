@@ -23,6 +23,10 @@
     <string name="login_reset_password">Atur Ulang Kata Sandi</string>
     <string name="login_send_reset">Kirim</string>
     <string name="login_reset_sent">Tautan atur ulang kata sandi telah dikirim ke email Anda.</string>
+    <string name="login_mfa_title">Masukkan kode verifikasi</string>
+    <string name="login_mfa_body">Masukkan kode dari aplikasi autentikator untuk menyelesaikan proses masuk.</string>
+    <string name="login_mfa_code">Kode verifikasi</string>
+    <string name="login_mfa_verify">Verifikasi</string>
 
     <!-- Doors -->
     <string name="doors_title">Pintu Saya</string>
