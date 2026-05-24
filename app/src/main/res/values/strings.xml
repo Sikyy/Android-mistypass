@@ -23,6 +23,10 @@
     <string name="login_reset_password">Reset Password</string>
     <string name="login_send_reset">Send</string>
     <string name="login_reset_sent">A password reset link has been sent to your email.</string>
+    <string name="login_mfa_title">Enter verification code</string>
+    <string name="login_mfa_body">Enter the code from your authenticator app to complete sign in.</string>
+    <string name="login_mfa_code">Verification code</string>
+    <string name="login_mfa_verify">Verify</string>
 
     <!-- Doors -->
     <string name="doors_title">My Doors</string>
@@ -177,7 +181,9 @@
     <string name="admin_search_credentials">Search credentials</string>
     <string name="admin_search_presence">Search users</string>
     <string name="admin_role">Role</string>
+    <string name="admin_status">Status</string>
     <string name="admin_last_activity">Last Activity</string>
+    <string name="admin_login_sessions">Login Sessions</string>
     <string name="admin_joined">Joined</string>
     <string name="admin_change_role">Change Role</string>
     <string name="admin_apply_role">Apply Role</string>
@@ -221,6 +227,9 @@
     <string name="admin_schedule_denial">Access Denial</string>
     <string name="admin_schedule_first">First to Arrive</string>
     <string name="admin_schedule_holiday">Holiday</string>
+    <string name="admin_holiday_regions">Holiday Regions</string>
+    <string name="admin_no_holiday_regions">No holiday regions</string>
+    <string name="admin_holidays_count">%d holidays</string>
     <string name="admin_members">Members</string>
     <string name="admin_doors">Doors</string>
     <string name="admin_no_members">No members</string>
@@ -340,6 +349,15 @@
     <string name="camera_model">Model</string>
     <string name="camera_ip">IP Address</string>
     <string name="camera_door">Door</string>
+    <string name="camera_cloud">Cloud</string>
+    <string name="camera_cloud_token">Cloud Token</string>
+    <string name="camera_cloud_token_available">Available</string>
+    <string name="camera_cloud_expires">Expires</string>
+    <string name="camera_cloud_unavailable">No cloud token available</string>
+    <string name="camera_recordings">Recordings</string>
+    <string name="camera_no_recordings">No recordings</string>
+    <string name="camera_recording_seconds">%d sec</string>
+    <string name="camera_recording_ready">Ready</string>
 
     <!-- User Presence Enhanced -->
     <string name="presence_weekday_activity">Weekday Activity</string>

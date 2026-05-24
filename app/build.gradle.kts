@@ -42,7 +42,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://localhost:8081/api/v1/\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/v1/\"")
             isDebuggable = true
         }
         create("staging") {

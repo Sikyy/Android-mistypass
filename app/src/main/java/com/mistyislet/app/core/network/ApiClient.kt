@@ -5,6 +5,7 @@ import com.mistyislet.app.core.storage.TokenStore
 import com.mistyislet.app.data.api.AccessApi
 import com.mistyislet.app.data.api.AuthApi
 import com.mistyislet.app.data.api.CredentialApi
+import com.mistyislet.app.data.api.DeviceApi
 import com.mistyislet.app.data.api.MobileCredentialApi
 import com.mistyislet.app.data.api.AdminApi
 import com.mistyislet.app.data.api.PlaceApi
@@ -107,6 +108,12 @@ object ApiClientModule {
     @Singleton
     fun provideCredentialApi(retrofit: Retrofit): CredentialApi {
         return retrofit.create(CredentialApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDeviceApi(retrofit: Retrofit): DeviceApi {
+        return retrofit.create(DeviceApi::class.java)
     }
 
     @Provides

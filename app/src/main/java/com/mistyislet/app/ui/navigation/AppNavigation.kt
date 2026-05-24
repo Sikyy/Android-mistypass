@@ -1,5 +1,6 @@
 package com.mistyislet.app.ui.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
@@ -18,11 +19,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
+import androidx.navigation.navArgument
 import com.mistyislet.app.R
 import com.mistyislet.app.data.repository.AuthRepository
 import com.mistyislet.app.ui.admin.AdminAccessRightsScreen
@@ -33,11 +36,13 @@ import com.mistyislet.app.ui.admin.AdminCamerasScreen
 import com.mistyislet.app.ui.admin.AdminCardsScreen
 import com.mistyislet.app.ui.admin.AdminControllersScreen
 import com.mistyislet.app.ui.admin.AdminDigitalCredentialsScreen
+import com.mistyislet.app.ui.admin.AdminEventDetailScreen
 import com.mistyislet.app.ui.admin.AdminEventsScreen
 import com.mistyislet.app.ui.admin.AdminExportScreen
 import com.mistyislet.app.ui.admin.AdminGatewaysScreen
 import com.mistyislet.app.ui.admin.AdminGuestManagementScreen
 import com.mistyislet.app.ui.admin.AdminGroupsScreen
+import com.mistyislet.app.ui.admin.AdminIncidentDetailScreen
 import com.mistyislet.app.ui.admin.AdminIncidentsScreen
 import com.mistyislet.app.ui.admin.AdminLiveActivityScreen
 import com.mistyislet.app.ui.admin.AdminOrgSettingsScreen
@@ -68,7 +73,9 @@ object Routes {
     const val BIND_CARD = "bind_card"
 
     const val ADMIN_EVENTS = "admin_events"
+    const val ADMIN_EVENT_DETAIL = "admin_event_detail"
     const val ADMIN_INCIDENTS = "admin_incidents"
+    const val ADMIN_INCIDENT_DETAIL = "admin_incident_detail"
     const val ADMIN_USERS = "admin_users"
     const val ADMIN_GROUPS = "admin_groups"
     const val ADMIN_TEAMS = "admin_teams"
@@ -89,6 +96,9 @@ object Routes {
     const val ADMIN_GUEST_MANAGEMENT = "admin_guest_management"
     const val ADMIN_ORG_SETTINGS = "admin_org_settings"
     const val TCP_AUTH_TEST = "tcp_auth_test"
+
+    fun adminEventDetail(eventId: String) = "$ADMIN_EVENT_DETAIL/${Uri.encode(eventId)}"
+    fun adminIncidentDetail(incidentId: String) = "$ADMIN_INCIDENT_DETAIL/${Uri.encode(incidentId)}"
 }
 
 data class BottomNavItem(
@@ -208,8 +218,36 @@ private fun MainScreen(onLogout: () -> Unit) {
             }
 
             // Admin screens
-            composable(Routes.ADMIN_EVENTS) { AdminEventsScreen(onBack = { navController.popBackStack() }) }
-            composable(Routes.ADMIN_INCIDENTS) { AdminIncidentsScreen(onBack = { navController.popBackStack() }) }
+            composable(Routes.ADMIN_EVENTS) {
+                AdminEventsScreen(
+                    onBack = { navController.popBackStack() },
+                    onEventClick = { eventId -> navController.navigate(Routes.adminEventDetail(eventId)) },
+                )
+            }
+            composable(
+                route = "${Routes.ADMIN_EVENT_DETAIL}/{eventId}",
+                arguments = listOf(navArgument("eventId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                AdminEventDetailScreen(
+                    eventId = backStackEntry.arguments?.getString("eventId").orEmpty(),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.ADMIN_INCIDENTS) {
+                AdminIncidentsScreen(
+                    onBack = { navController.popBackStack() },
+                    onIncidentClick = { incidentId -> navController.navigate(Routes.adminIncidentDetail(incidentId)) },
+                )
+            }
+            composable(
+                route = "${Routes.ADMIN_INCIDENT_DETAIL}/{incidentId}",
+                arguments = listOf(navArgument("incidentId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                AdminIncidentDetailScreen(
+                    incidentId = backStackEntry.arguments?.getString("incidentId").orEmpty(),
+                    onBack = { navController.popBackStack() },
+                )
+            }
             composable(Routes.ADMIN_USERS) { AdminUsersScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_GROUPS) { AdminGroupsScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_TEAMS) { AdminTeamsScreen(onBack = { navController.popBackStack() }) }

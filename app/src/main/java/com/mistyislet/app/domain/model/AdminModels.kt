@@ -11,24 +11,79 @@ data class PaginatedResponse<T>(
 @Serializable
 data class AdminEvent(
     val id: String,
+    @SerialName("place_id") val placeId: String = "",
     @SerialName("object_type") val eventType: String? = null,
     @SerialName("object_name") val objectName: String = "",
+    @SerialName("object_id") val objectId: String = "",
+    @SerialName("area_id") val areaId: String? = null,
+    @SerialName("gateway_id") val gatewayId: String? = null,
     val actor: String = "",
     val action: String = "",
     val result: String = "",
     @SerialName("result_color") val resultColor: String = "",
     val timestamp: String = "",
     @SerialName("display_time") val displayTime: String = "",
+    val detail: String? = null,
+)
+
+@Serializable
+data class RelatedEventsResponse(
+    @SerialName("event_id") val eventId: String = "",
+    val items: List<RelatedAdminEvent> = emptyList(),
+)
+
+@Serializable
+data class RelatedAdminEvent(
+    val id: String,
+    @SerialName("place_id") val placeId: String = "",
+    @SerialName("object_type") val eventType: String? = null,
+    @SerialName("object_name") val objectName: String = "",
+    @SerialName("object_id") val objectId: String = "",
+    val actor: String = "",
+    val action: String = "",
+    val result: String = "",
+    val timestamp: String = "",
+    val relation: String = "",
 )
 
 @Serializable
 data class AdminIncident(
     val id: String,
+    @SerialName("place_id") val placeId: String = "",
     @SerialName("type") val title: String = "",
+    val state: String = "",
     val severity: String = "",
     val status: String = "",
+    @SerialName("subject_type") val subjectType: String = "",
+    @SerialName("subject_id") val subjectId: String = "",
     val description: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
+    val count: Int = 0,
+    val events: List<IncidentEvent> = emptyList(),
+)
+
+@Serializable
+data class IncidentEvent(
+    @SerialName("event_id") val eventId: String = "",
+    val actor: String = "",
+    val timestamp: String = "",
+)
+
+@Serializable
+data class IncidentOccurrencesResponse(
+    @SerialName("incident_id") val incidentId: String = "",
+    val items: List<IncidentOccurrence> = emptyList(),
+)
+
+@Serializable
+data class IncidentOccurrence(
+    @SerialName("event_id") val eventId: String = "",
+    val actor: String? = null,
+    @SerialName("door_id") val doorId: String? = null,
+    @SerialName("gateway_id") val gatewayId: String? = null,
+    val detail: String? = null,
+    val result: String = "",
+    @SerialName("occurred_at") val occurredAt: String = "",
 )
 
 @Serializable
@@ -78,6 +133,24 @@ data class AdminZone(
     val name: String = "",
     val description: String = "",
     @SerialName("door_count") val doorCount: Int = 0,
+)
+
+@Serializable
+data class HolidayRegion(
+    val id: String = "",
+    val name: String = "",
+    @SerialName("country_code") val countryCode: String? = null,
+    val timezone: String? = null,
+    @SerialName("holiday_count") val holidayCount: Int = 0,
+)
+
+@Serializable
+data class Holiday(
+    val id: String = "",
+    @SerialName("region_id") val regionId: String? = null,
+    val name: String = "",
+    val date: String = "",
+    val type: String? = null,
 )
 
 @Serializable
@@ -161,6 +234,27 @@ data class CameraVideoLink(
 )
 
 @Serializable
+data class CameraCloudToken(
+    val token: String? = null,
+    @SerialName("cloud_token") val cloudToken: String? = null,
+    val status: String = "",
+    val url: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
+)
+
+@Serializable
+data class CameraRecording(
+    val id: String = "",
+    @SerialName("camera_id") val cameraId: String? = null,
+    val title: String? = null,
+    @SerialName("video_url") val videoUrl: String? = null,
+    @SerialName("thumbnail_url") val thumbnailUrl: String? = null,
+    @SerialName("started_at") val startedAt: String? = null,
+    @SerialName("ended_at") val endedAt: String? = null,
+    @SerialName("duration_seconds") val durationSeconds: Int? = null,
+)
+
+@Serializable
 data class AnalyticsSummary(
     @SerialName("total_unlocks") val totalUnlocks: Int = 0,
     @SerialName("unique_users") val uniqueUsers: Int = 0,
@@ -225,7 +319,7 @@ data class ReportExportRequest(
     val type: String,
     val from: String,
     val to: String,
-    val format: String = "csv",
+    val format: String = "pdf",
 )
 
 @Serializable
@@ -362,6 +456,7 @@ data class CreateGuestRequest(
     @SerialName("id_document_number") val idDocumentNumber: String? = null,
     @SerialName("expected_at") val expectedAt: String? = null,
     @SerialName("notify_host") val notifyHost: Boolean = true,
+    @SerialName("door_ids") val doorIds: List<String> = emptyList(),
     @SerialName("access_ttl_hours") val accessTtlHours: Int = 24,
 )
 
@@ -441,6 +536,13 @@ data class AssignDoorRequest(
 data class AssignAccessRightRequest(
     @SerialName("door_id") val doorId: String,
     @SerialName("schedule_id") val scheduleId: String? = null,
+)
+
+@Serializable
+data class ShareAccessRequest(
+    @SerialName("door_id") val doorId: String,
+    @SerialName("schedule_id") val scheduleId: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
 )
 
 @Serializable

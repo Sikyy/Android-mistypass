@@ -19,9 +19,9 @@ open class AuthRepository @Inject constructor(
     private val authApi: AuthApi,
     private val tokenStore: TokenStore,
 ) {
-    open suspend fun login(email: String, password: String): ApiResult<LoginResponse> {
+    open suspend fun login(email: String, password: String, mfaCode: String? = null): ApiResult<LoginResponse> {
         return safeApiCall {
-            val response = authApi.login(LoginRequest(email, password))
+            val response = authApi.login(LoginRequest(email, password, mfaCode))
             storeTokens(response)
             response
         }

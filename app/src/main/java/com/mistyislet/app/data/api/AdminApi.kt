@@ -15,6 +15,7 @@ import com.mistyislet.app.domain.model.Alarm
 import com.mistyislet.app.domain.model.AlarmSchedule
 import com.mistyislet.app.domain.model.AlarmStatusUpdateRequest
 import com.mistyislet.app.domain.model.AnalyticsSummary
+import com.mistyislet.app.domain.model.AccessRight
 import com.mistyislet.app.domain.model.Booking
 import com.mistyislet.app.domain.model.BookingSpace
 import com.mistyislet.app.domain.model.BookingSpaceStatus
@@ -22,6 +23,8 @@ import com.mistyislet.app.domain.model.AssignAccessRightRequest
 import com.mistyislet.app.domain.model.AssignDoorRequest
 import com.mistyislet.app.domain.model.AssignMemberRequest
 import com.mistyislet.app.domain.model.Camera
+import com.mistyislet.app.domain.model.CameraCloudToken
+import com.mistyislet.app.domain.model.CameraRecording
 import com.mistyislet.app.domain.model.CameraSnapshotResponse
 import com.mistyislet.app.domain.model.CameraVideoLink
 import com.mistyislet.app.domain.model.CreateBookingRequest
@@ -33,15 +36,21 @@ import com.mistyislet.app.domain.model.GroupDoor
 import com.mistyislet.app.domain.model.GroupMember
 import com.mistyislet.app.domain.model.GuestCheckInRequest
 import com.mistyislet.app.domain.model.GuestVisit
+import com.mistyislet.app.domain.model.Holiday
+import com.mistyislet.app.domain.model.HolidayRegion
 import com.mistyislet.app.domain.model.InviteUserRequest
+import com.mistyislet.app.domain.model.IncidentOccurrencesResponse
 import com.mistyislet.app.domain.model.LiveActivityRecord
 import com.mistyislet.app.domain.model.OrgSettings
 import com.mistyislet.app.domain.model.OrgSettingsUpdateRequest
 import com.mistyislet.app.domain.model.RenameRequest
 import com.mistyislet.app.domain.model.ReportExportRequest
+import com.mistyislet.app.domain.model.RelatedEventsResponse
 import com.mistyislet.app.domain.model.ScheduleWriteRequest
+import com.mistyislet.app.domain.model.ShareAccessRequest
 import com.mistyislet.app.domain.model.TeamAccessRight
 import com.mistyislet.app.domain.model.TeamMember
+import com.mistyislet.app.domain.model.UserLogin
 import com.mistyislet.app.domain.model.ReportExportResponse
 import com.mistyislet.app.domain.model.UserPresenceRecord
 import com.mistyislet.app.domain.model.UserRoleUpdateRequest
@@ -59,11 +68,60 @@ interface AdminApi {
     @GET("app/places/{placeId}/events")
     suspend fun listEvents(@Path("placeId") placeId: String): PaginatedResponse<AdminEvent>
 
+    @GET("app/places/{placeId}/events/{eventId}")
+    suspend fun getEvent(
+        @Path("placeId") placeId: String,
+        @Path("eventId") eventId: String,
+    ): AdminEvent
+
+    @GET("app/places/{placeId}/events/{eventId}/related")
+    suspend fun getRelatedEvents(
+        @Path("placeId") placeId: String,
+        @Path("eventId") eventId: String,
+    ): RelatedEventsResponse
+
     @GET("app/places/{placeId}/incidents")
     suspend fun listIncidents(@Path("placeId") placeId: String): PaginatedResponse<AdminIncident>
 
+    @GET("app/places/{placeId}/incidents/{incidentId}")
+    suspend fun getIncident(
+        @Path("placeId") placeId: String,
+        @Path("incidentId") incidentId: String,
+    ): AdminIncident
+
+    @GET("app/places/{placeId}/incidents/{incidentId}/occurrences")
+    suspend fun getIncidentOccurrences(
+        @Path("placeId") placeId: String,
+        @Path("incidentId") incidentId: String,
+    ): IncidentOccurrencesResponse
+
     @GET("app/places/{placeId}/users")
     suspend fun listUsers(@Path("placeId") placeId: String): PaginatedResponse<AdminUser>
+
+    @GET("app/places/{placeId}/users/{userId}")
+    suspend fun getUser(
+        @Path("placeId") placeId: String,
+        @Path("userId") userId: String,
+    ): AdminUser
+
+    @GET("app/places/{placeId}/users/{userId}/logins")
+    suspend fun listUserLogins(
+        @Path("placeId") placeId: String,
+        @Path("userId") userId: String,
+    ): PaginatedResponse<UserLogin>
+
+    @GET("app/places/{placeId}/users/{userId}/access-rights")
+    suspend fun listUserAccessRights(
+        @Path("placeId") placeId: String,
+        @Path("userId") userId: String,
+    ): PaginatedResponse<AccessRight>
+
+    @POST("app/places/{placeId}/users/{userId}/share-access")
+    suspend fun shareUserAccess(
+        @Path("placeId") placeId: String,
+        @Path("userId") userId: String,
+        @Body request: ShareAccessRequest,
+    ): AccessRight
 
     @GET("app/places/{placeId}/groups")
     suspend fun listGroups(@Path("placeId") placeId: String): PaginatedResponse<AdminGroup>
@@ -76,6 +134,21 @@ interface AdminApi {
 
     @GET("app/places/{placeId}/zones")
     suspend fun listZones(@Path("placeId") placeId: String): PaginatedResponse<AdminZone>
+
+    @GET("app/places/{placeId}/zones/{zoneId}")
+    suspend fun getZone(
+        @Path("placeId") placeId: String,
+        @Path("zoneId") zoneId: String,
+    ): AdminZone
+
+    @GET("app/places/{placeId}/holiday-regions")
+    suspend fun listHolidayRegions(@Path("placeId") placeId: String): PaginatedResponse<HolidayRegion>
+
+    @GET("app/places/{placeId}/holiday-regions/{regionId}/holidays")
+    suspend fun listHolidays(
+        @Path("placeId") placeId: String,
+        @Path("regionId") regionId: String,
+    ): PaginatedResponse<Holiday>
 
     @GET("app/alarms")
     suspend fun listAlarms(): PaginatedResponse<Alarm>
@@ -376,6 +449,12 @@ interface AdminApi {
     // Camera streaming
     @GET("app/cameras/{cameraId}/video-link")
     suspend fun getCameraStream(@Path("cameraId") cameraId: String): CameraVideoLink
+
+    @GET("app/cameras/{cameraId}/cloud-token")
+    suspend fun getCameraCloudToken(@Path("cameraId") cameraId: String): CameraCloudToken
+
+    @GET("app/cameras/{cameraId}/recordings")
+    suspend fun listCameraRecordings(@Path("cameraId") cameraId: String): PaginatedResponse<CameraRecording>
 
     // Camera streaming & snapshot
     @POST("app/cameras/{cameraId}/snapshot")

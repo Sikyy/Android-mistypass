@@ -8,7 +8,9 @@ data class CreateVisitorPassRequest(
     @SerialName("building_id") val buildingId: String? = null,
     val visitor: String,
     @SerialName("delivery_method") val deliveryMethod: String,
-    @SerialName("expires_at") val expiresAt: String,
+    @SerialName("ttl_hours") val ttlHours: Double? = null,
+    @SerialName("valid_until") val validUntil: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
 )
 
 @Serializable
@@ -50,6 +52,17 @@ data class BleTokenResponse(
     @SerialName("expires_in") val expiresIn: Int = 300,
     @SerialName("token_type") val tokenType: String? = null,
     @SerialName("user_id") val userId: String? = null,
+)
+
+@Serializable
+data class QRTokenRequest(
+    @SerialName("door_id") val doorId: String? = null,
+)
+
+@Serializable
+data class QRTokenResponse(
+    val token: String,
+    @SerialName("expires_at") val expiresAt: String,
 )
 
 @Serializable

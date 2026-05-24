@@ -8,21 +8,15 @@
         </trust-anchors>
     </base-config>
 
-    <!--
-        TODO: Enable certificate pinning once api.mistyislet.com TLS cert is stable.
-        Generate the pin hash with:
-            openssl s_client -connect api.mistyislet.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
-        Then uncomment below and replace placeholders with real hashes.
-    -->
-    <!--
+    <!-- Pins are for the public Cloudflare edge chain served by api.mistyislet.com. -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">api.mistyislet.com</domain>
-        <pin-set expiration="2027-06-01">
-            <pin digest="SHA-256">REPLACE_WITH_PRIMARY_PIN_HASH=</pin>
-            <pin digest="SHA-256">REPLACE_WITH_BACKUP_PIN_HASH=</pin>
+        <pin-set expiration="2027-07-13">
+            <pin digest="SHA-256">SCLfz8HMkTfdKWXGwyvGP8MfePXUCuLlNuXrxxoq/AA=</pin>
+            <pin digest="SHA-256">kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=</pin>
+            <pin digest="SHA-256">mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</pin>
         </pin-set>
     </domain-config>
-    -->
 
     <!-- Debug: allow cleartext for local development only -->
     <domain-config cleartextTrafficPermitted="true">

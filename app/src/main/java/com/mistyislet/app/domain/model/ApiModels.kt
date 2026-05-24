@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 data class LoginRequest(
     val email: String,
     val password: String,
+    @SerialName("mfa_code") val mfaCode: String? = null,
 )
 
 @Serializable
@@ -81,3 +82,16 @@ data class MagicLinkResponse(val status: String)
 
 @Serializable
 data class VerifyMagicLinkRequest(val token: String)
+
+@Serializable
+data class RegisterDeviceRequest(
+    @SerialName("fcm_token") val fcmToken: String,
+    @SerialName("device_id") val deviceId: String,
+    @SerialName("device_model") val deviceModel: String,
+    val platform: String = "android",
+)
+
+@Serializable
+data class RegisterDeviceResponse(
+    val status: String,
+)
