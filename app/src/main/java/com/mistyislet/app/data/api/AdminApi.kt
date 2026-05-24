@@ -95,7 +95,7 @@ interface AdminApi {
         @Path("incidentId") incidentId: String,
     ): IncidentOccurrencesResponse
 
-    @GET("app/places/{placeId}/users")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdUsersRetrofitPath)
     suspend fun listUsers(@Path("placeId") placeId: String): PaginatedResponse<AdminUser>
 
     @GET(MobileApiRoutes.getAppPlacesPlaceIdUsersUserIdRetrofitPath)
