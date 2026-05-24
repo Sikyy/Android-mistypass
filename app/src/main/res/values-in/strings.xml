@@ -181,7 +181,9 @@
     <string name="admin_search_credentials">Cari kredensial</string>
     <string name="admin_search_presence">Cari pengguna</string>
     <string name="admin_role">Peran</string>
+    <string name="admin_status">Status</string>
     <string name="admin_last_activity">Aktivitas Terakhir</string>
+    <string name="admin_login_sessions">Sesi Login</string>
     <string name="admin_joined">Bergabung</string>
     <string name="admin_change_role">Ubah Peran</string>
     <string name="admin_apply_role">Terapkan Peran</string>
@@ -225,6 +227,9 @@
     <string name="admin_schedule_denial">Tolak Akses</string>
     <string name="admin_schedule_first">Pertama Tiba</string>
     <string name="admin_schedule_holiday">Libur</string>
+    <string name="admin_holiday_regions">Wilayah Libur</string>
+    <string name="admin_no_holiday_regions">Tidak ada wilayah libur</string>
+    <string name="admin_holidays_count">%d hari libur</string>
     <string name="admin_members">Anggota</string>
     <string name="admin_doors">Pintu</string>
     <string name="admin_no_members">Tidak ada anggota</string>
@@ -342,6 +347,15 @@
     <string name="camera_model">Model</string>
     <string name="camera_ip">Alamat IP</string>
     <string name="camera_door">Pintu</string>
+    <string name="camera_cloud">Cloud</string>
+    <string name="camera_cloud_token">Token Cloud</string>
+    <string name="camera_cloud_token_available">Tersedia</string>
+    <string name="camera_cloud_expires">Kedaluwarsa</string>
+    <string name="camera_cloud_unavailable">Token cloud tidak tersedia</string>
+    <string name="camera_recordings">Rekaman</string>
+    <string name="camera_no_recordings">Tidak ada rekaman</string>
+    <string name="camera_recording_seconds">%d dtk</string>
+    <string name="camera_recording_ready">Siap</string>
     <string name="presence_weekday_activity">Aktivitas Hari Kerja</string>
     <string name="presence_user_heatmap">Peta Panas Pengguna</string>
     <string name="presence_users_title">Pengguna</string>

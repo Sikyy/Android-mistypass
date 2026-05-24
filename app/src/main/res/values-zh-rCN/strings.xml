@@ -181,7 +181,9 @@
     <string name="admin_search_credentials">搜索凭证</string>
     <string name="admin_search_presence">搜索用户</string>
     <string name="admin_role">角色</string>
+    <string name="admin_status">状态</string>
     <string name="admin_last_activity">最近活动</string>
+    <string name="admin_login_sessions">登录会话</string>
     <string name="admin_joined">加入时间</string>
     <string name="admin_change_role">更改角色</string>
     <string name="admin_apply_role">应用角色</string>
@@ -225,6 +227,9 @@
     <string name="admin_schedule_denial">拒绝访问</string>
     <string name="admin_schedule_first">首位到达</string>
     <string name="admin_schedule_holiday">假日</string>
+    <string name="admin_holiday_regions">假日区域</string>
+    <string name="admin_no_holiday_regions">暂无假日区域</string>
+    <string name="admin_holidays_count">%d 个假日</string>
     <string name="admin_members">成员</string>
     <string name="admin_doors">门禁</string>
     <string name="admin_no_members">暂无成员</string>
@@ -342,6 +347,15 @@
     <string name="camera_model">型号</string>
     <string name="camera_ip">IP 地址</string>
     <string name="camera_door">门</string>
+    <string name="camera_cloud">云端</string>
+    <string name="camera_cloud_token">云端令牌</string>
+    <string name="camera_cloud_token_available">可用</string>
+    <string name="camera_cloud_expires">过期时间</string>
+    <string name="camera_cloud_unavailable">暂无云端令牌</string>
+    <string name="camera_recordings">录像</string>
+    <string name="camera_no_recordings">暂无录像</string>
+    <string name="camera_recording_seconds">%d 秒</string>
+    <string name="camera_recording_ready">已就绪</string>
     <string name="presence_weekday_activity">工作日活动</string>
     <string name="presence_user_heatmap">用户热力图</string>
     <string name="presence_users_title">用户列表</string>
