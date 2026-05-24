@@ -73,7 +73,7 @@ class AdminApiEndpointTest {
         assertEquals("/api/v1/app/places/place-1/holiday-regions", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/holiday-regions/region-1/holidays", server.takeRequest().path)
         assertEquals("/api/v1/app/cameras/camera-1/cloud-token", server.takeRequest().path)
-        assertEquals("/api/v1/app/cameras/camera-1/recordings", server.takeRequest().path)
+        assertEquals("/api/v1/app/cameras/camera-1/cloud-recordings", server.takeRequest().path)
     }
 
     private fun MockWebServer.enqueueJson(body: String) {

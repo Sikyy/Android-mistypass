@@ -453,7 +453,7 @@ interface AdminApi {
     @GET("app/cameras/{cameraId}/cloud-token")
     suspend fun getCameraCloudToken(@Path("cameraId") cameraId: String): CameraCloudToken
 
-    @GET("app/cameras/{cameraId}/recordings")
+    @GET("app/cameras/{cameraId}/cloud-recordings")
     suspend fun listCameraRecordings(@Path("cameraId") cameraId: String): PaginatedResponse<CameraRecording>
 
     // Camera streaming & snapshot
