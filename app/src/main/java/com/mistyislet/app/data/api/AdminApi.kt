@@ -65,31 +65,31 @@ import retrofit2.http.Query
 
 interface AdminApi {
 
-    @GET("app/places/{placeId}/events")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdEventsRetrofitPath)
     suspend fun listEvents(@Path("placeId") placeId: String): PaginatedResponse<AdminEvent>
 
-    @GET("app/places/{placeId}/events/{eventId}")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdEventsEventIdRetrofitPath)
     suspend fun getEvent(
         @Path("placeId") placeId: String,
         @Path("eventId") eventId: String,
     ): AdminEvent
 
-    @GET("app/places/{placeId}/events/{eventId}/related")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdEventsEventIdRelatedRetrofitPath)
     suspend fun getRelatedEvents(
         @Path("placeId") placeId: String,
         @Path("eventId") eventId: String,
     ): RelatedEventsResponse
 
-    @GET("app/places/{placeId}/incidents")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdIncidentsRetrofitPath)
     suspend fun listIncidents(@Path("placeId") placeId: String): PaginatedResponse<AdminIncident>
 
-    @GET("app/places/{placeId}/incidents/{incidentId}")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdIncidentsIncidentIdRetrofitPath)
     suspend fun getIncident(
         @Path("placeId") placeId: String,
         @Path("incidentId") incidentId: String,
     ): AdminIncident
 
-    @GET("app/places/{placeId}/incidents/{incidentId}/occurrences")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdIncidentsIncidentIdOccurrencesRetrofitPath)
     suspend fun getIncidentOccurrences(
         @Path("placeId") placeId: String,
         @Path("incidentId") incidentId: String,
@@ -98,80 +98,80 @@ interface AdminApi {
     @GET("app/places/{placeId}/users")
     suspend fun listUsers(@Path("placeId") placeId: String): PaginatedResponse<AdminUser>
 
-    @GET("app/places/{placeId}/users/{userId}")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdUsersUserIdRetrofitPath)
     suspend fun getUser(
         @Path("placeId") placeId: String,
         @Path("userId") userId: String,
     ): AdminUser
 
-    @GET("app/places/{placeId}/users/{userId}/logins")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdUsersUserIdLoginsRetrofitPath)
     suspend fun listUserLogins(
         @Path("placeId") placeId: String,
         @Path("userId") userId: String,
     ): PaginatedResponse<UserLogin>
 
-    @GET("app/places/{placeId}/users/{userId}/access-rights")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdUsersUserIdAccessRightsRetrofitPath)
     suspend fun listUserAccessRights(
         @Path("placeId") placeId: String,
         @Path("userId") userId: String,
     ): PaginatedResponse<AccessRight>
 
-    @POST("app/places/{placeId}/users/{userId}/share-access")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdUsersUserIdShareAccessRetrofitPath)
     suspend fun shareUserAccess(
         @Path("placeId") placeId: String,
         @Path("userId") userId: String,
         @Body request: ShareAccessRequest,
     ): AccessRight
 
-    @GET("app/places/{placeId}/groups")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdGroupsRetrofitPath)
     suspend fun listGroups(@Path("placeId") placeId: String): PaginatedResponse<AdminGroup>
 
-    @GET("app/places/{placeId}/teams")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdTeamsRetrofitPath)
     suspend fun listTeams(@Path("placeId") placeId: String): PaginatedResponse<AdminTeam>
 
-    @GET("app/places/{placeId}/schedules")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdSchedulesRetrofitPath)
     suspend fun listSchedules(@Path("placeId") placeId: String): PaginatedResponse<AdminSchedule>
 
-    @GET("app/places/{placeId}/zones")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdZonesRetrofitPath)
     suspend fun listZones(@Path("placeId") placeId: String): PaginatedResponse<AdminZone>
 
-    @GET("app/places/{placeId}/zones/{zoneId}")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdZonesZoneIdRetrofitPath)
     suspend fun getZone(
         @Path("placeId") placeId: String,
         @Path("zoneId") zoneId: String,
     ): AdminZone
 
-    @GET("app/places/{placeId}/holiday-regions")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdHolidayRegionsRetrofitPath)
     suspend fun listHolidayRegions(@Path("placeId") placeId: String): PaginatedResponse<HolidayRegion>
 
-    @GET("app/places/{placeId}/holiday-regions/{regionId}/holidays")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdHolidayRegionsRegionIdHolidaysRetrofitPath)
     suspend fun listHolidays(
         @Path("placeId") placeId: String,
         @Path("regionId") regionId: String,
     ): PaginatedResponse<Holiday>
 
-    @GET("app/alarms")
+    @GET(MobileApiRoutes.getAppAlarmsRetrofitPath)
     suspend fun listAlarms(): PaginatedResponse<Alarm>
 
-    @GET("app/places/{placeId}/activity")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdActivityRetrofitPath)
     suspend fun listLiveActivity(@Path("placeId") placeId: String): PaginatedResponse<LiveActivityRecord>
 
-    @GET("app/bookings")
+    @GET(MobileApiRoutes.getAppBookingsRetrofitPath)
     suspend fun listBookings(@Query("space_id") spaceId: String? = null): PaginatedResponse<Booking>
 
-    @GET("app/places/{placeId}/cards")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdCardsRetrofitPath)
     suspend fun listCards(@Path("placeId") placeId: String): PaginatedResponse<AdminCard>
 
-    @GET("app/places/{placeId}/credentials")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdCredentialsRetrofitPath)
     suspend fun listCredentials(@Path("placeId") placeId: String): PaginatedResponse<AdminDigitalCredential>
 
-    @GET("app/places/{placeId}/analytics/summary")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdAnalyticsSummaryRetrofitPath)
     suspend fun getAnalyticsSummary(
         @Path("placeId") placeId: String,
         @Query("days") days: Int = 30,
     ): AnalyticsSummary
 
-    @GET("app/places/{placeId}/analytics/presence")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdAnalyticsPresenceRetrofitPath)
     suspend fun getUserPresence(
         @Path("placeId") placeId: String,
         @Query("days") days: Int = 30,
@@ -186,56 +186,56 @@ interface AdminApi {
     @GET(MobileApiRoutes.getAppCamerasRetrofitPath)
     suspend fun listCameras(): PaginatedResponse<Camera>
 
-    @GET("app/orgs/{orgId}/settings")
+    @GET(MobileApiRoutes.getAppOrgsOrgIdSettingsRetrofitPath)
     suspend fun getOrgSettings(@Path("orgId") orgId: String): OrgSettings
 
-    @PUT("app/orgs/{orgId}/settings")
+    @PUT(MobileApiRoutes.putAppOrgsOrgIdSettingsRetrofitPath)
     suspend fun updateOrgSettings(
         @Path("orgId") orgId: String,
         @Body request: OrgSettingsUpdateRequest,
     ): OrgSettings
 
     // User management
-    @PATCH("app/places/{placeId}/users/{userId}/role")
+    @PATCH(MobileApiRoutes.patchAppPlacesPlaceIdUsersUserIdRoleRetrofitPath)
     suspend fun updateUserRole(
         @Path("placeId") placeId: String,
         @Path("userId") userId: String,
         @Body request: UserRoleUpdateRequest,
     ): AdminUser
 
-    @POST("app/places/{placeId}/users/{userId}/sign-out")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdUsersUserIdSignOutRetrofitPath)
     suspend fun forceSignOutUser(
         @Path("placeId") placeId: String,
         @Path("userId") userId: String,
     )
 
-    @DELETE("app/places/{placeId}/users/{userId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdUsersUserIdRetrofitPath)
     suspend fun removeUser(
         @Path("placeId") placeId: String,
         @Path("userId") userId: String,
     )
 
     // User invite
-    @POST("app/places/{placeId}/users/invite")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdUsersInviteRetrofitPath)
     suspend fun inviteUser(
         @Path("placeId") placeId: String,
         @Body request: InviteUserRequest,
     ): AdminUser
 
     // Group CRUD
-    @POST("app/places/{placeId}/groups")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdGroupsRetrofitPath)
     suspend fun createGroup(
         @Path("placeId") placeId: String,
         @Body request: CreateGroupRequest,
     ): AdminGroup
 
-    @DELETE("app/places/{placeId}/groups/{groupId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdGroupsGroupIdRetrofitPath)
     suspend fun deleteGroup(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
     )
 
-    @PATCH("app/places/{placeId}/groups/{groupId}")
+    @PATCH(MobileApiRoutes.patchAppPlacesPlaceIdGroupsGroupIdRetrofitPath)
     suspend fun updateGroup(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
@@ -243,20 +243,20 @@ interface AdminApi {
     ): AdminGroup
 
     // Group members
-    @GET("app/places/{placeId}/groups/{groupId}/members")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdGroupsGroupIdMembersRetrofitPath)
     suspend fun listGroupMembers(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
     ): PaginatedResponse<GroupMember>
 
-    @POST("app/places/{placeId}/groups/{groupId}/members")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdGroupsGroupIdMembersRetrofitPath)
     suspend fun addGroupMember(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
         @Body request: AssignMemberRequest,
     ): GroupMember
 
-    @DELETE("app/places/{placeId}/groups/{groupId}/members/{memberId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdGroupsGroupIdMembersMemberIdRetrofitPath)
     suspend fun removeGroupMember(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
@@ -264,20 +264,20 @@ interface AdminApi {
     )
 
     // Group doors
-    @GET("app/places/{placeId}/groups/{groupId}/doors")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdGroupsGroupIdDoorsRetrofitPath)
     suspend fun listGroupDoors(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
     ): PaginatedResponse<GroupDoor>
 
-    @POST("app/places/{placeId}/groups/{groupId}/doors")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdGroupsGroupIdDoorsRetrofitPath)
     suspend fun addGroupDoor(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
         @Body request: AssignDoorRequest,
     ): GroupDoor
 
-    @DELETE("app/places/{placeId}/groups/{groupId}/doors/{doorId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdGroupsGroupIdDoorsDoorIdRetrofitPath)
     suspend fun removeGroupDoor(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
@@ -285,33 +285,33 @@ interface AdminApi {
     )
 
     // Team CRUD
-    @POST("app/places/{placeId}/teams")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdTeamsRetrofitPath)
     suspend fun createTeam(
         @Path("placeId") placeId: String,
         @Body request: CreateTeamRequest,
     ): AdminTeam
 
-    @DELETE("app/places/{placeId}/teams/{teamId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdTeamsTeamIdRetrofitPath)
     suspend fun deleteTeam(
         @Path("placeId") placeId: String,
         @Path("teamId") teamId: String,
     )
 
     // Team members
-    @GET("app/places/{placeId}/teams/{teamId}/members")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdTeamsTeamIdMembersRetrofitPath)
     suspend fun listTeamMembers(
         @Path("placeId") placeId: String,
         @Path("teamId") teamId: String,
     ): PaginatedResponse<TeamMember>
 
-    @POST("app/places/{placeId}/teams/{teamId}/members")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdTeamsTeamIdMembersRetrofitPath)
     suspend fun addTeamMember(
         @Path("placeId") placeId: String,
         @Path("teamId") teamId: String,
         @Body request: AssignMemberRequest,
     ): TeamMember
 
-    @DELETE("app/places/{placeId}/teams/{teamId}/members/{memberId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdTeamsTeamIdMembersMemberIdRetrofitPath)
     suspend fun removeTeamMember(
         @Path("placeId") placeId: String,
         @Path("teamId") teamId: String,
@@ -319,57 +319,57 @@ interface AdminApi {
     )
 
     // Team access rights
-    @GET("app/places/{placeId}/teams/{teamId}/access-rights")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdTeamsTeamIdAccessRightsRetrofitPath)
     suspend fun listTeamAccessRights(
         @Path("placeId") placeId: String,
         @Path("teamId") teamId: String,
     ): PaginatedResponse<TeamAccessRight>
 
-    @POST("app/places/{placeId}/teams/{teamId}/access-rights")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdTeamsTeamIdAccessRightsRetrofitPath)
     suspend fun addTeamAccessRight(
         @Path("placeId") placeId: String,
         @Path("teamId") teamId: String,
         @Body request: AssignAccessRightRequest,
     ): TeamAccessRight
 
-    @DELETE("app/places/{placeId}/teams/{teamId}/access-rights/{rightId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdTeamsTeamIdAccessRightsAccessRightIdRetrofitPath)
     suspend fun removeTeamAccessRight(
         @Path("placeId") placeId: String,
         @Path("teamId") teamId: String,
-        @Path("rightId") rightId: String,
+        @Path("accessRightId") rightId: String,
     )
 
     // Schedule CRUD
-    @POST("app/places/{placeId}/schedules")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdSchedulesRetrofitPath)
     suspend fun createSchedule(
         @Path("placeId") placeId: String,
         @Body request: ScheduleWriteRequest,
     ): Unit
 
-    @PUT("app/places/{placeId}/schedules/{scheduleId}")
+    @PUT(MobileApiRoutes.putAppPlacesPlaceIdSchedulesScheduleIdRetrofitPath)
     suspend fun updateSchedule(
         @Path("placeId") placeId: String,
         @Path("scheduleId") scheduleId: String,
         @Body request: ScheduleWriteRequest,
     ): Unit
 
-    @DELETE("app/places/{placeId}/schedules/{scheduleId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdSchedulesScheduleIdRetrofitPath)
     suspend fun deleteSchedule(
         @Path("placeId") placeId: String,
         @Path("scheduleId") scheduleId: String,
     )
 
     // Alarm actions
-    @PATCH("app/alarms/{alarmId}/status")
+    @PATCH(MobileApiRoutes.patchAppAlarmsAlarmIDStatusRetrofitPath)
     suspend fun updateAlarmStatus(
-        @Path("alarmId") alarmId: String,
+        @Path("alarmID") alarmId: String,
         @Body request: AlarmStatusUpdateRequest,
     ): Alarm
 
-    @GET("app/alarm-schedules")
+    @GET(MobileApiRoutes.getAppAlarmSchedulesRetrofitPath)
     suspend fun listAlarmSchedules(): PaginatedResponse<AlarmSchedule>
 
-    @GET("app/alarm-schedules/calendar")
+    @GET(MobileApiRoutes.getAppAlarmSchedulesCalendarRetrofitPath)
     suspend fun listAlarmCalendar(
         @Query("from") from: String? = null,
         @Query("to") to: String? = null,
@@ -377,70 +377,70 @@ interface AdminApi {
     ): PaginatedResponse<AlarmCalendarEntry>
 
     // Guest management
-    @GET("app/places/{placeId}/guests")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdGuestsRetrofitPath)
     suspend fun listGuests(@Path("placeId") placeId: String): PaginatedResponse<GuestVisit>
 
-    @POST("app/places/{placeId}/guests")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdGuestsRetrofitPath)
     suspend fun createGuest(
         @Path("placeId") placeId: String,
         @Body request: CreateGuestRequest,
     ): GuestVisit
 
-    @PATCH("app/places/{placeId}/guests/{guestId}")
+    @PATCH(MobileApiRoutes.patchAppPlacesPlaceIdGuestsGuestIdRetrofitPath)
     suspend fun updateGuestStatus(
         @Path("placeId") placeId: String,
         @Path("guestId") guestId: String,
         @Body request: GuestCheckInRequest,
     ): GuestVisit
 
-    @DELETE("app/places/{placeId}/guests/{guestId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdGuestsGuestIdRetrofitPath)
     suspend fun deleteGuest(
         @Path("placeId") placeId: String,
         @Path("guestId") guestId: String,
     )
 
     // Booking spaces & actions
-    @GET("app/bookable-spaces")
+    @GET(MobileApiRoutes.getAppBookableSpacesRetrofitPath)
     suspend fun listBookingSpaces(): PaginatedResponse<BookingSpace>
 
-    @GET("app/bookable-spaces/{spaceId}/status")
+    @GET(MobileApiRoutes.getAppBookableSpacesSpaceIDStatusRetrofitPath)
     suspend fun getBookableSpaceStatus(
-        @Path("spaceId") spaceId: String,
+        @Path("spaceID") spaceId: String,
     ): BookingSpaceStatus
 
-    @POST("app/bookings")
+    @POST(MobileApiRoutes.postAppBookingsRetrofitPath)
     suspend fun createBooking(@Body request: CreateBookingRequest): Booking
 
-    @POST("app/bookings/{bookingId}/cancel")
-    suspend fun cancelBooking(@Path("bookingId") bookingId: String): Booking
+    @POST(MobileApiRoutes.postAppBookingsBookingIDCancelRetrofitPath)
+    suspend fun cancelBooking(@Path("bookingID") bookingId: String): Booking
 
-    @POST("app/bookings/{bookingId}/check-in")
-    suspend fun checkInBooking(@Path("bookingId") bookingId: String): Booking
+    @POST(MobileApiRoutes.postAppBookingsBookingIDCheckInRetrofitPath)
+    suspend fun checkInBooking(@Path("bookingID") bookingId: String): Booking
 
-    @POST("app/bookings/{bookingId}/check-out")
-    suspend fun checkOutBooking(@Path("bookingId") bookingId: String): Booking
+    @POST(MobileApiRoutes.postAppBookingsBookingIDCheckOutRetrofitPath)
+    suspend fun checkOutBooking(@Path("bookingID") bookingId: String): Booking
 
     // Card actions
-    @DELETE("app/places/{placeId}/cards/{cardId}")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdCardsCardUidRetrofitPath)
     suspend fun unbindCard(
         @Path("placeId") placeId: String,
-        @Path("cardId") cardId: String,
+        @Path("cardUid") cardId: String,
     )
 
     // Credential actions
-    @POST("app/places/{placeId}/credentials/{credentialId}/revoke")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdCredentialsCredentialIdRevokeRetrofitPath)
     suspend fun revokeCredential(
         @Path("placeId") placeId: String,
         @Path("credentialId") credentialId: String,
     )
 
-    @POST("app/places/{placeId}/credentials/{credentialId}/suspend")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdCredentialsCredentialIdSuspendRetrofitPath)
     suspend fun suspendCredential(
         @Path("placeId") placeId: String,
         @Path("credentialId") credentialId: String,
     )
 
-    @POST("app/places/{placeId}/credentials/{credentialId}/activate")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdCredentialsCredentialIdActivateRetrofitPath)
     suspend fun activateCredential(
         @Path("placeId") placeId: String,
         @Path("credentialId") credentialId: String,
@@ -461,27 +461,27 @@ interface AdminApi {
     suspend fun takeCameraSnapshot(@Path("cameraID") cameraId: String): CameraSnapshotResponse
 
     // Analytics failed attempts
-    @GET("app/places/{placeId}/analytics/failed-attempts")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdAnalyticsFailedAttemptsRetrofitPath)
     suspend fun getFailedAttempts(
         @Path("placeId") placeId: String,
         @Query("days") days: Int = 30,
     ): PaginatedResponse<FailedAttemptEvent>
 
     // Rename endpoints
-    @PATCH("app/cameras/{cameraId}")
+    @PATCH(MobileApiRoutes.patchAppCamerasCameraIdRetrofitPath)
     suspend fun renameCamera(
         @Path("cameraId") cameraId: String,
         @Body request: RenameRequest,
     ): Camera
 
-    @PATCH("app/places/{placeId}/doors/{doorId}")
+    @PATCH(MobileApiRoutes.patchAppPlacesPlaceIdDoorsDoorIdRetrofitPath)
     suspend fun renameDoor(
         @Path("placeId") placeId: String,
         @Path("doorId") doorId: String,
         @Body request: RenameRequest,
     )
 
-    @PATCH("app/gateways/{gatewayId}")
+    @PATCH(MobileApiRoutes.patchAppGatewaysGatewayIdRetrofitPath)
     suspend fun renameGateway(
         @Path("gatewayId") gatewayId: String,
         @Body request: RenameRequest,

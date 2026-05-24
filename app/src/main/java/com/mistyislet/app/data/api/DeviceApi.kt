@@ -7,6 +7,6 @@ import retrofit2.http.POST
 
 interface DeviceApi {
 
-    @POST("app/devices/register")
+    @POST(MobileApiRoutes.postAppDevicesRegisterRetrofitPath)
     suspend fun registerDevice(@Body request: RegisterDeviceRequest): RegisterDeviceResponse
 }

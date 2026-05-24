@@ -21,22 +21,22 @@ data class SetPrimaryDeviceResponse(
 
 interface UserApi {
 
-    @GET("app/me")
+    @GET(MobileApiRoutes.fetchAppCurrentUserRetrofitPath)
     suspend fun getCurrentUser(): UserInfo
 
-    @GET("app/me/logins")
+    @GET(MobileApiRoutes.getAppMeLoginsRetrofitPath)
     suspend fun getMyLogins(): UserLoginListResponse
 
-    @DELETE("app/me/logins/{loginId}")
+    @DELETE(MobileApiRoutes.deleteAppMeLoginsLoginIdRetrofitPath)
     suspend fun remoteLogout(@Path("loginId") loginId: String)
 
-    @POST("app/me/change-password")
+    @POST(MobileApiRoutes.postAppMeChangePasswordRetrofitPath)
     suspend fun changePassword(@Body request: ChangePasswordRequest)
 
     @Multipart
-    @POST("app/me/avatar")
+    @POST(MobileApiRoutes.postAppMeAvatarRetrofitPath)
     suspend fun uploadAvatar(@Part file: MultipartBody.Part): UserInfo
 
-    @POST("app/me/primary-device")
+    @POST(MobileApiRoutes.postAppMePrimaryDeviceRetrofitPath)
     suspend fun setPrimaryDevice(): SetPrimaryDeviceResponse
 }
