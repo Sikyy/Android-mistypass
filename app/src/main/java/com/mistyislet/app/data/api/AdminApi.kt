@@ -177,13 +177,13 @@ interface AdminApi {
         @Query("days") days: Int = 30,
     ): List<UserPresenceRecord>
 
-    @POST("app/places/{placeId}/reports/export")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdReportsExportRetrofitPath)
     suspend fun exportReport(
         @Path("placeId") placeId: String,
         @Body request: ReportExportRequest,
     ): ReportExportResponse
 
-    @GET("app/cameras")
+    @GET(MobileApiRoutes.getAppCamerasRetrofitPath)
     suspend fun listCameras(): PaginatedResponse<Camera>
 
     @GET("app/orgs/{orgId}/settings")
@@ -447,18 +447,18 @@ interface AdminApi {
     )
 
     // Camera streaming
-    @GET("app/cameras/{cameraId}/video-link")
-    suspend fun getCameraStream(@Path("cameraId") cameraId: String): CameraVideoLink
+    @GET(MobileApiRoutes.getAppCamerasCameraIDVideoLinkRetrofitPath)
+    suspend fun getCameraStream(@Path("cameraID") cameraId: String): CameraVideoLink
 
-    @GET("app/cameras/{cameraId}/cloud-token")
-    suspend fun getCameraCloudToken(@Path("cameraId") cameraId: String): CameraCloudToken
+    @GET(MobileApiRoutes.getAppCamerasCameraIDCloudTokenRetrofitPath)
+    suspend fun getCameraCloudToken(@Path("cameraID") cameraId: String): CameraCloudToken
 
-    @GET("app/cameras/{cameraId}/cloud-recordings")
-    suspend fun listCameraRecordings(@Path("cameraId") cameraId: String): PaginatedResponse<CameraRecording>
+    @GET(MobileApiRoutes.getAppCamerasCameraIDCloudRecordingsRetrofitPath)
+    suspend fun listCameraRecordings(@Path("cameraID") cameraId: String): PaginatedResponse<CameraRecording>
 
     // Camera streaming & snapshot
-    @POST("app/cameras/{cameraId}/snapshot")
-    suspend fun takeCameraSnapshot(@Path("cameraId") cameraId: String): CameraSnapshotResponse
+    @POST(MobileApiRoutes.postAppCamerasCameraIDSnapshotRetrofitPath)
+    suspend fun takeCameraSnapshot(@Path("cameraID") cameraId: String): CameraSnapshotResponse
 
     // Analytics failed attempts
     @GET("app/places/{placeId}/analytics/failed-attempts")
