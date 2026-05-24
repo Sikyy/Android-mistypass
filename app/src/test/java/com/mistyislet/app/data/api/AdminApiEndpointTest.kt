@@ -38,17 +38,20 @@ class AdminApiEndpointTest {
     }
 
     @Test
-    fun `user detail endpoints use place scoped admin paths`() = runTest {
+    fun `user endpoints use place scoped admin paths`() = runTest {
+        server.enqueueJson("""{"items":[{"id":"user-1","name":"Ada","email":"ada@example.com","role":"door_access"}]}""")
         server.enqueueJson("""{"id":"user-1","name":"Ada","email":"ada@example.com","role":"door_access"}""")
         server.enqueueJson("""{"items":[{"id":"login-1","device_name":"Pixel","platform":"android","last_active":"2026-05-24T01:00:00Z"}]}""")
         server.enqueueJson("""{"items":[{"id":"right-1","team_name":"Ops","door_name":"Lobby","schedule_name":"Always"}]}""")
         server.enqueueJson("""{"id":"right-2","team_name":"Ops","door_name":"Lab","schedule_name":"Always"}""")
 
+        api.listUsers("place-1")
         api.getUser("place-1", "user-1")
         api.listUserLogins("place-1", "user-1")
         api.listUserAccessRights("place-1", "user-1")
         api.shareUserAccess("place-1", "user-1", ShareAccessRequest(doorId = "door-1"))
 
+        assertEquals("/api/v1/app/places/place-1/users", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/users/user-1", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/users/user-1/logins", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/users/user-1/access-rights", server.takeRequest().path)
