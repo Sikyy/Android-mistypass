@@ -19,6 +19,7 @@ import com.mistyislet.app.domain.model.Alarm
 import com.mistyislet.app.domain.model.AlarmSchedule
 import com.mistyislet.app.domain.model.AlarmStatusUpdateRequest
 import com.mistyislet.app.domain.model.AnalyticsSummary
+import com.mistyislet.app.domain.model.AccessRight
 import com.mistyislet.app.domain.model.Booking
 import com.mistyislet.app.domain.model.BookingSpace
 import com.mistyislet.app.domain.model.BookingSpaceStatus
@@ -26,6 +27,8 @@ import com.mistyislet.app.domain.model.AssignAccessRightRequest
 import com.mistyislet.app.domain.model.AssignDoorRequest
 import com.mistyislet.app.domain.model.AssignMemberRequest
 import com.mistyislet.app.domain.model.Camera
+import com.mistyislet.app.domain.model.CameraCloudToken
+import com.mistyislet.app.domain.model.CameraRecording
 import com.mistyislet.app.domain.model.CameraSnapshotResponse
 import com.mistyislet.app.domain.model.CameraVideoLink
 import com.mistyislet.app.domain.model.CreateBookingRequest
@@ -37,6 +40,8 @@ import com.mistyislet.app.domain.model.FailedAttemptEvent
 import com.mistyislet.app.domain.model.GroupDoor
 import com.mistyislet.app.domain.model.GroupMember
 import com.mistyislet.app.domain.model.GuestVisit
+import com.mistyislet.app.domain.model.Holiday
+import com.mistyislet.app.domain.model.HolidayRegion
 import com.mistyislet.app.domain.model.InviteUserRequest
 import com.mistyislet.app.domain.model.IncidentOccurrence
 import com.mistyislet.app.domain.model.LiveActivityRecord
@@ -46,8 +51,10 @@ import com.mistyislet.app.domain.model.RenameRequest
 import com.mistyislet.app.domain.model.ReportExportRequest
 import com.mistyislet.app.domain.model.ReportExportResponse
 import com.mistyislet.app.domain.model.RelatedAdminEvent
+import com.mistyislet.app.domain.model.ShareAccessRequest
 import com.mistyislet.app.domain.model.TeamAccessRight
 import com.mistyislet.app.domain.model.TeamMember
+import com.mistyislet.app.domain.model.UserLogin
 import com.mistyislet.app.domain.model.UserPresenceRecord
 import com.mistyislet.app.domain.model.UserRoleUpdateRequest
 import javax.inject.Inject
@@ -78,6 +85,24 @@ class AdminRepository @Inject constructor(
     suspend fun getUsers(placeId: String): ApiResult<List<AdminUser>> =
         safeApiCall { adminApi.listUsers(placeId).items }
 
+    suspend fun getUser(placeId: String, userId: String): ApiResult<AdminUser> =
+        safeApiCall { adminApi.getUser(placeId, userId) }
+
+    suspend fun getUserLogins(placeId: String, userId: String): ApiResult<List<UserLogin>> =
+        safeApiCall { adminApi.listUserLogins(placeId, userId).items }
+
+    suspend fun getUserAccessRights(placeId: String, userId: String): ApiResult<List<AccessRight>> =
+        safeApiCall { adminApi.listUserAccessRights(placeId, userId).items }
+
+    suspend fun shareUserAccess(
+        placeId: String,
+        userId: String,
+        doorId: String,
+        scheduleId: String? = null,
+        expiresAt: String? = null,
+    ): ApiResult<AccessRight> =
+        safeApiCall { adminApi.shareUserAccess(placeId, userId, ShareAccessRequest(doorId, scheduleId, expiresAt)) }
+
     suspend fun getGroups(placeId: String): ApiResult<List<AdminGroup>> =
         safeApiCall { adminApi.listGroups(placeId).items }
 
@@ -89,6 +114,15 @@ class AdminRepository @Inject constructor(
 
     suspend fun getZones(placeId: String): ApiResult<List<AdminZone>> =
         safeApiCall { adminApi.listZones(placeId).items }
+
+    suspend fun getZone(placeId: String, zoneId: String): ApiResult<AdminZone> =
+        safeApiCall { adminApi.getZone(placeId, zoneId) }
+
+    suspend fun getHolidayRegions(placeId: String): ApiResult<List<HolidayRegion>> =
+        safeApiCall { adminApi.listHolidayRegions(placeId).items }
+
+    suspend fun getHolidays(placeId: String, regionId: String): ApiResult<List<Holiday>> =
+        safeApiCall { adminApi.listHolidays(placeId, regionId).items }
 
     suspend fun getAlarms(): ApiResult<List<Alarm>> =
         safeApiCall { adminApi.listAlarms().items }
@@ -263,6 +297,12 @@ class AdminRepository @Inject constructor(
     // Camera streaming
     suspend fun getCameraStream(cameraId: String): ApiResult<CameraVideoLink> =
         safeApiCall { adminApi.getCameraStream(cameraId) }
+
+    suspend fun getCameraCloudToken(cameraId: String): ApiResult<CameraCloudToken> =
+        safeApiCall { adminApi.getCameraCloudToken(cameraId) }
+
+    suspend fun getCameraRecordings(cameraId: String): ApiResult<List<CameraRecording>> =
+        safeApiCall { adminApi.listCameraRecordings(cameraId).items }
 
     // Camera snapshot
     suspend fun takeCameraSnapshot(cameraId: String): ApiResult<CameraSnapshotResponse> =

@@ -65,6 +65,8 @@ import com.mistyislet.app.R
 import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.domain.model.Camera
+import com.mistyislet.app.domain.model.CameraCloudToken
+import com.mistyislet.app.domain.model.CameraRecording
 import com.mistyislet.app.domain.model.CameraVideoLink
 import com.mistyislet.app.ui.admin.components.KpiItem
 import com.mistyislet.app.ui.admin.components.StatusSummaryRow
@@ -92,6 +94,8 @@ class AdminCamerasViewModel @Inject constructor(
     val streamLoading: StateFlow<Boolean> = _streamLoading
     private val _streamError = MutableStateFlow<String?>(null)
     val streamError: StateFlow<String?> = _streamError
+    private val _cloudState = MutableStateFlow(CameraCloudDataState())
+    val cloudState: StateFlow<CameraCloudDataState> = _cloudState
 
     init {
         viewModelScope.launch { loadData() }
@@ -124,6 +128,40 @@ class AdminCamerasViewModel @Inject constructor(
         _streamError.value = null
     }
 
+    fun loadCloudStatus(cameraId: String) {
+        viewModelScope.launch {
+            _cloudState.value = CameraCloudDataState(isLoading = true)
+
+            var token: CameraCloudToken? = null
+            var tokenError: String? = null
+            when (val result = adminRepository.getCameraCloudToken(cameraId)) {
+                is ApiResult.Success -> token = result.data
+                is ApiResult.Error -> tokenError = result.message
+                is ApiResult.Exception -> tokenError = result.throwable.localizedMessage
+            }
+
+            var recordings = emptyList<CameraRecording>()
+            var recordingsError: String? = null
+            when (val result = adminRepository.getCameraRecordings(cameraId)) {
+                is ApiResult.Success -> recordings = result.data
+                is ApiResult.Error -> recordingsError = result.message
+                is ApiResult.Exception -> recordingsError = result.throwable.localizedMessage
+            }
+
+            _cloudState.value = CameraCloudDataState(
+                token = token,
+                recordings = recordings,
+                isLoading = false,
+                tokenError = tokenError,
+                recordingsError = recordingsError,
+            )
+        }
+    }
+
+    fun clearCloudStatus() {
+        _cloudState.value = CameraCloudDataState()
+    }
+
     fun renameCamera(cameraId: String, name: String) {
         viewModelScope.launch {
             adminRepository.renameCamera(cameraId, name)
@@ -146,6 +184,14 @@ class AdminCamerasViewModel @Inject constructor(
         _isLoading.value = false
     }
 }
+
+data class CameraCloudDataState(
+    val token: CameraCloudToken? = null,
+    val recordings: List<CameraRecording> = emptyList(),
+    val isLoading: Boolean = false,
+    val tokenError: String? = null,
+    val recordingsError: String? = null,
+)
 
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -193,6 +239,7 @@ fun AdminCamerasScreen(
             val camera = items.find { it.id == item.id }
             if (camera != null) {
                 selectedCamera = camera
+                viewModel.loadCloudStatus(camera.id)
                 if (camera.status.lowercase() == "online") {
                     viewModel.loadStream(camera.id)
                 }
@@ -215,6 +262,7 @@ fun AdminCamerasScreen(
             onDismissRequest = {
                 selectedCamera = null
                 viewModel.clearStream()
+                viewModel.clearCloudStatus()
             },
             sheetState = sheetState,
         ) {
@@ -226,6 +274,7 @@ fun AdminCamerasScreen(
                     renameTarget = camera
                     selectedCamera = null
                     viewModel.clearStream()
+                    viewModel.clearCloudStatus()
                 },
             )
         }
@@ -272,6 +321,7 @@ private fun CameraDetailSheet(
     val streamLink by viewModel.streamLink.collectAsStateWithLifecycle()
     val streamLoading by viewModel.streamLoading.collectAsStateWithLifecycle()
     val streamError by viewModel.streamError.collectAsStateWithLifecycle()
+    val cloudState by viewModel.cloudState.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -374,6 +424,10 @@ private fun CameraDetailSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        CloudStatusSection(cloudState = cloudState)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Camera info
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -393,6 +447,82 @@ private fun CameraDetailSheet(
             }
         }
     }
+}
+
+@Composable
+private fun CloudStatusSection(cloudState: CameraCloudDataState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.camera_cloud),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            when {
+                cloudState.isLoading -> CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                cloudState.tokenError != null -> CameraErrorText(cloudState.tokenError)
+                cloudState.token != null -> {
+                    val tokenValue = cloudState.token.token ?: cloudState.token.cloudToken
+                    InfoRow(
+                        label = stringResource(R.string.camera_cloud_token),
+                        value = if (tokenValue.isNullOrBlank()) {
+                            cloudState.token.status.ifBlank { stringResource(R.string.admin_active_now) }
+                        } else {
+                            stringResource(R.string.camera_cloud_token_available)
+                        },
+                    )
+                    cloudState.token.expiresAt?.let {
+                        InfoRow(stringResource(R.string.camera_cloud_expires), it.take(19))
+                    }
+                }
+                else -> Text(
+                    text = stringResource(R.string.camera_cloud_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.camera_recordings),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            when {
+                cloudState.isLoading -> CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                cloudState.recordingsError != null -> CameraErrorText(cloudState.recordingsError)
+                cloudState.recordings.isEmpty() -> Text(
+                    text = stringResource(R.string.camera_no_recordings),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                else -> cloudState.recordings.take(3).forEach { recording ->
+                    InfoRow(
+                        label = recording.title?.ifBlank { null } ?: recording.id,
+                        value = listOfNotNull(
+                            recording.startedAt?.take(10),
+                            recording.durationSeconds?.let { stringResource(R.string.camera_recording_seconds, it) },
+                        ).joinToString(" · ").ifBlank { stringResource(R.string.camera_recording_ready) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CameraErrorText(message: String) {
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+    )
 }
 
 @Composable

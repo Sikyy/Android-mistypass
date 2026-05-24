@@ -136,6 +136,24 @@ data class AdminZone(
 )
 
 @Serializable
+data class HolidayRegion(
+    val id: String = "",
+    val name: String = "",
+    @SerialName("country_code") val countryCode: String? = null,
+    val timezone: String? = null,
+    @SerialName("holiday_count") val holidayCount: Int = 0,
+)
+
+@Serializable
+data class Holiday(
+    val id: String = "",
+    @SerialName("region_id") val regionId: String? = null,
+    val name: String = "",
+    val date: String = "",
+    val type: String? = null,
+)
+
+@Serializable
 data class Alarm(
     val id: String,
     val type: String = "",
@@ -213,6 +231,27 @@ data class Camera(
 data class CameraVideoLink(
     @SerialName("video_url") val videoUrl: String,
     @SerialName("expires_at") val expiresAt: String? = null,
+)
+
+@Serializable
+data class CameraCloudToken(
+    val token: String? = null,
+    @SerialName("cloud_token") val cloudToken: String? = null,
+    val status: String = "",
+    val url: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
+)
+
+@Serializable
+data class CameraRecording(
+    val id: String = "",
+    @SerialName("camera_id") val cameraId: String? = null,
+    val title: String? = null,
+    @SerialName("video_url") val videoUrl: String? = null,
+    @SerialName("thumbnail_url") val thumbnailUrl: String? = null,
+    @SerialName("started_at") val startedAt: String? = null,
+    @SerialName("ended_at") val endedAt: String? = null,
+    @SerialName("duration_seconds") val durationSeconds: Int? = null,
 )
 
 @Serializable
@@ -497,6 +536,13 @@ data class AssignDoorRequest(
 data class AssignAccessRightRequest(
     @SerialName("door_id") val doorId: String,
     @SerialName("schedule_id") val scheduleId: String? = null,
+)
+
+@Serializable
+data class ShareAccessRequest(
+    @SerialName("door_id") val doorId: String,
+    @SerialName("schedule_id") val scheduleId: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
 )
 
 @Serializable
