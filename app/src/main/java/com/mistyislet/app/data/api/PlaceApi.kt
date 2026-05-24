@@ -22,44 +22,44 @@ import retrofit2.http.Query
 
 interface PlaceApi {
 
-    @GET("app/orgs")
+    @GET(MobileApiRoutes.getAppOrgsRetrofitPath)
     suspend fun listOrgs(): List<Organization>
 
-    @GET("app/orgs/{orgId}/places")
+    @GET(MobileApiRoutes.getAppOrgsOrgIdPlacesRetrofitPath)
     suspend fun listPlaces(@Path("orgId") orgId: String): List<Place>
 
-    @GET("app/places/{placeId}/doors")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdDoorsRetrofitPath)
     suspend fun listPlaceDoors(@Path("placeId") placeId: String): ListResponse<AccessibleDoor>
 
-    @GET("app/places/{placeId}/doors/search")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdDoorsSearchRetrofitPath)
     suspend fun searchPlaceDoors(
         @Path("placeId") placeId: String,
         @Query("q") query: String,
     ): ListResponse<AccessibleDoor>
 
-    @POST("app/places/{placeId}/doors/{doorId}/unlock")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdDoorsDoorIdUnlockRetrofitPath)
     suspend fun unlockPlaceDoor(
         @Path("placeId") placeId: String,
         @Path("doorId") doorId: String,
         @Body request: UnlockRequest,
     ): UnlockResponse
 
-    @PUT("app/places/{placeId}/doors/{doorId}/favorite")
+    @PUT(MobileApiRoutes.putAppPlacesPlaceIdDoorsDoorIdFavoriteRetrofitPath)
     suspend fun favoriteDoor(
         @Path("placeId") placeId: String,
         @Path("doorId") doorId: String,
     )
 
-    @DELETE("app/places/{placeId}/doors/{doorId}/favorite")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdDoorsDoorIdFavoriteRetrofitPath)
     suspend fun unfavoriteDoor(
         @Path("placeId") placeId: String,
         @Path("doorId") doorId: String,
     )
 
-    @POST("app/places/{placeId}/lockdown")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdLockdownRetrofitPath)
     suspend fun enableLockdown(@Path("placeId") placeId: String)
 
-    @DELETE("app/places/{placeId}/lockdown")
+    @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdLockdownRetrofitPath)
     suspend fun disableLockdown(@Path("placeId") placeId: String)
 
     @GET("app/places/{placeId}/visitor-groups")

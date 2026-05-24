@@ -16,21 +16,21 @@ import retrofit2.http.Query
 
 interface AuthApi {
 
-    @POST("app/auth/login")
+    @POST(MobileApiRoutes.createAppLoginSessionRetrofitPath)
     suspend fun login(@Body request: LoginRequest): LoginResponse
 
-    @POST("app/auth/refresh")
+    @POST(MobileApiRoutes.refreshAppLoginSessionRetrofitPath)
     suspend fun refresh(@Body request: RefreshRequest): RefreshResponse
 
-    @POST("app/auth/restore-password")
+    @POST(MobileApiRoutes.postAppAuthRestorePasswordRetrofitPath)
     suspend fun restorePassword(@Body request: RestorePasswordRequest)
 
-    @GET("app/auth/org-lookup")
+    @GET(MobileApiRoutes.getAppAuthOrgLookupRetrofitPath)
     suspend fun orgLookup(@Query("domain") domain: String): OrgAuthConfig
 
-    @POST("app/auth/magic-link")
+    @POST(MobileApiRoutes.postAppAuthMagicLinkRetrofitPath)
     suspend fun requestMagicLink(@Body request: MagicLinkRequest): MagicLinkResponse
 
-    @POST("app/auth/magic-link/verify")
+    @POST(MobileApiRoutes.postAppAuthMagicLinkVerifyRetrofitPath)
     suspend fun verifyMagicLink(@Body request: VerifyMagicLinkRequest): LoginResponse
 }

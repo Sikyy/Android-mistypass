@@ -19,25 +19,25 @@ import retrofit2.http.Query
 
 interface AccessApi {
 
-    @GET("app/access/my-doors")
+    @GET(MobileApiRoutes.fetchAppAccessMyDoorsRetrofitPath)
     suspend fun getMyDoors(): ListResponse<AccessibleDoor>
 
-    @POST("app/access/unlock")
+    @POST(MobileApiRoutes.appUnlockDoorRetrofitPath)
     suspend fun unlock(@Body request: UnlockRequest): UnlockResponse
 
-    @POST("app/access/qr-unlock")
+    @POST(MobileApiRoutes.appQRUnlockDoorRetrofitPath)
     suspend fun qrUnlock(@Body request: QRUnlockRequest): UnlockResponse
 
-    @GET("app/access/ble-token")
+    @GET(MobileApiRoutes.fetchAppAccessBLETokenRetrofitPath)
     suspend fun getBleToken(): BleTokenResponse
 
-    @POST("app/qr-token")
+    @POST(MobileApiRoutes.postAppQrTokenRetrofitPath)
     suspend fun getQrToken(@Body request: QRTokenRequest = QRTokenRequest()): QRTokenResponse
 
-    @GET("app/access/pin-code")
+    @GET(MobileApiRoutes.getAppAccessPinCodeRetrofitPath)
     suspend fun getPinCode(): PinCodeResponse
 
-    @GET("app/access/logs")
+    @GET(MobileApiRoutes.fetchAppAccessLogsRetrofitPath)
     suspend fun getAccessLogs(
         @Query("offset") offset: Int = 0,
         @Query("limit") limit: Int = 20,
