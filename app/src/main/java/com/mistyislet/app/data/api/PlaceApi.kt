@@ -62,34 +62,34 @@ interface PlaceApi {
     @DELETE(MobileApiRoutes.deleteAppPlacesPlaceIdLockdownRetrofitPath)
     suspend fun disableLockdown(@Path("placeId") placeId: String)
 
-    @GET("app/places/{placeId}/visitor-groups")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdVisitorGroupsRetrofitPath)
     suspend fun listVisitorGroups(@Path("placeId") placeId: String): List<VisitorGroup>
 
-    @GET("app/places/{placeId}/visitor-groups/{groupId}/members")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdVisitorGroupsGroupIdMembersRetrofitPath)
     suspend fun listGroupMembers(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,
     ): List<VisitorGroupMember>
 
-    @GET("app/places/{placeId}/events/{eventId}/media")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdEventsEventIdMediaRetrofitPath)
     suspend fun getEventMedia(
         @Path("placeId") placeId: String,
         @Path("eventId") eventId: String,
     ): List<EventMedia>
 
-    @GET("app/places/{placeId}/doors/{doorId}/restrictions")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdDoorsDoorIdRestrictionsRetrofitPath)
     suspend fun getDoorRestrictions(
         @Path("placeId") placeId: String,
         @Path("doorId") doorId: String,
     ): PaginatedResponse<DoorRestriction>
 
-    @GET("app/places/{placeId}/doors/{doorId}/schedules")
+    @GET(MobileApiRoutes.getAppPlacesPlaceIdDoorsDoorIdSchedulesRetrofitPath)
     suspend fun getDoorSchedules(
         @Path("placeId") placeId: String,
         @Path("doorId") doorId: String,
     ): PaginatedResponse<DoorSchedule>
 
-    @POST("app/places/{placeId}/visitor-groups/{groupId}/cleanup-expired")
+    @POST(MobileApiRoutes.postAppPlacesPlaceIdVisitorGroupsGroupIdCleanupExpiredRetrofitPath)
     suspend fun cleanupExpiredMembers(
         @Path("placeId") placeId: String,
         @Path("groupId") groupId: String,

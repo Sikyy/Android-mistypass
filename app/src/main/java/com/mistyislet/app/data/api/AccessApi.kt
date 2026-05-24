@@ -43,12 +43,12 @@ interface AccessApi {
         @Query("limit") limit: Int = 20,
     ): ListResponse<AccessLog>
 
-    @GET("app/visitor-passes")
+    @GET(MobileApiRoutes.getAppVisitorPassesRetrofitPath)
     suspend fun getVisitorPasses(
         @Query("offset") offset: Int = 0,
         @Query("limit") limit: Int = 50,
     ): ListResponse<VisitorPass>
 
-    @POST("app/visitor-passes")
+    @POST(MobileApiRoutes.createAppVisitorPassRetrofitPath)
     suspend fun createVisitorPass(@Body request: CreateVisitorPassRequest): VisitorPass
 }

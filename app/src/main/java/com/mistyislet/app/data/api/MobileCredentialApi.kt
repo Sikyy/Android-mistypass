@@ -13,22 +13,22 @@ import retrofit2.http.*
  */
 interface MobileCredentialApi {
 
-    @POST("app/credentials/register")
+    @POST(MobileApiRoutes.registerMobileCredentialRetrofitPath)
     suspend fun registerCredential(
         @Body request: RegisterMobileCredentialRequest
     ): Response<RegisterMobileCredentialResponse>
 
-    @GET("app/credentials/mobile")
+    @GET(MobileApiRoutes.listMobileCredentialsRetrofitPath)
     suspend fun listMobileCredentials(): ListResponse<MobileCredential>
 
-    @DELETE("app/credentials/mobile/{credentialId}")
+    @DELETE(MobileApiRoutes.revokeMobileCredentialSelfRetrofitPath)
     suspend fun revokeMobileCredential(
-        @Path("credentialId") credentialId: String
+        @Path("credentialID") credentialId: String
     ): Response<RevokeCredentialResponse>
 
-    @POST("app/credentials/mobile/{credentialId}/refresh")
+    @POST(MobileApiRoutes.refreshMobileCredentialRetrofitPath)
     suspend fun refreshMobileCredential(
-        @Path("credentialId") credentialId: String
+        @Path("credentialID") credentialId: String
     ): Response<RegisterMobileCredentialResponse>
 }
 

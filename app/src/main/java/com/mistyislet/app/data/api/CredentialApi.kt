@@ -13,15 +13,15 @@ import retrofit2.http.Path
 
 interface CredentialApi {
 
-    @GET("app/credentials")
+    @GET(MobileApiRoutes.fetchAppCredentialsRetrofitPath)
     suspend fun getCredentials(): ListResponse<Credential>
 
-    @GET("app/credentials/nfc")
+    @GET(MobileApiRoutes.getAppCredentialsNfcRetrofitPath)
     suspend fun listNFCCards(): List<NFCCard>
 
-    @POST("app/credentials/nfc")
+    @POST(MobileApiRoutes.postAppCredentialsNfcRetrofitPath)
     suspend fun bindNFCCard(@Body request: BindNFCCardRequest): NFCCard
 
-    @DELETE("app/credentials/nfc/{credentialId}")
+    @DELETE(MobileApiRoutes.deleteAppCredentialsNfcCredentialIdRetrofitPath)
     suspend fun unbindNFCCard(@Path("credentialId") credentialId: String): UnbindNFCCardResponse
 }
