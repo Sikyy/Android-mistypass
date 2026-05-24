@@ -38,12 +38,14 @@ import com.mistyislet.app.domain.model.GroupDoor
 import com.mistyislet.app.domain.model.GroupMember
 import com.mistyislet.app.domain.model.GuestVisit
 import com.mistyislet.app.domain.model.InviteUserRequest
+import com.mistyislet.app.domain.model.IncidentOccurrence
 import com.mistyislet.app.domain.model.LiveActivityRecord
 import com.mistyislet.app.domain.model.OrgSettings
 import com.mistyislet.app.domain.model.OrgSettingsUpdateRequest
 import com.mistyislet.app.domain.model.RenameRequest
 import com.mistyislet.app.domain.model.ReportExportRequest
 import com.mistyislet.app.domain.model.ReportExportResponse
+import com.mistyislet.app.domain.model.RelatedAdminEvent
 import com.mistyislet.app.domain.model.TeamAccessRight
 import com.mistyislet.app.domain.model.TeamMember
 import com.mistyislet.app.domain.model.UserPresenceRecord
@@ -58,8 +60,20 @@ class AdminRepository @Inject constructor(
     suspend fun getEvents(placeId: String): ApiResult<List<AdminEvent>> =
         safeApiCall { adminApi.listEvents(placeId).items }
 
+    suspend fun getEvent(placeId: String, eventId: String): ApiResult<AdminEvent> =
+        safeApiCall { adminApi.getEvent(placeId, eventId) }
+
+    suspend fun getRelatedEvents(placeId: String, eventId: String): ApiResult<List<RelatedAdminEvent>> =
+        safeApiCall { adminApi.getRelatedEvents(placeId, eventId).items }
+
     suspend fun getIncidents(placeId: String): ApiResult<List<AdminIncident>> =
         safeApiCall { adminApi.listIncidents(placeId).items }
+
+    suspend fun getIncident(placeId: String, incidentId: String): ApiResult<AdminIncident> =
+        safeApiCall { adminApi.getIncident(placeId, incidentId) }
+
+    suspend fun getIncidentOccurrences(placeId: String, incidentId: String): ApiResult<List<IncidentOccurrence>> =
+        safeApiCall { adminApi.getIncidentOccurrences(placeId, incidentId).items }
 
     suspend fun getUsers(placeId: String): ApiResult<List<AdminUser>> =
         safeApiCall { adminApi.listUsers(placeId).items }

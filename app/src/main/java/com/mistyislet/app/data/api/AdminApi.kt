@@ -34,11 +34,13 @@ import com.mistyislet.app.domain.model.GroupMember
 import com.mistyislet.app.domain.model.GuestCheckInRequest
 import com.mistyislet.app.domain.model.GuestVisit
 import com.mistyislet.app.domain.model.InviteUserRequest
+import com.mistyislet.app.domain.model.IncidentOccurrencesResponse
 import com.mistyislet.app.domain.model.LiveActivityRecord
 import com.mistyislet.app.domain.model.OrgSettings
 import com.mistyislet.app.domain.model.OrgSettingsUpdateRequest
 import com.mistyislet.app.domain.model.RenameRequest
 import com.mistyislet.app.domain.model.ReportExportRequest
+import com.mistyislet.app.domain.model.RelatedEventsResponse
 import com.mistyislet.app.domain.model.ScheduleWriteRequest
 import com.mistyislet.app.domain.model.TeamAccessRight
 import com.mistyislet.app.domain.model.TeamMember
@@ -59,8 +61,32 @@ interface AdminApi {
     @GET("app/places/{placeId}/events")
     suspend fun listEvents(@Path("placeId") placeId: String): PaginatedResponse<AdminEvent>
 
+    @GET("app/places/{placeId}/events/{eventId}")
+    suspend fun getEvent(
+        @Path("placeId") placeId: String,
+        @Path("eventId") eventId: String,
+    ): AdminEvent
+
+    @GET("app/places/{placeId}/events/{eventId}/related")
+    suspend fun getRelatedEvents(
+        @Path("placeId") placeId: String,
+        @Path("eventId") eventId: String,
+    ): RelatedEventsResponse
+
     @GET("app/places/{placeId}/incidents")
     suspend fun listIncidents(@Path("placeId") placeId: String): PaginatedResponse<AdminIncident>
+
+    @GET("app/places/{placeId}/incidents/{incidentId}")
+    suspend fun getIncident(
+        @Path("placeId") placeId: String,
+        @Path("incidentId") incidentId: String,
+    ): AdminIncident
+
+    @GET("app/places/{placeId}/incidents/{incidentId}/occurrences")
+    suspend fun getIncidentOccurrences(
+        @Path("placeId") placeId: String,
+        @Path("incidentId") incidentId: String,
+    ): IncidentOccurrencesResponse
 
     @GET("app/places/{placeId}/users")
     suspend fun listUsers(@Path("placeId") placeId: String): PaginatedResponse<AdminUser>

@@ -127,7 +127,7 @@ fun AdminExportScreen(
     var selectedType by remember { mutableIntStateOf(0) }
     var selectedFormat by remember { mutableIntStateOf(0) }
     var showTypeMenu by remember { mutableStateOf(false) }
-    val formats = listOf("CSV", "PDF")
+    val formats = listOf("PDF", "CSV")
     val presets = listOf(
         DatePreset("7d", 7),
         DatePreset("14d", 14),
