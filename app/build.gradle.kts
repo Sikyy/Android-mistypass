@@ -14,6 +14,12 @@ val keyPropertiesFile = rootProject.file("key.properties")
 val keyProperties = Properties().apply {
     if (keyPropertiesFile.exists()) load(FileInputStream(keyPropertiesFile))
 }
+val googleServicesFile = project.file("google-services.json")
+if (googleServicesFile.exists()) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.lifecycle("google-services.json not found; Firebase auto-init disabled for this build.")
+}
 
 android {
     namespace = "com.mistyislet.app"
