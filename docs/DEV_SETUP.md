@@ -67,6 +67,15 @@ adb reverse tcp:8080 tcp:8080  # 端口转发
 
 ## 4. 构建安装 APK
 
+### 可选：Firebase / FCM
+
+没有 `app/google-services.json` 时，构建仍会通过，登录后 FCM token 注册会被跳过。要测试真实推送：
+
+1. 在 Firebase Console 创建 Android app，package name 使用 `com.mistyislet.app`。
+2. 下载 `google-services.json`，放到 `app/google-services.json`。
+3. 重新构建 staging/debug APK。
+4. 后端 Mac mini 需要同时启用 `FCM_ENABLED=true` 并配置 Firebase service account。
+
 ```bash
 cd /Users/siky/code/android-MistyisletPass
 
