@@ -29,7 +29,14 @@ class FirebasePushTokenRegistrar @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun registerCurrentToken() {
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+        val firebaseMessaging = try {
+            FirebaseMessaging.getInstance()
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "FCM token fetch skipped: Firebase is not configured", e)
+            return
+        }
+
+        firebaseMessaging.token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
                 Log.w(TAG, "FCM token fetch failed", task.exception)
                 return@addOnCompleteListener
