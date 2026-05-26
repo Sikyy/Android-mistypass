@@ -15,6 +15,11 @@
     <!-- Login -->
     <string name="login_title">欢迎</string>
     <string name="login_subtitle">登录以访问您的门点</string>
+    <string name="login_email_title">输入你的邮箱</string>
+    <string name="login_email_body">使用工作邮箱查找组织并继续登录。</string>
+    <string name="login_lookup_body">通常只需要片刻。</string>
+    <string name="login_signin_title">登录你的组织</string>
+    <string name="login_signin_body">输入账号信息以继续。</string>
     <string name="login_email">邮箱</string>
     <string name="login_password">密码</string>
     <string name="login_button">登录</string>
