@@ -9,6 +9,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -106,6 +107,14 @@ fun DoorsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val biometricEnabled by viewModel.biometricEnabled.collectAsStateWithLifecycle(false)
+    val segmentColors = SegmentedButtonDefaults.colors(
+        activeContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+        activeContentColor = MaterialTheme.colorScheme.onSurface,
+        activeBorderColor = MaterialTheme.colorScheme.outline,
+        inactiveContainerColor = MaterialTheme.colorScheme.surface,
+        inactiveContentColor = MaterialTheme.colorScheme.onSurface,
+        inactiveBorderColor = MaterialTheme.colorScheme.outline,
+    )
 
     val visibleDoors = remember(uiState.doors, uiState.tab, uiState.searchQuery, uiState.sort) {
         uiState.doors
@@ -182,11 +191,13 @@ fun DoorsScreen(
                     selected = uiState.tab == DoorsTab.ALL,
                     onClick = { viewModel.setTab(DoorsTab.ALL) },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    colors = segmentColors,
                 ) { Text(stringResource(R.string.doors_tab_all)) }
                 SegmentedButton(
                     selected = uiState.tab == DoorsTab.FAVORITES,
                     onClick = { viewModel.setTab(DoorsTab.FAVORITES) },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    colors = segmentColors,
                 ) { Text(stringResource(R.string.doors_tab_favorites)) }
             }
 
@@ -213,7 +224,11 @@ fun DoorsScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    cursorColor = MaterialTheme.colorScheme.primary,
                 ),
             )
 
@@ -673,8 +688,9 @@ private fun DoorListCard(
             .fillMaxWidth()
             .clickable(onClick = onTap),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
             modifier = Modifier
@@ -685,23 +701,18 @@ private fun DoorListCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = door.name,
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                    Text(
-                        text = buildString {
-                            door.groupName?.let { append(it) }
-                            door.buildingId.takeIf { it.isNotBlank() }?.let {
-                                if (isNotEmpty()) append(" · ")
-                                append(it)
-                            }
-                        }.ifEmpty { " " },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(statusColor),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = door.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.weight(1f),
+                )
                 if (isBleReady) {
                     val infiniteTransition = rememberInfiniteTransition(label = "ble")
                     val alpha by infiniteTransition.animateFloat(
@@ -727,14 +738,20 @@ private fun DoorListCard(
                         tint = if (door.isFavorite) Warning else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Default.Circle,
-                    contentDescription = null,
-                    modifier = Modifier.size(12.dp),
-                    tint = statusColor,
-                )
             }
+
+            Text(
+                text = buildString {
+                    door.groupName?.let { append(it) }
+                    door.buildingId.takeIf { it.isNotBlank() }?.let {
+                        if (isNotEmpty()) append(" · ")
+                        append(it)
+                    }
+                }.ifEmpty { " " },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 18.dp),
+            )
 
             if (displayStatus == DoorDisplayStatus.OFFLINE || displayStatus == DoorDisplayStatus.DISCONNECTED) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -752,7 +769,7 @@ private fun DoorListCard(
                         .fillMaxWidth()
                         .height(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onPress = {
@@ -786,14 +803,14 @@ private fun DoorListCard(
                                 progress = { holdProgress.value },
                                 modifier = Modifier.size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                color = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                         }
                         Text(
                             text = stringResource(R.string.door_hold_to_unlock),
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -801,4 +818,3 @@ private fun DoorListCard(
         }
     }
 }
-

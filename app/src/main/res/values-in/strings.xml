@@ -15,6 +15,11 @@
     <!-- Login -->
     <string name="login_title">Selamat Datang</string>
     <string name="login_subtitle">Masuk untuk mengakses pintu Anda</string>
+    <string name="login_email_title">Masukkan email Anda</string>
+    <string name="login_email_body">Gunakan email kerja untuk menemukan organisasi Anda dan lanjut masuk.</string>
+    <string name="login_lookup_body">Biasanya hanya perlu beberapa saat.</string>
+    <string name="login_signin_title">Masuk ke organisasi Anda</string>
+    <string name="login_signin_body">Masukkan detail akun Anda untuk melanjutkan.</string>
     <string name="login_email">Email</string>
     <string name="login_password">Kata Sandi</string>
     <string name="login_button">Masuk</string>
