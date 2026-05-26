@@ -11,11 +11,11 @@ val Copper = Color(0xFFA96E42)
 val Teal = Color(0xFF62B7A8)
 val Moss = Color(0xFF7F9B6B)
 
-val Primary = Teal
-val PrimaryContainer = Color(0xFFE3F3EF)
-val OnPrimary = Color(0xFFFFFFFF)
-val OnPrimaryContainer = Color(0xFF102320)
-val Secondary = Brass
+val Primary = Obsidian
+val PrimaryContainer = Color(0xFFE8E1D5)
+val OnPrimary = Mist
+val OnPrimaryContainer = Obsidian
+val Secondary = Teal
 val SecondaryContainer = Color(0xFFF4E8D0)
 val OnSecondaryContainer = Color(0xFF281B08)
 val Background = Color(0xFFF7F4EE)

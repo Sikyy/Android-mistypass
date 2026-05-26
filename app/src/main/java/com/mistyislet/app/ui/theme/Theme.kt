@@ -1,6 +1,5 @@
 package com.mistyislet.app.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -26,26 +25,26 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Primary,
+    primary = Mist,
     onPrimary = Obsidian,
-    primaryContainer = Color(0xFF204D45),
+    primaryContainer = Color(0xFF252721),
     onPrimaryContainer = Mist,
-    secondary = Secondary,
-    secondaryContainer = Color(0xFF4C3513),
+    secondary = Teal,
+    secondaryContainer = Color(0xFF284844),
     onSecondaryContainer = Mist,
-    background = Obsidian,
+    background = Color(0xFF0D0D0C),
     onBackground = Mist,
     surface = Graphite,
-    surfaceVariant = Color(0xFF24251F),
+    surfaceVariant = Color(0xFF20221D),
     onSurface = Mist,
     onSurfaceVariant = Smoke,
-    outline = Color(0xFF4B4B43),
+    outline = Color(0xFF53564D),
     error = Danger,
 )
 
 @Composable
 fun MistyisletTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

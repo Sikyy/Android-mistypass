@@ -114,18 +114,20 @@ Users can:
 
 ---
 
-## 3. Design Language — Material Design 3
+## 3. Design Language — Mistyislet Dark Mist + Material Design 3
 
 ### 3.1 Core M3 Principles
 
-| M3 Principle | Application |
-|-------------|-------------|
-| **Dynamic color** | Material You color extraction from wallpaper on Android 12+ |
-| **Elevation** | Tonal elevation for door cards (surface tint, not shadow) |
-| **Motion** | Shared element transitions between door list → door detail |
-| **Shape** | M3 corner radii: small (8dp), medium (12dp), large (16dp) |
-| **Typography** | M3 type scale with Roboto Flex / system font |
-| **Accessible** | 48dp minimum touch target, 4.5:1 contrast ratio |
+| Principle | Application |
+|-----------|-------------|
+| **Website alignment** | Default to the misty dark visual language from `mistyislet.com`: near-black base, muted green fog, warm-white copy, and quiet borders. |
+| **Primary action** | Use warm mist white (`#F5F0E6`) as the main CTA fill on dark surfaces; do not use teal as the dominant button color. |
+| **Accent restraint** | Use teal (`#62B7A8`) only for focus, glow, status emphasis, and subtle selected accents. |
+| **Elevation** | Prefer translucent surfaces and soft borders over visible shadows. |
+| **Motion** | Shared element transitions between door list → door detail. |
+| **Shape** | Website-style pills for primary actions; compact M3 radii for app cards and controls. |
+| **Typography** | M3 type scale with system font, lighter headline weights (`400`) to match the website hero. |
+| **Accessible** | 48dp minimum touch target, 4.5:1 contrast ratio. |
 
 ### 3.2 Navigation Architecture
 
@@ -145,33 +147,27 @@ Navigation Bar (bottom, M3 style — 5 destinations)
 - Active indicator: pill shape with tonal color
 - Haptic: light click on tab switch
 
-### 3.3 Color System (Material You + Brand)
+### 3.3 Color System (Website Brand + Material 3)
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| Primary | `#62B7A8` | Main buttons, selected state |
-| On Primary | `#FFFFFF` | Text on primary |
-| Primary Container | `#E3F3EF` | Card highlights |
-| On Primary Container | `#102320` | Text on container |
-| Secondary | `#C9A25B` | Secondary elements and warning accents |
+| Primary | `#F5F0E6` | Main buttons and selected state on the default dark UI |
+| On Primary | `#070806` | Text on primary |
+| Primary Container | `#252721` | Dark card highlights |
+| On Primary Container | `#F5F0E6` | Text on container |
+| Secondary | `#62B7A8` | Focus, glow, and restrained selected accent |
 | Tertiary | `#A96E42` | Physical hardware accent |
-| Surface | `#FFFFFF` / `#141510` | Card backgrounds |
-| Background | `#F7F4EE` / `#070806` | Page backgrounds |
-| Text Primary | `#070806` / `#F5F0E6` | Headlines |
-| Text Secondary | `#6E695F` / `#BEB8AA` | Supporting text |
+| Surface | `#141510` | Card backgrounds |
+| Background | `#0D0D0C` | Page backgrounds |
+| Text Primary | `#F5F0E6` | Headlines |
+| Text Secondary | `#BEB8AA` | Supporting text |
 | Success | `#7F9B6B` | Unlock success and online state |
 | Error / Danger | `#D94A3A` | Denied/errors |
 | Warning | `#C9A25B` | Offline/caution |
 
 ```kotlin
-// Theme.kt — Dynamic color with brand fallback
-val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-val colorScheme = when {
-    dynamicColor && darkTheme -> dynamicDarkColorScheme(context)
-    dynamicColor && !darkTheme -> dynamicLightColorScheme(context)
-    darkTheme -> DarkColorScheme
-    else -> LightColorScheme
-}
+// Theme.kt — default to the website-aligned dark mist scheme.
+MistyisletTheme(darkTheme = true)
 ```
 
 ### 3.4 Typography (M3 Type Scale)
@@ -219,6 +215,15 @@ val colorScheme = when {
 - Auto-login on startup if valid token exists
 - BiometricPrompt to unlock local token (optional, P1)
 - Error display with rate-limit messaging
+
+**Visual baseline:**
+- Use the website hero image (`framer-hero.png`) as the login background reference, cropped full-bleed for mobile portrait.
+- Use a small white Mistyislet mark only on mobile login; remove the registered trademark marker from the source asset by transparency instead of cropping the mark shape, and omit the `Mistyislet` wordmark to avoid a web-navigation feel.
+- Center the step headline/body like the website hero copy.
+- Keep dashboard-style product controls over the hero: translucent dark fields, restrained white borders, and clear operational spacing.
+- Overlay a subtle repeated noise texture (`framer-noise.png`) so the mobile crop keeps the website's fine-grain mist texture.
+- Use mist-white pill CTAs on dark imagery; keep teal as atmosphere/focus only.
+- Force dark system bars on this app shell so status/navigation icons remain legible over the hero image.
 
 ### 4.2 Doors Screen (Home Tab)
 
