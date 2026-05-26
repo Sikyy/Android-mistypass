@@ -14,12 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Key
@@ -36,8 +36,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -53,7 +51,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.R
+import com.mistyislet.app.ui.components.MistyListCard
+import com.mistyislet.app.ui.theme.Ash
+import com.mistyislet.app.ui.theme.Brass
+import com.mistyislet.app.ui.theme.Copper
+import com.mistyislet.app.ui.theme.Moss
 import com.mistyislet.app.ui.theme.Success
+import com.mistyislet.app.ui.theme.Teal
+import com.mistyislet.app.ui.theme.Warning
 
 @Composable
 fun DashboardScreen(
@@ -114,8 +119,8 @@ fun DashboardScreen(
             }
             item {
                 DashboardRow(
-                    icon = Icons.Default.EventNote,
-                    iconTint = Color(0xFF4285F4),
+                    icon = Icons.AutoMirrored.Filled.EventNote,
+                    iconTint = Teal,
                     title = stringResource(R.string.dashboard_events),
                     onClick = { onNavigate("admin_events") },
                 )
@@ -123,7 +128,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Warning,
-                    iconTint = Color(0xFFD93025),
+                    iconTint = Warning,
                     title = stringResource(R.string.dashboard_incidents),
                     onClick = { onNavigate("admin_incidents") },
                 )
@@ -135,7 +140,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.People,
-                    iconTint = Color(0xFF4285F4),
+                    iconTint = Teal,
                     title = stringResource(R.string.dashboard_users),
                     onClick = { onNavigate("admin_users") },
                 )
@@ -143,7 +148,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.PeopleAlt,
-                    iconTint = Color(0xFF2CBAA1),
+                    iconTint = Moss,
                     title = stringResource(R.string.dashboard_groups),
                     onClick = { onNavigate("admin_groups") },
                 )
@@ -151,7 +156,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Groups,
-                    iconTint = Color(0xFF5C6BC0),
+                    iconTint = Brass,
                     title = stringResource(R.string.dashboard_teams),
                     onClick = { onNavigate("admin_teams") },
                 )
@@ -159,7 +164,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Schedule,
-                    iconTint = Color(0xFF9C27B0),
+                    iconTint = Copper,
                     title = stringResource(R.string.dashboard_schedules),
                     onClick = { onNavigate("admin_schedules") },
                 )
@@ -167,7 +172,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Map,
-                    iconTint = Color(0xFF009688),
+                    iconTint = Teal,
                     title = stringResource(R.string.dashboard_zones),
                     onClick = { onNavigate("admin_zones") },
                 )
@@ -179,7 +184,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Notifications,
-                    iconTint = Color(0xFFD93025),
+                    iconTint = Warning,
                     title = stringResource(R.string.dashboard_alarms),
                     onClick = { onNavigate("admin_alarms") },
                 )
@@ -199,7 +204,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.PeopleAlt,
-                    iconTint = Color(0xFFFF9800),
+                    iconTint = Brass,
                     title = stringResource(R.string.dashboard_guest_management),
                     onClick = { onNavigate("admin_guest_management") },
                 )
@@ -211,7 +216,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.CalendarMonth,
-                    iconTint = Color(0xFF00BCD4),
+                    iconTint = Teal,
                     title = stringResource(R.string.dashboard_bookings),
                     onClick = { onNavigate("admin_bookings") },
                 )
@@ -223,7 +228,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.CreditCard,
-                    iconTint = Color(0xFFFF9800),
+                    iconTint = Brass,
                     title = stringResource(R.string.dashboard_cards),
                     onClick = { onNavigate("admin_cards") },
                 )
@@ -231,7 +236,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Key,
-                    iconTint = Color(0xFF00BCD4),
+                    iconTint = Teal,
                     title = stringResource(R.string.dashboard_digital_credentials),
                     onClick = { onNavigate("admin_credentials") },
                 )
@@ -243,7 +248,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.BarChart,
-                    iconTint = Color(0xFF9C27B0),
+                    iconTint = Moss,
                     title = stringResource(R.string.dashboard_analytics),
                     onClick = { onNavigate("admin_analytics") },
                 )
@@ -251,7 +256,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.PersonSearch,
-                    iconTint = Color(0xFF5C6BC0),
+                    iconTint = Brass,
                     title = stringResource(R.string.dashboard_user_presence),
                     onClick = { onNavigate("admin_user_presence") },
                 )
@@ -259,7 +264,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Upload,
-                    iconTint = Color(0xFFFF9800),
+                    iconTint = Copper,
                     title = stringResource(R.string.dashboard_export_events),
                     onClick = { onNavigate("admin_export") },
                 )
@@ -271,7 +276,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Shield,
-                    iconTint = Color(0xFFD93025),
+                    iconTint = Warning,
                     title = stringResource(R.string.dashboard_access_rights),
                     onClick = { onNavigate("admin_access_rights") },
                 )
@@ -291,7 +296,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.Router,
-                    iconTint = Color(0xFF009688),
+                    iconTint = Teal,
                     title = stringResource(R.string.dashboard_gateways),
                     onClick = { onNavigate("admin_gateways") },
                 )
@@ -299,7 +304,7 @@ fun DashboardScreen(
             item {
                 DashboardRow(
                     icon = Icons.Default.CameraAlt,
-                    iconTint = Color(0xFF4285F4),
+                    iconTint = Moss,
                     title = stringResource(R.string.dashboard_cameras),
                     onClick = { onNavigate("admin_cameras") },
                 )
@@ -311,9 +316,9 @@ fun DashboardScreen(
                 item { SectionHeader(stringResource(R.string.dashboard_org_settings_section)) }
                 item {
                     DashboardRow(
-                        icon = Icons.Default.Settings,
-                        iconTint = Color(0xFF9E9E9E),
-                        title = stringResource(R.string.dashboard_org_settings),
+                    icon = Icons.Default.Settings,
+                    iconTint = Ash,
+                    title = stringResource(R.string.dashboard_org_settings),
                         onClick = { onNavigate("admin_org_settings") },
                     )
                 }
@@ -341,12 +346,7 @@ private fun DashboardRow(
     title: String,
     onClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    MistyListCard(onClick = onClick) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -363,12 +363,13 @@ private fun DashboardRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.74f),
             )
         }
     }

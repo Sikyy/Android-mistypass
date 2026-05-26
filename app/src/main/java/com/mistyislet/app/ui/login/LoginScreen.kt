@@ -518,7 +518,7 @@ private fun AuthStepLayout(
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.Start,
     ) {
         if (showBack) {
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -533,8 +533,7 @@ private fun AuthStepLayout(
         } else {
             BrandLogo(
                 modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(top = 8.dp, bottom = 92.dp),
+                    .padding(top = 8.dp, bottom = 32.dp),
             )
         }
 
@@ -547,7 +546,7 @@ private fun AuthStepLayout(
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Normal,
             color = Mist,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Start,
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(14.dp))
@@ -555,7 +554,7 @@ private fun AuthStepLayout(
             text = body,
             style = MaterialTheme.typography.bodyLarge,
             color = Mist.copy(alpha = 0.82f),
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Start,
             modifier = Modifier.fillMaxWidth(),
         )
 

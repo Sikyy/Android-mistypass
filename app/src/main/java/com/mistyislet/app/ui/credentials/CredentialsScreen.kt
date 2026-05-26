@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -62,14 +63,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.mistyislet.app.R
+import com.mistyislet.app.ui.theme.Hairline
+import com.mistyislet.app.ui.theme.Mist
+import com.mistyislet.app.ui.theme.Smoke
 import kotlinx.coroutines.delay
 import java.time.Instant
 
-private val AccessPassBg = Color(0xFF1A1F36)
-private val PinPassBg = Color(0xFF0F2027)
-private val DeviceCredentialBg = Color(0xFF2C3E50)
-private val CardFg = Color.White
-private val CardLabel = Color.White.copy(alpha = 0.6f)
+private val AccessPassBg = Color(0xE61A201E)
+private val PinPassBg = Color(0xE6111717)
+private val DeviceCredentialBg = Color(0xE6171C1A)
+private val CardFg = Mist
+private val CardLabel = Smoke.copy(alpha = 0.72f)
 
 enum class PassType { ACCESS_PASS, PIN_PASS, DEVICE_CREDENTIAL }
 
@@ -201,8 +205,9 @@ private fun PassCard(
     Card(
         onClick = onTap,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, Hairline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = bgColor),
     ) {
         Column {

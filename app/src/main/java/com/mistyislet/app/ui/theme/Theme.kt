@@ -27,18 +27,18 @@ private val LightColorScheme = lightColorScheme(
 private val DarkColorScheme = darkColorScheme(
     primary = Mist,
     onPrimary = Obsidian,
-    primaryContainer = Color(0xFF252721),
+    primaryContainer = FogRaised,
     onPrimaryContainer = Mist,
     secondary = Teal,
-    secondaryContainer = Color(0xFF284844),
+    secondaryContainer = Color(0xFF263331),
     onSecondaryContainer = Mist,
-    background = Color(0xFF0D0D0C),
+    background = Obsidian,
     onBackground = Mist,
     surface = Graphite,
-    surfaceVariant = Color(0xFF20221D),
+    surfaceVariant = Fog,
     onSurface = Mist,
     onSurfaceVariant = Smoke,
-    outline = Color(0xFF53564D),
+    outline = Hairline,
     error = Danger,
 )
 

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -57,8 +59,13 @@ import com.mistyislet.app.ui.dashboard.DashboardScreen
 import com.mistyislet.app.ui.doors.DoorsRootScreen
 import com.mistyislet.app.ui.history.HistoryScreen
 import com.mistyislet.app.ui.login.LoginScreen
+import com.mistyislet.app.ui.components.MistyScreen
 import com.mistyislet.app.ui.profile.ProfileScreen
 import com.mistyislet.app.ui.profile.TCPAuthTestScreen
+import com.mistyislet.app.ui.theme.Graphite
+import com.mistyislet.app.ui.theme.Mist
+import com.mistyislet.app.ui.theme.Obsidian
+import com.mistyislet.app.ui.theme.Smoke
 import com.mistyislet.app.ui.visitors.VisitorsScreen
 
 object Routes {
@@ -143,7 +150,6 @@ fun AppNavigation(authRepository: AuthRepository) {
         }
     }
 }
-
 @Composable
 private fun MainScreen(onLogout: () -> Unit) {
     val navController = rememberNavController()
@@ -151,13 +157,25 @@ private fun MainScreen(onLogout: () -> Unit) {
     val currentDestination = navBackStackEntry?.destination
 
     Scaffold(
+        containerColor = Obsidian,
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Graphite.copy(alpha = 0.94f),
+                contentColor = Mist,
+                tonalElevation = 0.dp,
+            ) {
                 bottomNavItems.forEach { item ->
                     NavigationBarItem(
                         icon = { Icon(item.icon, contentDescription = null) },
                         label = { Text(stringResource(item.labelResId)) },
                         selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Obsidian,
+                            selectedTextColor = Mist,
+                            indicatorColor = Mist,
+                            unselectedIconColor = Smoke.copy(alpha = 0.74f),
+                            unselectedTextColor = Smoke.copy(alpha = 0.74f),
+                        ),
                         onClick = {
                             navController.navigate(item.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
@@ -172,58 +190,60 @@ private fun MainScreen(onLogout: () -> Unit) {
             }
         },
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.DOORS,
+        MistyScreen(
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(
-                Routes.DOORS,
-                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://unlock/{doorId}" }),
-            ) { DoorsRootScreen() }
-            composable(
-                Routes.PASS,
-                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://pass" }),
+            NavHost(
+                navController = navController,
+                startDestination = Routes.DOORS,
             ) {
-                CredentialsScreen(
-                    onNavigateToBindCard = { navController.navigate(Routes.BIND_CARD) },
-                )
-            }
-            composable(
-                Routes.DASHBOARD,
-                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://dashboard" }),
-            ) {
-                DashboardScreen(
-                    onNavigate = { route -> navController.navigate(route) },
-                )
-            }
-            composable(Routes.HISTORY) { HistoryScreen() }
-            composable(
-                Routes.VISITORS,
-                deepLinks = listOf(
-                    navDeepLink { uriPattern = "https://app.mistyislet.com/visitor/{token}" },
-                ),
-            ) { VisitorsScreen() }
-            composable(
-                Routes.PROFILE,
-                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://profile" }),
-            ) {
-                ProfileScreen(
-                    onLogout = onLogout,
-                    onNavigateToTCPTest = { navController.navigate(Routes.TCP_AUTH_TEST) },
-                )
-            }
-            composable(Routes.BIND_CARD) {
-                BindCardScreen(onBindSuccess = { navController.popBackStack() })
-            }
+                composable(
+                    Routes.DOORS,
+                    deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://unlock/{doorId}" }),
+                ) { DoorsRootScreen() }
+                composable(
+                    Routes.PASS,
+                    deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://pass" }),
+                ) {
+                    CredentialsScreen(
+                        onNavigateToBindCard = { navController.navigate(Routes.BIND_CARD) },
+                    )
+                }
+                composable(
+                    Routes.DASHBOARD,
+                    deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://dashboard" }),
+                ) {
+                    DashboardScreen(
+                        onNavigate = { route -> navController.navigate(route) },
+                    )
+                }
+                composable(Routes.HISTORY) { HistoryScreen() }
+                composable(
+                    Routes.VISITORS,
+                    deepLinks = listOf(
+                        navDeepLink { uriPattern = "https://app.mistyislet.com/visitor/{token}" },
+                    ),
+                ) { VisitorsScreen() }
+                composable(
+                    Routes.PROFILE,
+                    deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://profile" }),
+                ) {
+                    ProfileScreen(
+                        onLogout = onLogout,
+                        onNavigateToTCPTest = { navController.navigate(Routes.TCP_AUTH_TEST) },
+                    )
+                }
+                composable(Routes.BIND_CARD) {
+                    BindCardScreen(onBindSuccess = { navController.popBackStack() })
+                }
 
-            // Admin screens
-            composable(Routes.ADMIN_EVENTS) {
-                AdminEventsScreen(
-                    onBack = { navController.popBackStack() },
-                    onEventClick = { eventId -> navController.navigate(Routes.adminEventDetail(eventId)) },
-                )
-            }
+                // Admin screens
+                composable(Routes.ADMIN_EVENTS) {
+                    AdminEventsScreen(
+                        onBack = { navController.popBackStack() },
+                        onEventClick = { eventId -> navController.navigate(Routes.adminEventDetail(eventId)) },
+                    )
+                }
             composable(
                 route = "${Routes.ADMIN_EVENT_DETAIL}/{eventId}",
                 arguments = listOf(navArgument("eventId") { type = NavType.StringType }),
@@ -272,4 +292,5 @@ private fun MainScreen(onLogout: () -> Unit) {
             composable(Routes.TCP_AUTH_TEST) { TCPAuthTestScreen(onBack = { navController.popBackStack() }) }
         }
     }
+}
 }

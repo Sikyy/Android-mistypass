@@ -1,7 +1,6 @@
 package com.mistyislet.app.ui.places
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +36,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.Organization
+import com.mistyislet.app.ui.components.MistyListCard
+import com.mistyislet.app.ui.theme.FogRaised
+import com.mistyislet.app.ui.theme.Mist
 
 @Composable
 fun MyOrgsScreen(
@@ -100,14 +100,7 @@ fun MyOrgsScreen(
 
 @Composable
 private fun OrgCard(org: Organization, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
-    ) {
+    MistyListCard(onClick = onClick) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -118,13 +111,13 @@ private fun OrgCard(org: Organization, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(FogRaised),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = org.name.firstOrNull()?.uppercase() ?: "?",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = Mist,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -148,7 +141,7 @@ private fun OrgCard(org: Organization, onClick: () -> Unit) {
                     Spacer(modifier = Modifier.size(4.dp))
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                     ) {
                         Text(
                             text = role.replace('_', ' ').replaceFirstChar { it.uppercase() },

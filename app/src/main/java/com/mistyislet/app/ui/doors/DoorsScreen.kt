@@ -10,7 +10,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,8 +44,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -61,7 +58,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -89,7 +88,11 @@ import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.DoorDisplayStatus
 import com.mistyislet.app.domain.model.displayStatus
 import androidx.compose.material.icons.filled.Check
+import com.mistyislet.app.ui.components.MistyListCard
 import com.mistyislet.app.ui.theme.Danger
+import com.mistyislet.app.ui.theme.FogRaised
+import com.mistyislet.app.ui.theme.Hairline
+import com.mistyislet.app.ui.theme.Obsidian
 import com.mistyislet.app.ui.theme.Success
 import com.mistyislet.app.ui.theme.Warning
 import kotlinx.coroutines.Job
@@ -182,11 +185,13 @@ fun DoorsScreen(
                     selected = uiState.tab == DoorsTab.ALL,
                     onClick = { viewModel.setTab(DoorsTab.ALL) },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    colors = mistySegmentedButtonColors(),
                 ) { Text(stringResource(R.string.doors_tab_all)) }
                 SegmentedButton(
                     selected = uiState.tab == DoorsTab.FAVORITES,
                     onClick = { viewModel.setTab(DoorsTab.FAVORITES) },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    colors = mistySegmentedButtonColors(),
                 ) { Text(stringResource(R.string.doors_tab_favorites)) }
             }
 
@@ -213,7 +218,11 @@ fun DoorsScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.52f),
+                    unfocusedBorderColor = Hairline,
+                    focusedContainerColor = FogRaised.copy(alpha = 0.68f),
+                    unfocusedContainerColor = FogRaised.copy(alpha = 0.42f),
+                    cursorColor = MaterialTheme.colorScheme.primary,
                 ),
             )
 
@@ -668,14 +677,7 @@ private fun DoorListCard(
 
     val isUnlockable = displayStatus == DoorDisplayStatus.ONLINE_UNLOCKABLE && !isUnlocking
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onTap),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
-    ) {
+    MistyListCard(onClick = onTap) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -685,23 +687,25 @@ private fun DoorListCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = door.name,
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                    Text(
-                        text = buildString {
-                            door.groupName?.let { append(it) }
-                            door.buildingId.takeIf { it.isNotBlank() }?.let {
-                                if (isNotEmpty()) append(" · ")
-                                append(it)
-                            }
-                        }.ifEmpty { " " },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Icon(
+                    imageVector = when (displayStatus) {
+                        DoorDisplayStatus.ONLINE_UNLOCKABLE -> Icons.Default.DoorFront
+                        DoorDisplayStatus.ONLINE_LOCKED_DOWN -> Icons.Default.Lock
+                        DoorDisplayStatus.OFFLINE -> Icons.Default.WifiOff
+                        DoorDisplayStatus.DISCONNECTED -> Icons.Default.Router
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = statusColor,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = door.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
                 if (isBleReady) {
                     val infiniteTransition = rememberInfiniteTransition(label = "ble")
                     val alpha by infiniteTransition.animateFloat(
@@ -718,30 +722,56 @@ private fun DoorListCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                 }
-                IconButton(onClick = onToggleFavorite) {
+                TextButton(onClick = onToggleFavorite) {
                     Icon(
                         imageVector = if (door.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                         contentDescription = stringResource(
                             if (door.isFavorite) R.string.doors_unfavorite else R.string.doors_favorite,
                         ),
                         tint = if (door.isFavorite) Warning else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = stringResource(if (door.isFavorite) R.string.doors_saved else R.string.doors_save),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (door.isFavorite) Warning else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Default.Circle,
-                    contentDescription = null,
-                    modifier = Modifier.size(12.dp),
-                    tint = statusColor,
-                )
             }
 
-            if (displayStatus == DoorDisplayStatus.OFFLINE || displayStatus == DoorDisplayStatus.DISCONNECTED) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                when (displayStatus) {
+                    DoorDisplayStatus.ONLINE_UNLOCKABLE -> {
+                        DoorStatusTag(label = stringResource(R.string.doors_online), color = Success)
+                        DoorStatusTag(label = stringResource(R.string.doors_unlockable), color = MaterialTheme.colorScheme.primary)
+                    }
+                    DoorDisplayStatus.ONLINE_LOCKED_DOWN -> {
+                        DoorStatusTag(label = stringResource(R.string.doors_lockdown), color = Danger)
+                    }
+                    DoorDisplayStatus.OFFLINE -> {
+                        DoorStatusTag(label = stringResource(R.string.door_offline), color = Warning)
+                    }
+                    DoorDisplayStatus.DISCONNECTED -> {
+                        DoorStatusTag(label = stringResource(R.string.door_disconnected), color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                }
+            }
+
+            val locationLabel = buildString {
+                door.groupName?.let { append(it) }
+                door.buildingId.takeIf { it.isNotBlank() }?.let {
+                    if (isNotEmpty()) append(" · ")
+                    append(it)
+                }
+            }
+            if (locationLabel.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.door_controller_offline),
+                    text = locationLabel,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Danger,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -752,7 +782,7 @@ private fun DoorListCard(
                         .fillMaxWidth()
                         .height(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.92f))
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onPress = {
@@ -786,14 +816,14 @@ private fun DoorListCard(
                                 progress = { holdProgress.value },
                                 modifier = Modifier.size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                color = MaterialTheme.colorScheme.onPrimary,
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                         }
                         Text(
                             text = stringResource(R.string.door_hold_to_unlock),
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
                 }
@@ -802,3 +832,28 @@ private fun DoorListCard(
     }
 }
 
+@Composable
+private fun DoorStatusTag(label: String, color: Color) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = color.copy(alpha = 0.14f),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        )
+    }
+}
+
+@Composable
+private fun mistySegmentedButtonColors() = SegmentedButtonDefaults.colors(
+    activeContainerColor = MaterialTheme.colorScheme.primary,
+    activeContentColor = Obsidian,
+    activeBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.34f),
+    inactiveContainerColor = FogRaised.copy(alpha = 0.38f),
+    inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    inactiveBorderColor = Hairline,
+)

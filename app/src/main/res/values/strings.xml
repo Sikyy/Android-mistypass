@@ -66,6 +66,9 @@
     <string name="doors_no_favorites">No favorites yet</string>
     <string name="doors_favorite">Add to favorites</string>
     <string name="doors_unfavorite">Remove from favorites</string>
+    <string name="doors_save">Save</string>
+    <string name="doors_saved">Saved</string>
+    <string name="doors_unlockable">Unlockable</string>
     <string name="doors_lockdown">Lockdown</string>
     <string name="doors_lockdown_active">Lockdown active</string>
     <string name="doors_lockdown_inactive">Lockdown inactive</string>

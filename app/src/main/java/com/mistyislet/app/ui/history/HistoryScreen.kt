@@ -1,7 +1,6 @@
 package com.mistyislet.app.ui.history
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,8 +25,6 @@ import androidx.compose.material.icons.filled.DoorFront
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -58,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.AccessLog
+import com.mistyislet.app.ui.components.MistyListCard
 import com.mistyislet.app.ui.theme.Danger
 import com.mistyislet.app.ui.theme.Success
 import java.time.Duration
@@ -211,12 +209,7 @@ private fun DateSectionHeader(date: LocalDate) {
 private fun AccessLogCard(log: AccessLog, onClick: () -> Unit) {
     val isSuccess = isGranted(log)
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    MistyListCard(onClick = onClick) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

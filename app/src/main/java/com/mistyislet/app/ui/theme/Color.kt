@@ -2,10 +2,14 @@ package com.mistyislet.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Obsidian = Color(0xFF070806)
-val Graphite = Color(0xFF141510)
+val Obsidian = Color(0xFF050607)
+val Graphite = Color(0xFF111417)
+val Fog = Color(0xFF171B1B)
+val FogRaised = Color(0xE62A2E2B)
 val Mist = Color(0xFFF5F0E6)
-val Smoke = Color(0xFFBEB8AA)
+val Smoke = Color(0xFFC4C7BD)
+val Ash = Color(0xFF80877E)
+val Hairline = Color(0x26F5F0E6)
 val Brass = Color(0xFFC9A25B)
 val Copper = Color(0xFFA96E42)
 val Teal = Color(0xFF62B7A8)

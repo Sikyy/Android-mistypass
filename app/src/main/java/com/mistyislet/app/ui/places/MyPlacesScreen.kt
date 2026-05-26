@@ -1,7 +1,6 @@
 package com.mistyislet.app.ui.places
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,8 +23,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,7 +46,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.Place
+import com.mistyislet.app.ui.components.MistyListCard
 import com.mistyislet.app.ui.theme.Danger
+import com.mistyislet.app.ui.theme.FogRaised
+import com.mistyislet.app.ui.theme.Graphite
+import com.mistyislet.app.ui.theme.Hairline
+import com.mistyislet.app.ui.theme.Mist
 import com.mistyislet.app.ui.theme.Success
 import com.mistyislet.app.ui.theme.Warning
 
@@ -109,7 +111,11 @@ fun MyPlacesScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.52f),
+                    unfocusedBorderColor = Hairline,
+                    focusedContainerColor = FogRaised.copy(alpha = 0.68f),
+                    unfocusedContainerColor = FogRaised.copy(alpha = 0.42f),
+                    cursorColor = MaterialTheme.colorScheme.primary,
                 ),
             )
         }
@@ -162,27 +168,20 @@ fun MyPlacesScreen(
 
 @Composable
 private fun PlaceCard(place: Place, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
-    ) {
+    MistyListCard(onClick = onClick) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .height(104.dp)
                     .background(brush = gradientBrush(place.id)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = place.name.firstOrNull()?.uppercase() ?: "·",
-                    fontSize = 40.sp,
+                    fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.45f),
+                    color = Mist.copy(alpha = 0.36f),
                 )
                 if (place.isLockdown) {
                     Surface(
@@ -214,7 +213,7 @@ private fun PlaceCard(place: Place, onClick: () -> Unit) {
                 }
             }
 
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(14.dp)) {
                 Text(
                     text = place.name,
                     style = MaterialTheme.typography.titleMedium,
@@ -278,12 +277,12 @@ private fun occupancyColor(place: Place): Color {
 }
 
 private val palettes = listOf(
-    listOf(Color(0xFF2196F3), Color(0xFF9C27B0)),
-    listOf(Color(0xFF009688), Color(0xFF2196F3)),
-    listOf(Color(0xFF3F51B5), Color(0xFFE91E63)),
-    listOf(Color(0xFF4CAF50), Color(0xFF009688)),
-    listOf(Color(0xFFFF9800), Color(0xFFF44336)),
-    listOf(Color(0xFF9C27B0), Color(0xFF3F51B5)),
+    listOf(FogRaised, Color(0xFF354641)),
+    listOf(Graphite, Color(0xFF31423F)),
+    listOf(Color(0xFF171B1B), Color(0xFF3D3730)),
+    listOf(Color(0xFF151918), Color(0xFF2F4037)),
+    listOf(Color(0xFF151716), Color(0xFF43382D)),
+    listOf(Color(0xFF181B1B), Color(0xFF303838)),
 )
 
 private fun gradientBrush(id: String): Brush {
