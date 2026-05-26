@@ -149,19 +149,19 @@ Navigation Bar (bottom, M3 style — 5 destinations)
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| Primary | `#4F55FF` | Main buttons, selected state |
+| Primary | `#62B7A8` | Main buttons, selected state |
 | On Primary | `#FFFFFF` | Text on primary |
-| Primary Container | `#E0E1FF` | Card highlights |
-| On Primary Container | `#0A0F7A` | Text on container |
-| Secondary | `#5C5D72` | Secondary elements |
-| Tertiary | `#78536B` | Accent |
-| Surface | `#FEFBFF` / `#FFFFFF` | Card backgrounds |
-| Background | `#F7F7F8` | Page backgrounds |
-| Text Primary | `#17171C` | Headlines |
-| Text Secondary | `#6F717C` | Supporting text |
-| Success | `#35A853` | Unlock success |
-| Error / Danger | `#BA1A1A` / `#D93025` | Denied/errors |
-| Warning | `#D98B06` | Offline/caution |
+| Primary Container | `#E3F3EF` | Card highlights |
+| On Primary Container | `#102320` | Text on container |
+| Secondary | `#C9A25B` | Secondary elements and warning accents |
+| Tertiary | `#A96E42` | Physical hardware accent |
+| Surface | `#FFFFFF` / `#141510` | Card backgrounds |
+| Background | `#F7F4EE` / `#070806` | Page backgrounds |
+| Text Primary | `#070806` / `#F5F0E6` | Headlines |
+| Text Secondary | `#6E695F` / `#BEB8AA` | Supporting text |
+| Success | `#7F9B6B` | Unlock success and online state |
+| Error / Danger | `#D94A3A` | Denied/errors |
+| Warning | `#C9A25B` | Offline/caution |
 
 ```kotlin
 // Theme.kt — Dynamic color with brand fallback
