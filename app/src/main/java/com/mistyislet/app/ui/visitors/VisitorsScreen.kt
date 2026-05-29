@@ -6,15 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -33,16 +30,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -70,9 +63,15 @@ import com.google.zxing.qrcode.QRCodeWriter
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.VisitorGroupMember
 import com.mistyislet.app.domain.model.VisitorPass
-import com.mistyislet.app.ui.theme.Danger
-import com.mistyislet.app.ui.theme.Success
-import com.mistyislet.app.ui.theme.Warning
+import com.mistyislet.app.ui.components.MistyBottomSheet
+import com.mistyislet.app.ui.components.MistyEmptyState
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyPagePadding
+import com.mistyislet.app.ui.components.MistyPillActionButton
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosRed
 import java.time.Duration
 import java.time.Instant
 
@@ -92,22 +91,33 @@ fun VisitorsScreen(
     }
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = viewModel::showCreateSheet) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_visitor_pass))
-            }
-        },
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            Text(
-                text = stringResource(R.string.visitors_title),
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.visitors_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = viewModel::showCreateSheet) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(R.string.create_visitor_pass),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
 
             PullToRefreshBox(
                 isRefreshing = uiState.isLoading,
@@ -115,25 +125,10 @@ fun VisitorsScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 if (uiState.passes.isEmpty() && !uiState.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.PersonAdd,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.visitors_empty),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    MistyEmptyState(
+                        icon = Icons.Default.PersonAdd,
+                        title = stringResource(R.string.visitors_empty),
+                    )
                 } else {
                     val activePasses = uiState.passes.filter { !isExpired(it) }
                     val expiredPasses = uiState.passes.filter { isExpired(it) }
@@ -142,59 +137,55 @@ fun VisitorsScreen(
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = MistyPagePadding,
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         uiState.visitorGroup?.let { group ->
                             item(key = "group_header") {
-                                VisitorGroupHeader(
-                                    group = group,
-                                    activeCount = activeMembers.size,
-                                )
-                            }
-                            if (activeMembers.isNotEmpty()) {
-                                items(activeMembers, key = { "gm_${it.id}" }) { member ->
-                                    GroupMemberRow(member = member, isActive = true)
-                                }
-                            }
-                            if (expiredMembers.isNotEmpty()) {
-                                items(expiredMembers, key = { "gm_exp_${it.id}" }) { member ->
-                                    GroupMemberRow(member = member, isActive = false)
-                                }
-                            }
-                            if (expiredMembers.isNotEmpty()) {
-                                item(key = "cleanup_btn") {
-                                    TextButton(
-                                        onClick = viewModel::cleanupExpired,
-                                        modifier = Modifier.padding(top = 4.dp),
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = Danger,
-                                        )
-                                        Spacer(Modifier.width(6.dp))
-                                        Text(
-                                            stringResource(R.string.visitors_cleanup_expired),
-                                            color = Danger,
-                                        )
+                                MistyGroupedSection(title = stringResource(R.string.visitors_temp_group)) {
+                                    VisitorGroupHeader(
+                                        group = group,
+                                        activeCount = activeMembers.size,
+                                    )
+                                    if (activeMembers.isNotEmpty() || expiredMembers.isNotEmpty()) {
+                                        HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                                    }
+                                    val allMembers = activeMembers.map { it to true } + expiredMembers.map { it to false }
+                                    allMembers.forEachIndexed { index, (member, active) ->
+                                        GroupMemberRow(member = member, isActive = active)
+                                        if (index < allMembers.lastIndex) {
+                                            HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                                        }
+                                    }
+                                    if (expiredMembers.isNotEmpty()) {
+                                        HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                                        Box(modifier = Modifier.fillMaxWidth()) {
+                                            TextButton(
+                                                onClick = viewModel::cleanupExpired,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = IosRed,
+                                                )
+                                                Spacer(Modifier.width(6.dp))
+                                                Text(
+                                                    stringResource(R.string.visitors_cleanup_expired),
+                                                    color = IosRed,
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                         if (activePasses.isNotEmpty()) {
                             item {
-                                Text(
-                                    text = stringResource(R.string.visitors_active),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
-                                )
-                            }
-                            items(activePasses, key = { it.id }) { pass ->
-                                VisitorPassCard(
-                                    pass = pass,
+                                VisitorPassSection(
+                                    title = stringResource(R.string.visitors_active),
+                                    passes = activePasses,
                                     isActive = true,
                                     onShowQR = { qrDialogPass = it },
                                 )
@@ -202,15 +193,11 @@ fun VisitorsScreen(
                         }
                         if (expiredPasses.isNotEmpty()) {
                             item {
-                                Text(
-                                    text = stringResource(R.string.visitors_expired),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                                VisitorPassSection(
+                                    title = stringResource(R.string.visitors_expired),
+                                    passes = expiredPasses,
+                                    isActive = false,
                                 )
-                            }
-                            items(expiredPasses, key = { it.id }) { pass ->
-                                VisitorPassCard(pass = pass, isActive = false)
                             }
                         }
                     }
@@ -238,98 +225,126 @@ fun VisitorsScreen(
 }
 
 @Composable
-private fun StatusBadge(text: String, color: Color) {
+private fun StatusBadge(text: String, color: Color, compact: Boolean = false) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
         color = color,
         modifier = Modifier
             .background(color.copy(alpha = 0.15f), RoundedCornerShape(50))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .padding(
+                horizontal = if (compact) 6.dp else 8.dp,
+                vertical = if (compact) 2.dp else 3.dp,
+            ),
     )
 }
 
 @Composable
-private fun VisitorPassCard(pass: VisitorPass, isActive: Boolean, onShowQR: (VisitorPass) -> Unit = {}) {
+private fun VisitorPassSection(
+    title: String,
+    passes: List<VisitorPass>,
+    isActive: Boolean,
+    onShowQR: (VisitorPass) -> Unit = {},
+) {
+    MistyGroupedSection(title = title) {
+        passes.forEachIndexed { index, pass ->
+            VisitorPassRow(
+                pass = pass,
+                isActive = isActive,
+                onShowQR = onShowQR,
+            )
+            if (index < passes.lastIndex) {
+                HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun VisitorPassRow(pass: VisitorPass, isActive: Boolean, onShowQR: (VisitorPass) -> Unit = {}) {
     val context = LocalContext.current
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive) {
-                MaterialTheme.colorScheme.surface
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            },
-        ),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (isActive) {
+                    Color.Transparent
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                },
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = pass.visitor,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                modifier = Modifier.weight(1f),
+            )
+            StatusBadge(
+                text = if (isActive) stringResource(R.string.visitors_active) else stringResource(R.string.visitor_expired),
+                color = if (isActive) IosGreen else IosRed,
+            )
+        }
+
+        pass.host?.let {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        if (isActive) {
+            getRemainingTime(pass)?.let { remaining ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.visitors_remaining, remaining),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = IosOrange,
+                )
+            }
+
+            val passLink = "https://app.mistyislet.com/access-link/${pass.id}"
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    text = pass.visitor,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                StatusBadge(
-                    text = if (isActive) stringResource(R.string.visitors_active) else stringResource(R.string.visitor_expired),
-                    color = if (isActive) Success else Danger,
-                )
-            }
-
-            pass.host?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            if (isActive) {
-                getRemainingTime(pass)?.let { remaining ->
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = Warning,
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = stringResource(R.string.visitors_remaining, remaining),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Warning,
-                        )
-                    }
-                }
-
-                val passLink = "https://app.mistyislet.com/access-link/${pass.id}"
-                Spacer(modifier = Modifier.height(8.dp))
-                Row {
-                    IconButton(onClick = { onShowQR(pass) }) {
-                        Icon(Icons.Default.QrCode, contentDescription = "QR", modifier = Modifier.size(20.dp))
-                    }
-                    IconButton(onClick = {
+                MistyPillActionButton(
+                    text = stringResource(R.string.visitor_copy_link),
+                    icon = Icons.Default.ContentCopy,
+                    tint = MaterialTheme.colorScheme.primary,
+                    onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         clipboard.setPrimaryClip(ClipData.newPlainText("Visitor Pass", passLink))
                         Toast.makeText(context, context.getString(R.string.visitor_link_copied), Toast.LENGTH_SHORT).show()
-                    }) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(20.dp))
-                    }
-                    IconButton(onClick = {
+                    },
+                )
+                MistyPillActionButton(
+                    text = stringResource(R.string.visitor_share_pass),
+                    icon = Icons.Default.Share,
+                    tint = IosBlue,
+                    onClick = {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
                             putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.visitor_share_subject))
                             putExtra(Intent.EXTRA_TEXT, passLink)
                         }
                         context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.visitor_share_title)))
-                    }) {
-                        Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(20.dp))
-                    }
-                }
+                    },
+                )
+                MistyPillActionButton(
+                    text = "QR",
+                    icon = Icons.Default.QrCode,
+                    tint = IosGreen,
+                    onClick = { onShowQR(pass) },
+                )
             }
         }
     }
@@ -341,34 +356,32 @@ private fun VisitorQRDialog(pass: VisitorPass, onDismiss: () -> Unit) {
     val passLink = "https://app.mistyislet.com/access-link/${pass.id}"
     val remaining = getRemainingTime(pass)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.85f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { onDismiss() },
-        contentAlignment = Alignment.Center,
+    MistyBottomSheet(
+        title = stringResource(R.string.pass_title),
+        doneLabel = stringResource(R.string.common_done),
+        onDismiss = onDismiss,
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 32.dp),
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = pass.visitor,
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White,
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Box(
                 modifier = Modifier
-                    .size(280.dp)
+                    .size(290.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .padding(16.dp),
+                    .padding(20.dp),
             ) {
                 val bitmap = remember(passLink) { generateVisitorQR(passLink, 512) }
                 if (bitmap != null) {
@@ -382,40 +395,26 @@ private fun VisitorQRDialog(pass: VisitorPass, onDismiss: () -> Unit) {
             }
 
             if (remaining != null) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.visitors_remaining, remaining),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Warning,
+                    color = IosOrange,
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                OutlinedButton(
-                    onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Visitor Pass", passLink))
-                        Toast.makeText(context, context.getString(R.string.visitor_link_copied), Toast.LENGTH_SHORT).show()
-                    },
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                ) {
-                    Icon(
-                        Icons.Default.ContentCopy,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.White,
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(R.string.visitor_copy_link),
-                        color = Color.White,
-                    )
-                }
-                OutlinedButton(
+                MistyPillActionButton(
+                    text = stringResource(R.string.visitor_share_pass),
+                    icon = Icons.Default.Share,
+                    tint = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     onClick = {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
@@ -424,29 +423,18 @@ private fun VisitorQRDialog(pass: VisitorPass, onDismiss: () -> Unit) {
                         }
                         context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.visitor_share_title)))
                     },
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                ) {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.White,
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(R.string.visitor_share_pass),
-                        color = Color.White,
-                    )
-                }
+                )
+                MistyPillActionButton(
+                    text = stringResource(R.string.visitor_copy_link),
+                    icon = Icons.Default.ContentCopy,
+                    tint = MaterialTheme.colorScheme.primary,
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Visitor Pass", passLink))
+                        Toast.makeText(context, context.getString(R.string.visitor_link_copied), Toast.LENGTH_SHORT).show()
+                    }
+                )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = stringResource(R.string.tap_to_close),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f),
-            )
         }
     }
 }
@@ -459,7 +447,7 @@ private fun VisitorGroupHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -471,17 +459,17 @@ private fun VisitorGroupHeader(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = group.name,
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.weight(1f),
         )
         if (activeCount > 0) {
             Text(
                 text = "$activeCount",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = IosBlue,
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                    .background(IosBlue.copy(alpha = 0.15f), RoundedCornerShape(50))
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
             )
         }
     }
@@ -489,50 +477,42 @@ private fun VisitorGroupHeader(
 
 @Composable
 private fun GroupMemberRow(member: VisitorGroupMember, isActive: Boolean) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive) {
-                MaterialTheme.colorScheme.surface
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            },
-        ),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (isActive) {
+                    Color.Transparent
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                },
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = member.visitorName,
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
+                color = if (isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (isActive) {
                 member.expiresAt?.let { exp ->
-                    val remaining = getMemberRemainingTime(exp)
-                    if (remaining != null) {
+                    getMemberRemainingTime(exp)?.let { remaining ->
                         Text(
                             text = remaining,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Warning,
+                            color = IosOrange,
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
                     }
                 }
-                StatusBadge(
-                    text = stringResource(R.string.visitors_active),
-                    color = Success,
-                )
-            } else {
-                StatusBadge(
-                    text = stringResource(R.string.visitor_expired),
-                    color = Danger,
-                )
             }
         }
+        StatusBadge(
+            text = if (isActive) stringResource(R.string.visitors_active) else stringResource(R.string.visitor_expired),
+            color = if (isActive) IosGreen else IosRed,
+            compact = true,
+        )
     }
 }
 

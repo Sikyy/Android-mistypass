@@ -1,13 +1,18 @@
 package com.mistyislet.app.ui.profile
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -15,6 +20,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.core.ble.BLEAuthClient
 import com.mistyislet.app.core.ble.KeystoreManager
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -107,143 +117,193 @@ fun TCPAuthTestScreen(
     val clipboard = LocalClipboardManager.current
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text("TCP Auth Test") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Text("←", fontSize = 20.sp)
-                    }
-                }
+            MistyNavigationTopBar(
+                title = "TCP Auth Test",
+                onBack = onBack,
             )
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(padding),
+            contentPadding = MistyGroupedListPadding,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Connection settings
-            Text("Connection", style = MaterialTheme.typography.titleSmall)
-            OutlinedTextField(
-                value = host,
-                onValueChange = { host = it },
-                label = { Text("Gateway Host") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = port,
-                    onValueChange = { port = it },
-                    label = { Text("Port") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = userId,
-                    onValueChange = { userId = it },
-                    label = { Text("User ID") },
-                    modifier = Modifier.weight(2f),
-                    singleLine = true,
-                )
+            item {
+                MistyGroupedSection(title = "Connection") {
+                    InlineEditRow(label = "Host", value = host, onValueChange = { host = it }, placeholder = "Gateway IP")
+                    HorizontalDivider(modifier = Modifier.padding(start = 66.dp))
+                    InlineEditRow(label = "Port", value = port, onValueChange = { port = it }, placeholder = "9900")
+                }
             }
 
-            HorizontalDivider()
-
-            // Key info
-            Text("Device Identity", style = MaterialTheme.typography.titleSmall)
-            Text("Keystore: $keystoreLevel", style = MaterialTheme.typography.bodySmall)
-
-            if (publicKeyPEM.isNotEmpty()) {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+            item {
+                MistyGroupedSection(title = "Device Identity") {
+                    InlineEditRow(label = "User ID", value = userId, onValueChange = { userId = it }, placeholder = "(none)")
+                    if (keystoreLevel.isNotBlank()) {
+                        HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                        InfoRow(label = "Keystore", value = keystoreLevel)
+                    }
+                    if (publicKeyPEM.isNotEmpty()) {
+                        HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
-                            Text("Public Key (PEM)", style = MaterialTheme.typography.labelSmall)
-                            TextButton(
-                                onClick = { clipboard.setText(AnnotatedString(publicKeyPEM)) },
-                                contentPadding = PaddingValues(0.dp),
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("Copy", fontSize = 12.sp)
+                                Text(
+                                    text = "Public Key (PEM)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                TextButton(
+                                    onClick = { clipboard.setText(AnnotatedString(publicKeyPEM)) },
+                                    contentPadding = PaddingValues(horizontal = 0.dp),
+                                ) {
+                                    Text("Copy", fontSize = 12.sp)
+                                }
+                            }
+                            SelectionContainer {
+                                Text(
+                                    text = publicKeyPEM,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp,
+                                    lineHeight = 12.sp,
+                                    maxLines = 8,
+                                )
                             }
                         }
-                        SelectionContainer {
-                            Text(
-                                text = publicKeyPEM.take(120) + "...",
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 10.sp,
-                                lineHeight = 12.sp,
+                    } else {
+                        HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                        TextButton(
+                            onClick = { viewModel.generateNewKeyPair() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            Text("Generate Key Pair")
+                        }
+                    }
+                }
+            }
+
+            item {
+                MistyGroupedSection(title = "Test") {
+                    TextButton(
+                        onClick = { viewModel.runTCPAuth(host, port.toIntOrNull() ?: 9900, userId) },
+                        enabled = !isRunning && host.isNotBlank() && userId.isNotBlank(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                    ) {
+                        if (isRunning) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
                             )
+                            Spacer(Modifier.width(8.dp))
                         }
+                        Text(if (isRunning) "Authenticating..." else "Run TCP Auth")
                     }
-                }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { viewModel.generateNewKeyPair() },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
-                    ),
-                ) {
-                    Text("Regen Key")
-                }
-                Button(
-                    onClick = { viewModel.runTCPAuth(host, port.toIntOrNull() ?: 9900, userId) },
-                    enabled = !isRunning && host.isNotBlank() && userId.isNotBlank(),
-                ) {
-                    if (isRunning) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                    if (result.isNotEmpty()) {
+                        HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                        Text(
+                            text = result,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 13.sp,
+                            color = if (result.contains("GRANTED")) IosGreen else IosRed,
                         )
-                        Spacer(Modifier.width(8.dp))
                     }
-                    Text(if (isRunning) "Connecting..." else "Run TCP Auth")
                 }
             }
 
-            HorizontalDivider()
-
-            // Result
-            if (result.isNotEmpty()) {
-                Text("Result", style = MaterialTheme.typography.titleSmall)
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = when {
-                            result.contains("GRANTED") -> MaterialTheme.colorScheme.primaryContainer
-                            result.contains("DENIED") || result.contains("ERROR") ->
-                                MaterialTheme.colorScheme.errorContainer
-                            else -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    ),
-                ) {
-                    Text(
-                        text = result,
-                        modifier = Modifier.padding(12.dp),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                    )
+            item {
+                MistyGroupedSection(title = "Protocol Info") {
+                    InfoRow(label = "Challenge", value = "52 bytes (v2)")
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                    InfoRow(label = "Signing", value = "SHA256(nonce||userId||'BLE')")
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                    InfoRow(label = "Curve", value = "P-256 (Android Keystore)")
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                    InfoRow(label = "Transport Tag", value = "BLE")
                 }
             }
-
-            Spacer(Modifier.weight(1f))
-
-            // Protocol info
-            Text("Protocol v2", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-            Text(
-                "Challenge: 52B | Sign: SHA256(nonce||userId||'BLE') | Curve: P-256",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
-                fontSize = 11.sp,
-            )
         }
+    }
+}
+
+@Composable
+private fun InlineEditRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.width(64.dp),
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+            ),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            modifier = Modifier.weight(1f),
+            decorationBox = { innerTextField ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    if (value.isEmpty()) {
+                        Text(
+                            text = placeholder,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    innerTextField()
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(0.42f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Normal,
+            modifier = Modifier.weight(0.58f),
+        )
     }
 }

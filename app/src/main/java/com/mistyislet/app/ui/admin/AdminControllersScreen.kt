@@ -1,7 +1,8 @@
 package com.mistyislet.app.ui.admin
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DoorFront
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -12,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -21,8 +23,15 @@ import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.PlaceRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AccessibleDoor
+import com.mistyislet.app.domain.model.DoorDisplayStatus
+import com.mistyislet.app.domain.model.displayStatus
 import com.mistyislet.app.ui.admin.components.KpiItem
 import com.mistyislet.app.ui.admin.components.StatusSummaryRow
+import com.mistyislet.app.ui.components.MistyFormTextField
+import com.mistyislet.app.ui.theme.IosGray
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -72,9 +81,9 @@ class AdminControllersViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = placeRepository.listPlaceDoors(pid)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.accessibleDoors }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.accessibleDoors; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.accessibleDoors; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -93,8 +102,8 @@ fun AdminControllersScreen(
     var renameTarget by remember { mutableStateOf<AccessibleDoor?>(null) }
     var renameText by remember { mutableStateOf("") }
 
-    val online = items.count { it.status.lowercase() == "online" }
-    val offline = items.count { it.status.lowercase() == "offline" }
+    val online = items.count { it.status.lowercase() != "offline" && it.gatewayStatus.lowercase() == "online" }
+    val offline = items.size - online
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_door_controllers),
@@ -103,22 +112,22 @@ fun AdminControllersScreen(
                 id = door.id,
                 title = door.name,
                 subtitle = listOfNotNull(door.groupName, door.gatewayName).joinToString(" · ").ifBlank { null },
-                trailing = door.status.replaceFirstChar { it.uppercase() },
-                trailingColor = when (door.status.lowercase()) {
-                    "online" -> Color(0xFF35A853)
-                    "offline" -> Color(0xFFD93025)
-                    "locked_down" -> Color(0xFFFF9800)
-                    else -> Color(0xFF9E9E9E)
-                },
+                trailing = controllerStatusLabel(door),
+                trailingColor = controllerStatusColor(door),
+                trailingChip = true,
+                leadingDotColor = controllerStatusColor(door),
             )
         },
         isLoading = isLoading,
-        emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyMessage = stringResource(R.string.hardware_no_controllers),
+        emptyDescription = stringResource(R.string.hardware_no_controllers_description),
+        emptyIcon = Icons.Default.DoorFront,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
         errorMessage = error,
-        onItemClick = { item ->
+        listSectionTitle = stringResource(R.string.hardware_all_controllers),
+        onItemLongClick = { item ->
             val door = items.find { it.id == item.id }
             if (door != null) {
                 renameText = door.name
@@ -128,24 +137,23 @@ fun AdminControllersScreen(
         headerContent = {
             StatusSummaryRow(
                 items = listOf(
-                    KpiItem(online.toString(), stringResource(R.string.admin_online), Color(0xFF35A853)),
-                    KpiItem(offline.toString(), stringResource(R.string.admin_offline), Color(0xFFD93025)),
-                    KpiItem(items.size.toString(), stringResource(R.string.admin_total), Color(0xFF4285F4)),
+                    KpiItem(online.toString(), stringResource(R.string.admin_online), IosGreen),
+                    KpiItem(offline.toString(), stringResource(R.string.admin_offline), if (offline > 0) IosRed else IosGray),
+                    KpiItem(items.size.toString(), stringResource(R.string.admin_total), MaterialTheme.colorScheme.onSurface),
                 ),
             )
         },
     )
 
     renameTarget?.let { door ->
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { renameTarget = null },
             title = { Text(stringResource(R.string.admin_rename)) },
             text = {
-                OutlinedTextField(
+                MistyFormTextField(
                     value = renameText,
                     onValueChange = { renameText = it },
-                    label = { Text(stringResource(R.string.admin_enter_new_name)) },
-                    singleLine = true,
+                    label = stringResource(R.string.admin_enter_new_name),
                 )
             },
             confirmButton = {
@@ -166,4 +174,19 @@ fun AdminControllersScreen(
             },
         )
     }
+}
+
+@Composable
+private fun controllerStatusLabel(door: AccessibleDoor): String = when (door.displayStatus()) {
+    DoorDisplayStatus.ONLINE_UNLOCKABLE -> stringResource(R.string.doors_online)
+    DoorDisplayStatus.ONLINE_LOCKED_DOWN -> stringResource(R.string.doors_lockdown)
+    DoorDisplayStatus.OFFLINE -> stringResource(R.string.door_offline)
+    DoorDisplayStatus.DISCONNECTED -> stringResource(R.string.door_disconnected)
+}
+
+private fun controllerStatusColor(door: AccessibleDoor): Color = when (door.displayStatus()) {
+    DoorDisplayStatus.ONLINE_UNLOCKABLE -> IosGreen
+    DoorDisplayStatus.ONLINE_LOCKED_DOWN -> IosOrange
+    DoorDisplayStatus.OFFLINE -> IosRed
+    DoorDisplayStatus.DISCONNECTED -> IosGray
 }

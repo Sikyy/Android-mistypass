@@ -2,21 +2,23 @@ package com.mistyislet.app.ui.admin
 
 import android.net.Uri
 import androidx.annotation.OptIn
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Edit
@@ -24,25 +26,21 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VideocamOff
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +68,14 @@ import com.mistyislet.app.domain.model.CameraRecording
 import com.mistyislet.app.domain.model.CameraVideoLink
 import com.mistyislet.app.ui.admin.components.KpiItem
 import com.mistyislet.app.ui.admin.components.StatusSummaryRow
+import com.mistyislet.app.ui.components.MistyFormTextField
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.theme.IosGray
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -177,9 +183,9 @@ class AdminCamerasViewModel @Inject constructor(
 
     private suspend fun loadData() {
         when (val result = adminRepository.getCameras()) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.cameras }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.cameras; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.cameras; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -192,6 +198,16 @@ data class CameraCloudDataState(
     val tokenError: String? = null,
     val recordingsError: String? = null,
 )
+
+private fun Camera.vendorLabel(): String = vendor.ifBlank { provider }
+
+private fun Camera.ipDisplayText(): String? {
+    ipAddress?.takeIf { it.isNotBlank() }?.let { return it }
+    return host?.takeIf { it.isNotBlank() }?.let { if (port > 0) "$it:$port" else it }
+}
+
+private fun Camera.doorDisplayName(): String? =
+    doorName?.takeIf { it.isNotBlank() } ?: doorId?.takeIf { it.isNotBlank() }
 
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -206,12 +222,44 @@ fun AdminCamerasScreen(
     var selectedCamera by remember { mutableStateOf<Camera?>(null) }
     var renameTarget by remember { mutableStateOf<Camera?>(null) }
     var renameText by remember { mutableStateOf("") }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
 
     val online = items.count { it.status.lowercase() == "online" }
     val offline = items.count { it.status.lowercase() == "offline" }
     val errorCount = items.count { it.status.lowercase() == "error" }
+
+    selectedCamera?.let { camera ->
+        BackHandler {
+            selectedCamera = null
+            viewModel.clearStream()
+            viewModel.clearCloudStatus()
+        }
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            topBar = {
+                MistyNavigationTopBar(
+                    title = camera.name,
+                    onBack = {
+                        selectedCamera = null
+                        viewModel.clearStream()
+                        viewModel.clearCloudStatus()
+                    },
+                )
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                CameraDetailSheet(
+                    camera = camera,
+                    viewModel = viewModel,
+                    showHeader = false,
+                )
+            }
+        }
+        return
+    }
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_cameras),
@@ -219,22 +267,35 @@ fun AdminCamerasScreen(
             AdminListItem(
                 id = camera.id,
                 title = camera.name,
-                subtitle = listOfNotNull(camera.provider.ifBlank { null }, camera.host).joinToString(" · ").ifBlank { null },
+                subtitle = listOfNotNull(
+                    camera.vendorLabel().takeIf { it.isNotBlank() },
+                    camera.doorDisplayName(),
+                ).joinToString(" · ").ifBlank { null },
                 trailing = camera.status.replaceFirstChar { it.uppercase() },
                 trailingColor = when (camera.status.lowercase()) {
-                    "online" -> Color(0xFF35A853)
-                    "offline" -> Color(0xFFD93025)
-                    "error" -> Color(0xFFFF9800)
+                    "online" -> IosGreen
+                    "offline" -> IosRed
+                    "error" -> IosOrange
                     else -> null
+                },
+                trailingChip = true,
+                leadingDotColor = when (camera.status.lowercase()) {
+                    "online" -> IosGreen
+                    "offline" -> IosRed
+                    "error" -> IosOrange
+                    else -> IosGray
                 },
             )
         },
         isLoading = isLoading,
-        emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyMessage = stringResource(R.string.camera_no_cameras),
+        emptyDescription = stringResource(R.string.camera_no_cameras_description),
+        emptyIcon = Icons.Default.VideocamOff,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
         errorMessage = error,
+        listSectionTitle = stringResource(R.string.hardware_all_cameras),
         onItemClick = { item ->
             val camera = items.find { it.id == item.id }
             if (camera != null) {
@@ -245,51 +306,34 @@ fun AdminCamerasScreen(
                 }
             }
         },
+        onItemLongClick = { item ->
+            val camera = items.find { it.id == item.id }
+            if (camera != null) {
+                renameText = camera.name
+                renameTarget = camera
+            }
+        },
         headerContent = {
             StatusSummaryRow(
                 items = listOfNotNull(
-                    KpiItem(online.toString(), stringResource(R.string.admin_online), Color(0xFF35A853)),
-                    KpiItem(offline.toString(), stringResource(R.string.admin_offline), Color(0xFFD93025)),
-                    if (errorCount > 0) KpiItem(errorCount.toString(), stringResource(R.string.admin_error), Color(0xFFFF9800)) else null,
-                    KpiItem(items.size.toString(), stringResource(R.string.admin_total), Color(0xFF4285F4)),
+                    KpiItem(online.toString(), stringResource(R.string.admin_online), IosGreen),
+                    KpiItem(offline.toString(), stringResource(R.string.admin_offline), if (offline > 0) IosRed else IosGray),
+                    if (errorCount > 0) KpiItem(errorCount.toString(), stringResource(R.string.admin_error), IosOrange) else null,
+                    KpiItem(items.size.toString(), stringResource(R.string.admin_total), MaterialTheme.colorScheme.onSurface),
                 ),
             )
         },
     )
 
-    selectedCamera?.let { camera ->
-        ModalBottomSheet(
-            onDismissRequest = {
-                selectedCamera = null
-                viewModel.clearStream()
-                viewModel.clearCloudStatus()
-            },
-            sheetState = sheetState,
-        ) {
-            CameraDetailSheet(
-                camera = camera,
-                viewModel = viewModel,
-                onRename = {
-                    renameText = camera.name
-                    renameTarget = camera
-                    selectedCamera = null
-                    viewModel.clearStream()
-                    viewModel.clearCloudStatus()
-                },
-            )
-        }
-    }
-
     renameTarget?.let { camera ->
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { renameTarget = null },
             title = { Text(stringResource(R.string.admin_rename)) },
             text = {
-                OutlinedTextField(
+                MistyFormTextField(
                     value = renameText,
                     onValueChange = { renameText = it },
-                    label = { Text(stringResource(R.string.admin_enter_new_name)) },
-                    singleLine = true,
+                    label = stringResource(R.string.admin_enter_new_name),
                 )
             },
             confirmButton = {
@@ -317,199 +361,217 @@ private fun CameraDetailSheet(
     camera: Camera,
     viewModel: AdminCamerasViewModel,
     onRename: () -> Unit = {},
+    showHeader: Boolean = true,
 ) {
     val streamLink by viewModel.streamLink.collectAsStateWithLifecycle()
     val streamLoading by viewModel.streamLoading.collectAsStateWithLifecycle()
     val streamError by viewModel.streamError.collectAsStateWithLifecycle()
     val cloudState by viewModel.cloudState.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 32.dp)
-            .verticalScroll(rememberScrollState()),
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = MistyGroupedListPadding,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = camera.name,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onRename) {
-                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.admin_rename), modifier = Modifier.size(20.dp))
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Video area
-        if (camera.status.lowercase() == "online") {
-            if (streamLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = Color.White)
-                }
-            } else if (streamLink != null) {
-                VideoPlayer(
-                    url = streamLink!!.videoUrl,
-                    onReload = { viewModel.loadStream(camera.id) },
-                    onSnapshot = { viewModel.takeSnapshot(camera.id) },
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.8f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        if (showHeader) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = camera.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = onRename) {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = Color.White.copy(alpha = 0.7f),
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.camera_tap_to_stream),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.7f),
+                            Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.admin_rename),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
             }
+        }
+
+        item {
+            CameraVideoArea(
+                camera = camera,
+                streamLink = streamLink,
+                streamLoading = streamLoading,
+                onLoadStream = { viewModel.loadStream(camera.id) },
+                onSnapshot = { viewModel.takeSnapshot(camera.id) },
+            )
+        }
+
+        streamError?.let { err ->
+            item { CameraErrorText(err) }
+        }
+
+        item {
+            MistyGroupedSection(title = stringResource(R.string.camera_info)) {
+                InfoRow(
+                    stringResource(R.string.camera_status),
+                    camera.status.replaceFirstChar { it.uppercase() },
+                    valueColor = when (camera.status.lowercase()) {
+                        "online" -> IosGreen
+                        "offline" -> IosRed
+                        "error" -> IosOrange
+                        else -> null
+                    },
+                )
+                if (camera.vendorLabel().isNotBlank()) {
+                    DetailDivider()
+                    InfoRow(stringResource(R.string.camera_vendor), camera.vendorLabel())
+                }
+                camera.model?.takeIf { it.isNotBlank() }?.let {
+                    DetailDivider()
+                    InfoRow(stringResource(R.string.camera_model), it)
+                }
+                camera.ipDisplayText()?.let {
+                    DetailDivider()
+                    InfoRow(stringResource(R.string.camera_ip), it)
+                }
+                camera.doorDisplayName()?.let {
+                    DetailDivider()
+                    InfoRow(stringResource(R.string.camera_door), it)
+                }
+            }
+        }
+
+        item { CloudAccessSection(cloudState = cloudState) }
+        item { RecordingsSection(cloudState = cloudState) }
+    }
+}
+
+@Composable
+private fun CameraVideoArea(
+    camera: Camera,
+    streamLink: CameraVideoLink?,
+    streamLoading: Boolean,
+    onLoadStream: () -> Unit,
+    onSnapshot: () -> Unit,
+) {
+    if (camera.status.lowercase() == "online") {
+        if (streamLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = Color.White)
+            }
+        } else if (streamLink != null) {
+            VideoPlayer(
+                url = streamLink.videoUrl,
+                onReload = onLoadStream,
+                onSnapshot = onSnapshot,
+            )
         } else {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.6f)),
+                    .background(Color.Black.copy(alpha = 0.8f))
+                    .clickable(onClick = onLoadStream),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        imageVector = Icons.Default.VideocamOff,
+                        imageVector = Icons.Default.PlayArrow,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
-                        tint = Color.White.copy(alpha = 0.5f),
+                        tint = Color.White.copy(alpha = 0.7f),
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(R.string.camera_offline),
+                        text = stringResource(R.string.camera_tap_to_stream),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.5f),
+                        color = Color.White.copy(alpha = 0.7f),
                     )
                 }
             }
         }
-
-        streamError?.let { err ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = err,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFD93025),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        CloudStatusSection(cloudState = cloudState)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Camera info
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.Black.copy(alpha = 0.6f)),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                InfoRow(stringResource(R.string.camera_status), camera.status.replaceFirstChar { it.uppercase() },
-                    valueColor = when (camera.status.lowercase()) {
-                        "online" -> Color(0xFF35A853)
-                        "offline" -> Color(0xFFD93025)
-                        "error" -> Color(0xFFFF9800)
-                        else -> null
-                    })
-                InfoRow(stringResource(R.string.camera_vendor), camera.provider)
-                camera.host?.let { InfoRow(stringResource(R.string.camera_ip), if (camera.port > 0) "$it:${camera.port}" else it) }
-                camera.doorId?.let { InfoRow(stringResource(R.string.camera_door), it) }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.VideocamOff,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = Color.White.copy(alpha = 0.5f),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.camera_offline),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.5f),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CloudStatusSection(cloudState: CameraCloudDataState) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.camera_cloud),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            when {
-                cloudState.isLoading -> CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                cloudState.tokenError != null -> CameraErrorText(cloudState.tokenError)
-                cloudState.token != null -> {
-                    val tokenValue = cloudState.token.token ?: cloudState.token.cloudToken
+private fun CloudAccessSection(cloudState: CameraCloudDataState) {
+    MistyGroupedSection(title = stringResource(R.string.camera_cloud)) {
+        when {
+            cloudState.isLoading -> DetailLoadingRow()
+            cloudState.tokenError != null -> CameraErrorText(cloudState.tokenError)
+            cloudState.token != null -> {
+                val tokenValue = cloudState.token.token ?: cloudState.token.cloudToken
+                cloudState.token.provider?.takeIf { it.isNotBlank() }?.let {
                     InfoRow(
-                        label = stringResource(R.string.camera_cloud_token),
-                        value = if (tokenValue.isNullOrBlank()) {
-                            cloudState.token.status.ifBlank { stringResource(R.string.admin_active_now) }
-                        } else {
-                            stringResource(R.string.camera_cloud_token_available)
-                        },
+                        label = stringResource(R.string.camera_cloud_provider),
+                        value = it,
                     )
-                    cloudState.token.expiresAt?.let {
-                        InfoRow(stringResource(R.string.camera_cloud_expires), it.take(19))
-                    }
+                    DetailDivider()
                 }
-                else -> Text(
-                    text = stringResource(R.string.camera_cloud_unavailable),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                InfoRow(
+                    label = stringResource(R.string.camera_cloud_token),
+                    value = if (tokenValue.isNullOrBlank()) {
+                        cloudState.token.status.ifBlank { stringResource(R.string.admin_active_now) }
+                    } else {
+                        stringResource(R.string.camera_cloud_token_available)
+                    },
                 )
+                cloudState.token.expiresAt?.let {
+                    DetailDivider()
+                    InfoRow(stringResource(R.string.camera_cloud_expires), it.take(19))
+                }
             }
+            else -> DetailEmptyText(stringResource(R.string.camera_cloud_unavailable))
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.camera_recordings),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            when {
-                cloudState.isLoading -> CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                cloudState.recordingsError != null -> CameraErrorText(cloudState.recordingsError)
-                cloudState.recordings.isEmpty() -> Text(
-                    text = stringResource(R.string.camera_no_recordings),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+@Composable
+private fun RecordingsSection(cloudState: CameraCloudDataState) {
+    MistyGroupedSection(title = stringResource(R.string.camera_recordings)) {
+        when {
+            cloudState.isLoading -> DetailLoadingRow()
+            cloudState.recordingsError != null -> CameraErrorText(cloudState.recordingsError)
+            cloudState.recordings.isEmpty() -> DetailEmptyText(stringResource(R.string.camera_no_recordings))
+            else -> cloudState.recordings.take(3).forEachIndexed { index, recording ->
+                InfoRow(
+                    label = recording.title?.ifBlank { null } ?: recording.id,
+                    value = listOfNotNull(
+                        recording.startedAt?.take(10),
+                        recording.durationSeconds?.let { stringResource(R.string.camera_recording_seconds, it) },
+                    ).joinToString(" · ").ifBlank { stringResource(R.string.camera_recording_ready) },
                 )
-                else -> cloudState.recordings.take(3).forEach { recording ->
-                    InfoRow(
-                        label = recording.title?.ifBlank { null } ?: recording.id,
-                        value = listOfNotNull(
-                            recording.startedAt?.take(10),
-                            recording.durationSeconds?.let { stringResource(R.string.camera_recording_seconds, it) },
-                        ).joinToString(" · ").ifBlank { stringResource(R.string.camera_recording_ready) },
-                    )
+                if (index < cloudState.recordings.take(3).lastIndex) {
+                    DetailDivider()
                 }
             }
         }
@@ -522,6 +584,37 @@ private fun CameraErrorText(message: String) {
         text = message,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+    )
+}
+
+@Composable
+private fun DetailLoadingRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
+private fun DetailEmptyText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+    )
+}
+
+@Composable
+private fun DetailDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 20.dp),
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
     )
 }
 
@@ -530,19 +623,22 @@ private fun InfoRow(label: String, value: String, valueColor: Color? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             color = valueColor ?: MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 16.dp),
         )
     }
 }

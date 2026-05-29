@@ -1,24 +1,50 @@
 package com.mistyislet.app.ui.navigation
 
 import android.net.Uri
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.DoorFront
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Wallet
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.Dashboard
+import androidx.compose.material.icons.outlined.DoorFront
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -51,10 +77,12 @@ import com.mistyislet.app.ui.admin.AdminOrgSettingsScreen
 import com.mistyislet.app.ui.admin.AdminSchedulesScreen
 import com.mistyislet.app.ui.admin.AdminTeamsScreen
 import com.mistyislet.app.ui.admin.AdminUserPresenceScreen
+import com.mistyislet.app.ui.admin.AdminUserDetailScreen
 import com.mistyislet.app.ui.admin.AdminUsersScreen
 import com.mistyislet.app.ui.admin.AdminZonesScreen
 import com.mistyislet.app.ui.credentials.BindCardScreen
 import com.mistyislet.app.ui.credentials.CredentialsScreen
+import com.mistyislet.app.ui.credentials.QRPassScreen
 import com.mistyislet.app.ui.dashboard.DashboardScreen
 import com.mistyislet.app.ui.doors.DoorsRootScreen
 import com.mistyislet.app.ui.history.HistoryScreen
@@ -68,6 +96,7 @@ object Routes {
     const val MAIN = "main"
     const val DOORS = "doors"
     const val PASS = "pass"
+    const val QR_PASS = "qr_pass"
     const val DASHBOARD = "dashboard"
     const val HISTORY = "history"
     const val VISITORS = "visitors"
@@ -79,6 +108,7 @@ object Routes {
     const val ADMIN_INCIDENTS = "admin_incidents"
     const val ADMIN_INCIDENT_DETAIL = "admin_incident_detail"
     const val ADMIN_USERS = "admin_users"
+    const val ADMIN_USER_DETAIL = "admin_user_detail"
     const val ADMIN_GROUPS = "admin_groups"
     const val ADMIN_TEAMS = "admin_teams"
     const val ADMIN_SCHEDULES = "admin_schedules"
@@ -101,6 +131,7 @@ object Routes {
 
     fun adminEventDetail(eventId: String) = "$ADMIN_EVENT_DETAIL/${Uri.encode(eventId)}"
     fun adminIncidentDetail(incidentId: String) = "$ADMIN_INCIDENT_DETAIL/${Uri.encode(incidentId)}"
+    fun adminUserDetail(userId: String) = "$ADMIN_USER_DETAIL/${Uri.encode(userId)}"
 }
 
 data class BottomNavItem(
@@ -110,10 +141,10 @@ data class BottomNavItem(
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem(Routes.DOORS, Icons.Default.DoorFront, R.string.nav_doors),
-    BottomNavItem(Routes.PASS, Icons.Default.Wallet, R.string.nav_pass),
-    BottomNavItem(Routes.DASHBOARD, Icons.Default.Dashboard, R.string.nav_dashboard),
-    BottomNavItem(Routes.PROFILE, Icons.Default.Person, R.string.nav_profile),
+    BottomNavItem(Routes.DOORS, Icons.Outlined.DoorFront, R.string.nav_doors),
+    BottomNavItem(Routes.PASS, Icons.Outlined.Badge, R.string.nav_pass),
+    BottomNavItem(Routes.DASHBOARD, Icons.Outlined.Dashboard, R.string.nav_dashboard),
+    BottomNavItem(Routes.PROFILE, Icons.Outlined.AccountCircle, R.string.nav_profile),
 )
 
 @Composable
@@ -124,6 +155,10 @@ fun AppNavigation(authRepository: AuthRepository) {
     NavHost(
         navController = rootNavController,
         startDestination = startDestination,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
     ) {
         composable(Routes.LOGIN) {
             LoginScreen(
@@ -151,43 +186,36 @@ private fun MainScreen(onLogout: () -> Unit) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val currentTabRoute = currentDestination?.hierarchy?.firstOrNull { destination ->
+        bottomNavItems.any { it.route == destination.route }
+    }?.route
+    var lastTabRoute by rememberSaveable { mutableStateOf(Routes.DOORS) }
+    LaunchedEffect(currentTabRoute) {
+        if (currentTabRoute != null) {
+            lastTabRoute = currentTabRoute
+        }
+    }
+    val activeTabRoute = currentTabRoute ?: lastTabRoute
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar(
-                containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp,
-            ) {
-                bottomNavItems.forEach { item ->
-                    NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = null) },
-                        label = { Text(stringResource(item.labelResId)) },
-                        selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                            selectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                            indicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer,
-                            unselectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                    )
-                }
-            }
-        },
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.DOORS,
-            modifier = Modifier.padding(innerPadding),
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                if (activeTabRoute == Routes.DASHBOARD) {
+                    MaterialTheme.colorScheme.surfaceContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
+            ),
+    ) {
+            NavHost(
+                navController = navController,
+                startDestination = Routes.DOORS,
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
         ) {
             composable(
                 Routes.DOORS,
@@ -199,7 +227,14 @@ private fun MainScreen(onLogout: () -> Unit) {
             ) {
                 CredentialsScreen(
                     onNavigateToBindCard = { navController.navigate(Routes.BIND_CARD) },
+                    onNavigateToQrPass = { navController.navigate(Routes.QR_PASS) },
                 )
+            }
+            composable(
+                Routes.QR_PASS,
+                deepLinks = listOf(navDeepLink { uriPattern = "mistyislet://qr-pass" }),
+            ) {
+                QRPassScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 Routes.DASHBOARD,
@@ -209,7 +244,7 @@ private fun MainScreen(onLogout: () -> Unit) {
                     onNavigate = { route -> navController.navigate(route) },
                 )
             }
-            composable(Routes.HISTORY) { HistoryScreen() }
+            composable(Routes.HISTORY) { HistoryScreen(onBack = { navController.popBackStack() }) }
             composable(
                 Routes.VISITORS,
                 deepLinks = listOf(
@@ -260,7 +295,21 @@ private fun MainScreen(onLogout: () -> Unit) {
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable(Routes.ADMIN_USERS) { AdminUsersScreen(onBack = { navController.popBackStack() }) }
+            composable(Routes.ADMIN_USERS) {
+                AdminUsersScreen(
+                    onBack = { navController.popBackStack() },
+                    onUserClick = { userId -> navController.navigate(Routes.adminUserDetail(userId)) },
+                )
+            }
+            composable(
+                route = "${Routes.ADMIN_USER_DETAIL}/{userId}",
+                arguments = listOf(navArgument("userId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                AdminUserDetailScreen(
+                    userId = backStackEntry.arguments?.getString("userId").orEmpty(),
+                    onBack = { navController.popBackStack() },
+                )
+            }
             composable(Routes.ADMIN_GROUPS) { AdminGroupsScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_TEAMS) { AdminTeamsScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.ADMIN_SCHEDULES) { AdminSchedulesScreen(onBack = { navController.popBackStack() }) }
@@ -282,6 +331,93 @@ private fun MainScreen(onLogout: () -> Unit) {
 
             // Debug screens
             composable(Routes.TCP_AUTH_TEST) { TCPAuthTestScreen(onBack = { navController.popBackStack() }) }
+        }
+
+        MistyFloatingBottomNav(
+            currentRoute = activeTabRoute,
+            onSelected = { route ->
+                lastTabRoute = route
+                navController.navigate(route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun MistyFloatingBottomNav(
+    currentRoute: String?,
+    onSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .blockBottomNavScrollThrough()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+                .shadow(18.dp, RoundedCornerShape(40.dp), clip = false)
+                .clip(RoundedCornerShape(40.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+                .border(0.7.dp, Color.White.copy(alpha = 0.65f), RoundedCornerShape(40.dp))
+                .padding(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            bottomNavItems.forEach { item ->
+                val selected = currentRoute == item.route
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(34.dp))
+                        .background(
+                            if (selected) {
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.82f)
+                            } else {
+                                Color.Transparent
+                            },
+                        )
+                        .clickable { onSelected(item.route) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = stringResource(item.labelResId),
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun Modifier.blockBottomNavScrollThrough(): Modifier = pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            if (event.changes.any { it.positionChange() != Offset.Zero }) {
+                event.changes.forEach { it.consume() }
+            }
         }
     }
 }

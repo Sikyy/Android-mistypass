@@ -8,6 +8,8 @@ import com.mistyislet.app.data.api.AccessApi
 import com.mistyislet.app.data.api.UserApi
 import com.mistyislet.app.data.repository.CredentialRepository
 import com.mistyislet.app.data.repository.MobileCredentialRepository
+import com.mistyislet.app.data.repository.SelectedPlaceRepository
+import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.Credential
 import com.mistyislet.app.domain.model.MobileCredential
 import com.mistyislet.app.domain.model.QRTokenRequest
@@ -26,8 +28,12 @@ data class CredentialsUiState(
     val userId: String? = null,
     val organizationName: String = "Mistyislet",
     val placeName: String? = null,
+    val qrDoors: List<AccessibleDoor> = emptyList(),
+    val selectedQrDoorId: String? = null,
     val dynamicQrContent: String? = null,
     val qrExpiresAt: Instant? = null,
+    val isQrLoading: Boolean = false,
+    val qrErrorMessage: String? = null,
     val pinCode: String? = null,
     val pinExpiresAt: Instant? = null,
     val pinPeriodSecs: Int = 30,
@@ -41,6 +47,7 @@ class CredentialsViewModel @Inject constructor(
     private val mobileCredentialRepository: MobileCredentialRepository,
     private val userApi: UserApi,
     private val accessApi: AccessApi,
+    private val selectedPlaceRepository: SelectedPlaceRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CredentialsUiState())
@@ -50,12 +57,25 @@ class CredentialsViewModel @Inject constructor(
     private var pinRefreshJob: Job? = null
 
     init {
+        observeSelectedScope()
         observeCached()
         refresh()
         loadUser()
+        loadQrDoors()
         loadMobileCredentials()
         startQrRefreshLoop()
         startPinRefreshLoop()
+    }
+
+    private fun observeSelectedScope() {
+        viewModelScope.launch {
+            selectedPlaceRepository.scope.collect { scope ->
+                _uiState.value = _uiState.value.copy(
+                    organizationName = scope.orgName ?: _uiState.value.organizationName,
+                    placeName = scope.placeName ?: _uiState.value.placeName,
+                )
+            }
+        }
     }
 
     private fun loadUser() {
@@ -104,8 +124,33 @@ class CredentialsViewModel @Inject constructor(
         }
     }
 
+    private fun loadQrDoors() {
+        viewModelScope.launch {
+            when (val result = safeApiCall { accessApi.getMyDoors().items }) {
+                is ApiResult.Success -> {
+                    val doors = result.data
+                    val selectedDoorId = _uiState.value.selectedQrDoorId
+                        ?.takeIf { id -> doors.any { it.id == id } }
+                        ?: doors.firstOrNull()?.id
+                    _uiState.value = _uiState.value.copy(
+                        qrDoors = doors,
+                        selectedQrDoorId = selectedDoorId,
+                    )
+                    refreshQrToken()
+                }
+                is ApiResult.Error -> {
+                    _uiState.value = _uiState.value.copy(qrErrorMessage = result.message)
+                }
+                is ApiResult.Exception -> {
+                    _uiState.value = _uiState.value.copy(qrErrorMessage = result.throwable.localizedMessage)
+                }
+            }
+        }
+    }
+
     private suspend fun refreshQrToken() {
-        when (val result = safeApiCall { accessApi.getQrToken(QRTokenRequest()) }) {
+        _uiState.value = _uiState.value.copy(isQrLoading = true, qrErrorMessage = null)
+        when (val result = safeApiCall { accessApi.getQrToken(QRTokenRequest(doorId = _uiState.value.selectedQrDoorId)) }) {
             is ApiResult.Success -> {
                 val token = result.data
                 val expiresAt = try {
@@ -116,19 +161,24 @@ class CredentialsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     dynamicQrContent = token.token,
                     qrExpiresAt = expiresAt,
+                    isQrLoading = false,
+                    qrErrorMessage = null,
                 )
             }
-            else -> refreshBleQrFallback()
+            is ApiResult.Error -> refreshBleQrFallback(result.message)
+            is ApiResult.Exception -> refreshBleQrFallback(result.throwable.localizedMessage)
         }
     }
 
-    private suspend fun refreshBleQrFallback() {
+    private suspend fun refreshBleQrFallback(errorMessage: String?) {
         when (val result = safeApiCall { accessApi.getBleToken() }) {
             is ApiResult.Success -> {
                 val token = result.data
                 _uiState.value = _uiState.value.copy(
                     dynamicQrContent = "mistyislet://ble/${token.bleToken}",
                     qrExpiresAt = Instant.now().plusSeconds(token.expiresIn.toLong()),
+                    isQrLoading = false,
+                    qrErrorMessage = null,
                 )
             }
             else -> {
@@ -137,6 +187,13 @@ class CredentialsViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         dynamicQrContent = "mistyislet://access/$userId",
                         qrExpiresAt = Instant.now().plusSeconds(25),
+                        isQrLoading = false,
+                        qrErrorMessage = null,
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isQrLoading = false,
+                        qrErrorMessage = errorMessage,
                     )
                 }
             }
@@ -173,6 +230,16 @@ class CredentialsViewModel @Inject constructor(
 
     fun manualRefreshQr() {
         viewModelScope.launch { refreshQrToken() }
+    }
+
+    fun selectQrDoor(doorId: String) {
+        if (doorId == _uiState.value.selectedQrDoorId) return
+        _uiState.value = _uiState.value.copy(
+            selectedQrDoorId = doorId,
+            dynamicQrContent = null,
+            qrExpiresAt = null,
+        )
+        manualRefreshQr()
     }
 
     fun manualRefreshPin() {

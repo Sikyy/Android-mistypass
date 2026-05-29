@@ -1,12 +1,9 @@
 package com.mistyislet.app.ui.places
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,8 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,10 +31,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.Organization
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyEmptyState
+import com.mistyislet.app.ui.components.MistyInitialAvatar
+import com.mistyislet.app.ui.components.MistyLargeTitle
+import com.mistyislet.app.ui.components.MistyPage
+import com.mistyislet.app.ui.components.MistyPagePadding
 
 @Composable
 fun MyOrgsScreen(
@@ -47,13 +49,8 @@ fun MyOrgsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = stringResource(R.string.nav_doors),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-        )
+    MistyPage {
+        MistyLargeTitle(text = stringResource(R.string.nav_doors))
 
         when {
             uiState.isLoading && uiState.orgs.isEmpty() -> {
@@ -62,32 +59,16 @@ fun MyOrgsScreen(
                 }
             }
             uiState.orgs.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Business,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.size(16.dp))
-                        Text(
-                            text = stringResource(R.string.places_no_orgs),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Spacer(modifier = Modifier.size(4.dp))
-                        Text(
-                            text = stringResource(R.string.places_no_orgs_desc),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                MistyEmptyState(
+                    icon = Icons.Default.Business,
+                    title = stringResource(R.string.places_no_orgs),
+                    description = stringResource(R.string.places_no_orgs_desc),
+                )
             }
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    contentPadding = MistyPagePadding,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(uiState.orgs, key = { it.id }) { org ->
@@ -101,14 +82,8 @@ fun MyOrgsScreen(
 
 @Composable
 private fun OrgCard(org: Organization, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    MistyCard(
+        onClick = onClick,
     ) {
         Row(
             modifier = Modifier
@@ -116,25 +91,12 @@ private fun OrgCard(org: Organization, onClick: () -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = org.name.firstOrNull()?.uppercase() ?: "?",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+            MistyInitialAvatar(text = org.name)
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = org.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, lineHeight = 22.sp),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                 )

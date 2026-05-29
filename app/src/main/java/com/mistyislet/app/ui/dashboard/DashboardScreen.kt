@@ -1,6 +1,5 @@
 package com.mistyislet.app.ui.dashboard
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,30 +14,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.MeetingRoom
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.PeopleAlt
-import androidx.compose.material.icons.filled.PersonSearch
-import androidx.compose.material.icons.filled.Router
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.EventNote
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.GppMaybe
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.MeetingRoom
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.PeopleAlt
+import androidx.compose.material.icons.outlined.PersonSearch
+import androidx.compose.material.icons.outlined.Router
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Upload
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -49,12 +48,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.R
-import com.mistyislet.app.ui.theme.Success
+import com.mistyislet.app.ui.components.MistyBottomNavInset
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyLargeTitle
+import com.mistyislet.app.ui.components.MistyPage
+import com.mistyislet.app.ui.components.MistySectionTitle
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosCyan
+import com.mistyislet.app.ui.theme.IosGray
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosIndigo
+import com.mistyislet.app.ui.theme.IosMint
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosPurple
+import com.mistyislet.app.ui.theme.IosRed
+import com.mistyislet.app.ui.theme.IosTeal
+
+private data class DashboardAction(
+    val icon: ImageVector,
+    val iconTint: Color,
+    val title: String,
+    val onClick: () -> Unit,
+)
+
+private data class DashboardSectionData(
+    val title: String,
+    val actions: List<DashboardAction>,
+)
 
 @Composable
 fun DashboardScreen(
@@ -70,7 +94,7 @@ fun DashboardScreen(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
-                    imageVector = Icons.Default.MeetingRoom,
+                    imageVector = Icons.Outlined.MeetingRoom,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -91,289 +115,295 @@ fun DashboardScreen(
         return
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = stringResource(R.string.nav_dashboard),
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+    val sections = buildList {
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_activity),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.History,
+                        iconTint = IosGreen,
+                        title = stringResource(R.string.dashboard_event_history),
+                        onClick = { onNavigate("history") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.AutoMirrored.Outlined.Assignment,
+                        iconTint = IosBlue,
+                        title = stringResource(R.string.dashboard_events),
+                        onClick = { onNavigate("admin_events") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.GppMaybe,
+                        iconTint = IosRed,
+                        title = stringResource(R.string.dashboard_incidents),
+                        onClick = { onNavigate("admin_incidents") },
+                    ),
+                ),
+            ),
         )
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_management),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.People,
+                        iconTint = IosBlue,
+                        title = stringResource(R.string.dashboard_users),
+                        onClick = { onNavigate("admin_users") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.PeopleAlt,
+                        iconTint = IosMint,
+                        title = stringResource(R.string.dashboard_groups),
+                        onClick = { onNavigate("admin_groups") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.Groups,
+                        iconTint = IosIndigo,
+                        title = stringResource(R.string.dashboard_teams),
+                        onClick = { onNavigate("admin_teams") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.CalendarMonth,
+                        iconTint = IosPurple,
+                        title = stringResource(R.string.dashboard_schedules),
+                        onClick = { onNavigate("admin_schedules") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.Map,
+                        iconTint = IosTeal,
+                        title = stringResource(R.string.dashboard_zones),
+                        onClick = { onNavigate("admin_zones") },
+                    ),
+                ),
+            ),
+        )
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_security),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.Notifications,
+                        iconTint = IosRed,
+                        title = stringResource(R.string.dashboard_alarms),
+                        onClick = { onNavigate("admin_alarms") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.PersonSearch,
+                        iconTint = IosGreen,
+                        title = stringResource(R.string.dashboard_live_activity),
+                        onClick = { onNavigate("admin_live_activity") },
+                    ),
+                ),
+            ),
+        )
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_visitors_section),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.PeopleAlt,
+                        iconTint = IosOrange,
+                        title = stringResource(R.string.dashboard_guest_management),
+                        onClick = { onNavigate("admin_guest_management") },
+                    ),
+                ),
+            ),
+        )
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_bookings_section),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.CalendarMonth,
+                        iconTint = IosCyan,
+                        title = stringResource(R.string.dashboard_bookings),
+                        onClick = { onNavigate("admin_bookings") },
+                    ),
+                ),
+            ),
+        )
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_credentials_section),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.CreditCard,
+                        iconTint = IosOrange,
+                        title = stringResource(R.string.dashboard_cards),
+                        onClick = { onNavigate("admin_cards") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.Key,
+                        iconTint = IosCyan,
+                        title = stringResource(R.string.dashboard_digital_credentials),
+                        onClick = { onNavigate("admin_credentials") },
+                    ),
+                ),
+            ),
+        )
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_reports),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.BarChart,
+                        iconTint = IosPurple,
+                        title = stringResource(R.string.dashboard_analytics),
+                        onClick = { onNavigate("admin_analytics") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.PersonSearch,
+                        iconTint = IosIndigo,
+                        title = stringResource(R.string.dashboard_user_presence),
+                        onClick = { onNavigate("admin_user_presence") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.Upload,
+                        iconTint = IosOrange,
+                        title = stringResource(R.string.dashboard_export_events),
+                        onClick = { onNavigate("admin_export") },
+                    ),
+                ),
+            ),
+        )
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_access_control),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.Shield,
+                        iconTint = IosRed,
+                        title = stringResource(R.string.dashboard_access_rights),
+                        onClick = { onNavigate("admin_access_rights") },
+                    ),
+                ),
+            ),
+        )
+        add(
+            DashboardSectionData(
+                title = stringResource(R.string.dashboard_my_device),
+                actions = listOf(
+                    DashboardAction(
+                        icon = Icons.Outlined.MeetingRoom,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        title = stringResource(R.string.dashboard_door_controllers),
+                        onClick = { onNavigate("admin_controllers") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.Router,
+                        iconTint = IosTeal,
+                        title = stringResource(R.string.dashboard_gateways),
+                        onClick = { onNavigate("admin_gateways") },
+                    ),
+                    DashboardAction(
+                        icon = Icons.Outlined.CameraAlt,
+                        iconTint = IosBlue,
+                        title = stringResource(R.string.dashboard_cameras),
+                        onClick = { onNavigate("admin_cameras") },
+                    ),
+                ),
+            ),
+        )
+        if (uiState.orgId != null) {
+            add(
+                DashboardSectionData(
+                    title = stringResource(R.string.dashboard_org_settings_section),
+                    actions = listOf(
+                        DashboardAction(
+                            icon = Icons.Outlined.Settings,
+                            iconTint = IosGray,
+                            title = stringResource(R.string.dashboard_org_settings),
+                            onClick = { onNavigate("admin_org_settings") },
+                        ),
+                    ),
+                ),
+            )
+        }
+    }
 
+    MistyPage {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            contentPadding = PaddingValues(bottom = MistyBottomNavInset),
         ) {
-            // Activity
-            item { SectionHeader(stringResource(R.string.dashboard_activity)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.History,
-                    iconTint = Success,
-                    title = stringResource(R.string.dashboard_event_history),
-                    onClick = { onNavigate("history") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.AutoMirrored.Filled.EventNote,
-                    iconTint = Color(0xFF4285F4),
-                    title = stringResource(R.string.dashboard_events),
-                    onClick = { onNavigate("admin_events") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Warning,
-                    iconTint = Color(0xFFD93025),
-                    title = stringResource(R.string.dashboard_incidents),
-                    onClick = { onNavigate("admin_incidents") },
-                )
-            }
-
-            // Management
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { SectionHeader(stringResource(R.string.dashboard_management)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.People,
-                    iconTint = Color(0xFF4285F4),
-                    title = stringResource(R.string.dashboard_users),
-                    onClick = { onNavigate("admin_users") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.PeopleAlt,
-                    iconTint = Color(0xFF2CBAA1),
-                    title = stringResource(R.string.dashboard_groups),
-                    onClick = { onNavigate("admin_groups") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Groups,
-                    iconTint = Color(0xFF5C6BC0),
-                    title = stringResource(R.string.dashboard_teams),
-                    onClick = { onNavigate("admin_teams") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Schedule,
-                    iconTint = Color(0xFF9C27B0),
-                    title = stringResource(R.string.dashboard_schedules),
-                    onClick = { onNavigate("admin_schedules") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Map,
-                    iconTint = Color(0xFF009688),
-                    title = stringResource(R.string.dashboard_zones),
-                    onClick = { onNavigate("admin_zones") },
-                )
-            }
-
-            // Security
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { SectionHeader(stringResource(R.string.dashboard_security)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Notifications,
-                    iconTint = Color(0xFFD93025),
-                    title = stringResource(R.string.dashboard_alarms),
-                    onClick = { onNavigate("admin_alarms") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.PersonSearch,
-                    iconTint = Success,
-                    title = stringResource(R.string.dashboard_live_activity),
-                    onClick = { onNavigate("admin_live_activity") },
-                )
-            }
-
-            // Visitors
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { SectionHeader(stringResource(R.string.dashboard_visitors_section)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.PeopleAlt,
-                    iconTint = Color(0xFFFF9800),
-                    title = stringResource(R.string.dashboard_guest_management),
-                    onClick = { onNavigate("admin_guest_management") },
-                )
-            }
-
-            // Bookings
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { SectionHeader(stringResource(R.string.dashboard_bookings_section)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.CalendarMonth,
-                    iconTint = Color(0xFF00BCD4),
-                    title = stringResource(R.string.dashboard_bookings),
-                    onClick = { onNavigate("admin_bookings") },
-                )
-            }
-
-            // Credentials
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { SectionHeader(stringResource(R.string.dashboard_credentials_section)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.CreditCard,
-                    iconTint = Color(0xFFFF9800),
-                    title = stringResource(R.string.dashboard_cards),
-                    onClick = { onNavigate("admin_cards") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Key,
-                    iconTint = Color(0xFF00BCD4),
-                    title = stringResource(R.string.dashboard_digital_credentials),
-                    onClick = { onNavigate("admin_credentials") },
-                )
-            }
-
-            // Reports
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { SectionHeader(stringResource(R.string.dashboard_reports)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.BarChart,
-                    iconTint = Color(0xFF9C27B0),
-                    title = stringResource(R.string.dashboard_analytics),
-                    onClick = { onNavigate("admin_analytics") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.PersonSearch,
-                    iconTint = Color(0xFF5C6BC0),
-                    title = stringResource(R.string.dashboard_user_presence),
-                    onClick = { onNavigate("admin_user_presence") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Upload,
-                    iconTint = Color(0xFFFF9800),
-                    title = stringResource(R.string.dashboard_export_events),
-                    onClick = { onNavigate("admin_export") },
-                )
-            }
-
-            // Access Control
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { SectionHeader(stringResource(R.string.dashboard_access_control)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Shield,
-                    iconTint = Color(0xFFD93025),
-                    title = stringResource(R.string.dashboard_access_rights),
-                    onClick = { onNavigate("admin_access_rights") },
-                )
-            }
-
-            // My Device
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { SectionHeader(stringResource(R.string.dashboard_my_device)) }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.MeetingRoom,
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    title = stringResource(R.string.dashboard_door_controllers),
-                    onClick = { onNavigate("admin_controllers") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.Router,
-                    iconTint = Color(0xFF009688),
-                    title = stringResource(R.string.dashboard_gateways),
-                    onClick = { onNavigate("admin_gateways") },
-                )
-            }
-            item {
-                DashboardRow(
-                    icon = Icons.Default.CameraAlt,
-                    iconTint = Color(0xFF4285F4),
-                    title = stringResource(R.string.dashboard_cameras),
-                    onClick = { onNavigate("admin_cameras") },
-                )
-            }
-
-            // Org Settings (conditional)
-            if (uiState.orgId != null) {
-                item { Spacer(modifier = Modifier.height(8.dp)) }
-                item { SectionHeader(stringResource(R.string.dashboard_org_settings_section)) }
+            item { MistyLargeTitle(text = stringResource(R.string.nav_dashboard)) }
+            sections.forEachIndexed { index, section ->
                 item {
-                    DashboardRow(
-                        icon = Icons.Default.Settings,
-                        iconTint = Color(0xFF9E9E9E),
-                        title = stringResource(R.string.dashboard_org_settings),
-                        onClick = { onNavigate("admin_org_settings") },
+                    DashboardSection(
+                        section = section,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .padding(top = if (index == 0) 0.dp else 18.dp),
                     )
                 }
             }
-
-            item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
 }
 
 @Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
-    )
+private fun SectionHeader(text: String, modifier: Modifier = Modifier) {
+    MistySectionTitle(text = text, modifier = modifier)
 }
 
 @Composable
-private fun DashboardRow(
-    icon: ImageVector,
-    iconTint: Color,
-    title: String,
-    onClick: () -> Unit,
+private fun DashboardSection(
+    section: DashboardSectionData,
+    modifier: Modifier = Modifier,
 ) {
-    Card(
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        SectionHeader(
+            text = section.title,
+            modifier = Modifier.padding(start = 14.dp),
+        )
+        MistyCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                section.actions.forEachIndexed { index, action ->
+                    DashboardRow(action = action)
+                    if (index < section.actions.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 52.dp, end = 20.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardRow(action: DashboardAction) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            .height(48.dp)
+            .clickable(onClick = action.onClick)
+            .padding(start = 16.dp, end = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = iconTint,
-            )
-            Spacer(modifier = Modifier.size(14.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f),
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Icon(
+            imageVector = action.icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = action.iconTint,
+        )
+        Spacer(modifier = Modifier.size(10.dp))
+        Text(
+            text = action.title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = MaterialTheme.colorScheme.outline,
+        )
     }
 }

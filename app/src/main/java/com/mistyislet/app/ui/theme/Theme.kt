@@ -9,10 +9,12 @@ private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
     primaryContainer = PrimaryContainer,
+    onPrimaryContainer = Primary,
     background = Background,
     surface = Surface,
     surfaceContainer = SurfaceGrouped,
     surfaceContainerHigh = SurfaceElevated,
+    surfaceVariant = SurfaceGrouped,
     onSurface = OnSurface,
     onSurfaceVariant = OnSurfaceVariant,
     outline = Outline,
@@ -37,6 +39,7 @@ fun MistyisletTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = MistyShapes,
         content = content,
     )
 }

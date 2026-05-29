@@ -14,23 +14,31 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosGray
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosRed
+import com.mistyislet.app.ui.theme.IosYellow
 
 fun severityColor(severity: String): Color = when (severity.lowercase()) {
-    "critical" -> Color(0xFFD93025)
-    "high" -> Color(0xFFFF9800)
-    "medium" -> Color(0xFFD98B06)
-    "low" -> Color(0xFF4285F4)
-    else -> Color(0xFF9E9E9E)
+    "critical" -> IosRed
+    "high" -> IosOrange
+    "medium" -> IosYellow
+    "low" -> IosBlue
+    else -> IosGray
 }
 
 fun statusColor(status: String): Color = when (status.lowercase()) {
-    "open", "triggered", "active" -> Color(0xFFD93025)
-    "acknowledged" -> Color(0xFF4285F4)
-    "investigating" -> Color(0xFFFF9800)
-    "resolved", "completed", "checked_out" -> Color(0xFF35A853)
-    "false_positive", "cancelled" -> Color(0xFF9E9E9E)
-    "checked_in", "confirmed" -> Color(0xFF4285F4)
-    else -> Color(0xFF9E9E9E)
+    "open", "triggered" -> IosRed
+    "expected", "pending" -> IosOrange
+    "active", "available", "enabled" -> IosGreen
+    "acknowledged" -> IosBlue
+    "investigating" -> IosOrange
+    "resolved", "completed", "checked_out" -> IosGreen
+    "false_positive", "cancelled", "disabled", "full" -> IosGray
+    "checked_in", "confirmed" -> IosBlue
+    else -> IosGray
 }
 
 @Composable
@@ -52,8 +60,8 @@ fun StatusBadge(status: String, modifier: Modifier = Modifier) {
         fontWeight = FontWeight.Medium,
         color = color,
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(color.copy(alpha = 0.12f))
+            .clip(RoundedCornerShape(20.dp))
+            .background(color.copy(alpha = 0.15f))
             .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }

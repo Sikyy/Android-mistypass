@@ -15,6 +15,7 @@ data class AdminEvent(
     @SerialName("object_type") val eventType: String? = null,
     @SerialName("object_name") val objectName: String = "",
     @SerialName("object_id") val objectId: String = "",
+    @SerialName("door_id") val doorId: String? = null,
     @SerialName("area_id") val areaId: String? = null,
     @SerialName("gateway_id") val gatewayId: String? = null,
     val actor: String = "",
@@ -39,10 +40,15 @@ data class RelatedAdminEvent(
     @SerialName("object_type") val eventType: String? = null,
     @SerialName("object_name") val objectName: String = "",
     @SerialName("object_id") val objectId: String = "",
+    @SerialName("door_id") val doorId: String? = null,
+    @SerialName("area_id") val areaId: String? = null,
+    @SerialName("gateway_id") val gatewayId: String? = null,
     val actor: String = "",
     val action: String = "",
     val result: String = "",
+    @SerialName("result_color") val resultColor: String = "",
     val timestamp: String = "",
+    @SerialName("display_time") val displayTime: String = "",
     val relation: String = "",
 )
 
@@ -130,9 +136,14 @@ data class AdminSchedule(
 @Serializable
 data class AdminZone(
     val id: String,
+    @SerialName("place_id") val placeId: String = "",
     val name: String = "",
     val description: String = "",
+    val status: String = "",
     @SerialName("door_count") val doorCount: Int = 0,
+    @SerialName("camera_count") val cameraCount: Int? = null,
+    @SerialName("holiday_region_count") val holidayRegionCount: Int? = null,
+    @SerialName("created_at") val createdAt: String? = null,
 )
 
 @Serializable
@@ -140,6 +151,7 @@ data class HolidayRegion(
     val id: String = "",
     val name: String = "",
     @SerialName("country_code") val countryCode: String? = null,
+    @SerialName("region_code") val regionCode: String? = null,
     val timezone: String? = null,
     @SerialName("holiday_count") val holidayCount: Int = 0,
 )
@@ -220,11 +232,17 @@ data class AdminDigitalCredential(
 data class Camera(
     val id: String,
     val name: String = "",
+    val vendor: String = "",
+    val model: String? = null,
+    @SerialName("ip_address") val ipAddress: String? = null,
     val provider: String = "",
     val status: String = "",
     val host: String? = null,
     val port: Int = 0,
     @SerialName("door_id") val doorId: String? = null,
+    @SerialName("door_name") val doorName: String? = null,
+    @SerialName("stream_url") val streamUrl: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
 )
 
 @Serializable
@@ -237,6 +255,7 @@ data class CameraVideoLink(
 data class CameraCloudToken(
     val token: String? = null,
     @SerialName("cloud_token") val cloudToken: String? = null,
+    val provider: String? = null,
     val status: String = "",
     val url: String? = null,
     @SerialName("expires_at") val expiresAt: String? = null,
@@ -335,6 +354,14 @@ data class AccessRight(
     @SerialName("team_name") val teamName: String = "",
     @SerialName("door_name") val doorName: String = "",
     @SerialName("schedule_name") val scheduleName: String? = null,
+)
+
+@Serializable
+data class UserAccessShare(
+    @SerialName("user_id") val userId: String? = null,
+    val url: String? = null,
+    val token: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
 )
 
 @Serializable
@@ -539,11 +566,7 @@ data class AssignAccessRightRequest(
 )
 
 @Serializable
-data class ShareAccessRequest(
-    @SerialName("door_id") val doorId: String,
-    @SerialName("schedule_id") val scheduleId: String? = null,
-    @SerialName("expires_at") val expiresAt: String? = null,
-)
+class EmptyRequest
 
 @Serializable
 data class FailedAttemptEvent(

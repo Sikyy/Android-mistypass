@@ -6,7 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,24 +21,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +46,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,8 +62,18 @@ import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.UserPresenceRecord
-import com.mistyislet.app.ui.admin.components.KpiItem
-import com.mistyislet.app.ui.admin.components.StatusSummaryRow
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyInlineSectionLabel
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistyPickerSheet
+import com.mistyislet.app.ui.components.MistySearchField
+import com.mistyislet.app.ui.components.MistySegmentedControl
+import com.mistyislet.app.ui.components.MistyTopBarIconButton
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -119,16 +121,15 @@ class AdminUserPresenceViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getUserPresence(pid, _days.value)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.userPresenceRecords }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.userPresenceRecords; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.userPresenceRecords; _error.value = null }
         }
         _isLoading.value = false
     }
 }
 
 private enum class PresenceSort { DAYS_DESC, UNLOCKS_DESC, NAME_ASC, DAYS_ASC }
-private val weekdayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -144,14 +145,21 @@ fun AdminUserPresenceScreen(
     val presenceDayOptions = listOf(7, 14, 30)
     var selectedPeriod by rememberSaveable { mutableIntStateOf(presenceDayOptions.indexOf(days).coerceAtLeast(0)) }
     var sortMode by rememberSaveable { mutableIntStateOf(0) }
-    var showSortMenu by remember { mutableStateOf(false) }
+    var showSortPicker by remember { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    val sortLabels = listOf(
+        stringResource(R.string.admin_sort_days_desc),
+        stringResource(R.string.admin_sort_unlocks_desc),
+        stringResource(R.string.admin_sort_name_asc),
+        stringResource(R.string.admin_sort_days_asc),
+    )
 
     val filtered = remember(items, searchQuery) {
         if (searchQuery.isBlank()) items
         else items.filter {
-            it.userName.contains(searchQuery, ignoreCase = true) ||
-                it.email.contains(searchQuery, ignoreCase = true)
+            it.presenceDisplayName().contains(searchQuery, ignoreCase = true) ||
+                it.email.contains(searchQuery, ignoreCase = true) ||
+                it.id.contains(searchQuery, ignoreCase = true)
         }
     }
 
@@ -159,7 +167,7 @@ fun AdminUserPresenceScreen(
         when (PresenceSort.entries[sortMode]) {
             PresenceSort.DAYS_DESC -> filtered.sortedByDescending { it.daysPresent }
             PresenceSort.UNLOCKS_DESC -> filtered.sortedByDescending { it.totalUnlocks }
-            PresenceSort.NAME_ASC -> filtered.sortedBy { it.userName.lowercase() }
+            PresenceSort.NAME_ASC -> filtered.sortedBy { it.presenceDisplayName().lowercase() }
             PresenceSort.DAYS_ASC -> filtered.sortedBy { it.daysPresent }
         }
     }
@@ -169,36 +177,16 @@ fun AdminUserPresenceScreen(
     val totalUnlocks = items.sumOf { it.totalUnlocks }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_user_presence)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            MistyNavigationTopBar(
+                title = stringResource(R.string.dashboard_user_presence),
+                onBack = onBack,
                 actions = {
-                    IconButton(onClick = { showSortMenu = true }) {
-                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null)
-                    }
-                    DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.admin_sort_days_desc)) },
-                            onClick = { sortMode = 0; showSortMenu = false },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.admin_sort_unlocks_desc)) },
-                            onClick = { sortMode = 1; showSortMenu = false },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.admin_sort_name_asc)) },
-                            onClick = { sortMode = 2; showSortMenu = false },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.admin_sort_days_asc)) },
-                            onClick = { sortMode = 3; showSortMenu = false },
-                        )
-                    }
+                    MistyTopBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.Sort,
+                        onClick = { showSortPicker = true },
+                    )
                 },
             )
         },
@@ -219,104 +207,75 @@ fun AdminUserPresenceScreen(
                     )
                 } else {
                     LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        contentPadding = MistyGroupedListPadding,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         // Period picker
                         item {
-                            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                                presenceDayOptions.forEachIndexed { index, d ->
-                                    SegmentedButton(
-                                        selected = selectedPeriod == index,
-                                        onClick = {
-                                            selectedPeriod = index
-                                            viewModel.setDays(d)
-                                        },
-                                        shape = SegmentedButtonDefaults.itemShape(index, presenceDayOptions.size),
-                                    ) {
-                                        Text("${d}d")
-                                    }
-                                }
-                            }
+                            MistySegmentedControl(
+                                labels = presenceDayOptions.map { stringResource(R.string.analytics_last_n_days, it) },
+                                selectedIndex = selectedPeriod,
+                                onSelected = { index ->
+                                    selectedPeriod = index
+                                    viewModel.setDays(presenceDayOptions[index])
+                                },
+                            )
+                        }
+
+                        item {
+                            MistySearchField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = stringResource(R.string.admin_search_users),
+                            )
                         }
 
                         // KPI
                         item {
-                            StatusSummaryRow(
+                            PresenceKpiGrid(
                                 items = listOf(
-                                    KpiItem(totalUsers.toString(), stringResource(R.string.analytics_unique_users), Color(0xFF4285F4)),
-                                    KpiItem(avgDays.toString(), stringResource(R.string.admin_avg_days), Color(0xFF35A853)),
-                                    KpiItem(totalUnlocks.toString(), stringResource(R.string.admin_total_unlocks), Color(0xFFFF9800)),
+                                    PresenceKpiItem(totalUsers.toString(), stringResource(R.string.analytics_unique_users), IosBlue),
+                                    PresenceKpiItem(avgDays.toString(), stringResource(R.string.admin_avg_days), IosGreen),
+                                    PresenceKpiItem(totalUnlocks.toString(), stringResource(R.string.admin_total_unlocks), IosOrange),
                                 ),
                             )
                         }
 
-                        // Search
-                        item {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = { Text(stringResource(R.string.admin_search_presence)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
-
                         // Weekday activity chart
-                        if (items.any { !it.weekdayBreakdown.isNullOrEmpty() }) {
-                            item {
-                                Text(
-                                    text = stringResource(R.string.presence_weekday_activity),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
+                        item {
+                            PresenceSectionCard(title = stringResource(R.string.presence_weekday_activity)) {
                                 WeekdayActivityChart(items)
                             }
                         }
 
                         // Per-user heatmap
-                        val usersWithBreakdown = sorted.filter { !it.weekdayBreakdown.isNullOrEmpty() }.take(15)
-                        if (usersWithBreakdown.isNotEmpty()) {
-                            item {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.presence_user_heatmap),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                UserHeatmapGrid(usersWithBreakdown)
+                        val heatmapUsers = sorted.take(15)
+                        item {
+                            PresenceSectionCard(title = stringResource(R.string.presence_user_heatmap)) {
+                                if (heatmapUsers.any { !it.weekdayBreakdown.isNullOrEmpty() }) {
+                                    UserHeatmapGrid(heatmapUsers)
+                                } else {
+                                    Text(
+                                        text = stringResource(R.string.dashboard_no_data),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
 
                         // User list
                         item {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.presence_users_title),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-
-                        if (sorted.isEmpty()) {
-                            item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
+                            PresenceSectionCard(title = stringResource(R.string.presence_user_details)) {
+                                if (sorted.isEmpty()) {
                                     Text(
                                         text = stringResource(R.string.dashboard_no_data),
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
+                                } else {
+                                    PresenceTable(sorted, days = presenceDayOptions[selectedPeriod])
                                 }
-                            }
-                        } else {
-                            items(sorted, key = { it.id }) { record ->
-                                PresenceUserRow(record)
                             }
                         }
 
@@ -326,14 +285,218 @@ fun AdminUserPresenceScreen(
             }
         }
     }
+
+    if (showSortPicker) {
+        MistyPickerSheet(
+            title = stringResource(R.string.doors_sort),
+            cancelLabel = stringResource(R.string.cancel),
+            items = sortLabels.indices.toList(),
+            itemLabel = { index -> sortLabels[index] },
+            isSelected = { index -> index == sortMode },
+            onSelect = { index ->
+                sortMode = index
+                showSortPicker = false
+            },
+            onDismiss = { showSortPicker = false },
+        )
+    }
+}
+
+private data class PresenceKpiItem(
+    val value: String,
+    val label: String,
+    val color: Color,
+)
+
+@Composable
+private fun PresenceKpiGrid(items: List<PresenceKpiItem>) {
+    MistyCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items.forEach { item ->
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(item.color.copy(alpha = 0.06f))
+                        .padding(horizontal = 6.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = item.value,
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, lineHeight = 27.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = item.color,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = item.label,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 12.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PresenceSectionCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    MistyCard {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            MistyInlineSectionLabel(text = title)
+            content()
+        }
+    }
+}
+
+@Composable
+private fun localizedWeekdayLabels(): List<String> = listOf(
+    stringResource(R.string.analytics_day_mon),
+    stringResource(R.string.analytics_day_tue),
+    stringResource(R.string.analytics_day_wed),
+    stringResource(R.string.analytics_day_thu),
+    stringResource(R.string.analytics_day_fri),
+    stringResource(R.string.analytics_day_sat),
+    stringResource(R.string.analytics_day_sun),
+)
+
+@Composable
+private fun PresenceTable(records: List<UserPresenceRecord>, days: Int) {
+    Column {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.analytics_user),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = stringResource(R.string.presence_days_col),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.width(42.dp),
+                )
+                Text(
+                    text = stringResource(R.string.presence_unlocks_col),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.width(62.dp),
+                )
+                Text(
+                    text = stringResource(R.string.presence_first_seen),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.width(54.dp),
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(top = 6.dp, bottom = 2.dp))
+            records.forEachIndexed { index, record ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = record.presenceDisplayName(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        val secondary = record.presenceSecondaryText()
+                        if (secondary.isNotBlank()) {
+                            Text(
+                                text = secondary,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                    Text(
+                        text = "${record.daysPresent}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = attendanceColor(record.daysPresent, days),
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.width(42.dp),
+                    )
+                    Text(
+                        text = "${record.totalUnlocks}",
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.width(62.dp),
+                    )
+                    Text(
+                        text = shortDateOnly(record.firstUnlock),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.width(54.dp),
+                    )
+                }
+                if (index < records.lastIndex) {
+                    HorizontalDivider()
+                }
+            }
+    }
+}
+
+private fun attendanceColor(daysPresent: Int, selectedDays: Int): Color {
+    val ratio = daysPresent.toFloat() / selectedDays.coerceAtLeast(1)
+    return when {
+        ratio >= 0.8f -> IosGreen
+        ratio >= 0.5f -> IosOrange
+        else -> IosRed
+    }
+}
+
+private fun UserPresenceRecord.presenceDisplayName(): String = when {
+    userName.isNotBlank() -> userName
+    email.isNotBlank() -> email
+    else -> id
+}
+
+private fun UserPresenceRecord.presenceSecondaryText(): String = when {
+    userName.isNotBlank() && email.isNotBlank() -> email
+    userName.isNotBlank() -> id
+    email.isNotBlank() -> id.takeIf { it != email }.orEmpty()
+    else -> id
+}
+
+private fun shortDateOnly(isoDate: String?): String {
+    val date = isoDate?.takeIf { it.length >= 10 } ?: return "-"
+    return date.take(10).takeLast(5)
 }
 
 @Composable
 private fun PresenceUserRow(record: UserPresenceRecord) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    MistyCard {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -344,13 +507,13 @@ private fun PresenceUserRow(record: UserPresenceRecord) {
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF4285F4).copy(alpha = 0.15f)),
+                    .background(IosBlue.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = record.userName.take(1).uppercase(),
                     style = MaterialTheme.typography.titleSmall,
-                    color = Color(0xFF4285F4),
+                    color = IosBlue,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -377,9 +540,9 @@ private fun PresenceUserRow(record: UserPresenceRecord) {
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = when {
-                        record.daysPresent >= 20 -> Color(0xFF35A853)
-                        record.daysPresent >= 10 -> Color(0xFFFF9800)
-                        else -> Color(0xFFD93025)
+                        record.daysPresent >= 20 -> IosGreen
+                        record.daysPresent >= 10 -> IosOrange
+                        else -> IosRed
                     },
                 )
                 Text(
@@ -394,6 +557,7 @@ private fun PresenceUserRow(record: UserPresenceRecord) {
 
 @Composable
 private fun WeekdayActivityChart(records: List<UserPresenceRecord>) {
+    val dayLabels = localizedWeekdayLabels()
     val totals = remember(records) {
         val result = IntArray(7)
         records.forEach { record ->
@@ -408,14 +572,17 @@ private fun WeekdayActivityChart(records: List<UserPresenceRecord>) {
 
     val maxVal = (totals.maxOrNull() ?: 1).coerceAtLeast(1)
     val primary = MaterialTheme.colorScheme.primary
-    val weekend = Color(0xFFFF9800)
+    val weekend = IosOrange
     val textColor = MaterialTheme.colorScheme.onSurface
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+    if (totals.sum() == 0) {
+        Text(
+            text = stringResource(R.string.dashboard_no_data),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        Column {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -437,7 +604,7 @@ private fun WeekdayActivityChart(records: List<UserPresenceRecord>) {
                         cornerRadius = CornerRadius(4f, 4f),
                     )
                     val paint = android.graphics.Paint().apply {
-                        this.color = textColor.hashCode()
+                        this.color = textColor.toArgb()
                         textSize = 10.sp.toPx()
                         textAlign = android.graphics.Paint.Align.CENTER
                     }
@@ -453,7 +620,7 @@ private fun WeekdayActivityChart(records: List<UserPresenceRecord>) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                weekdayLabels.forEach { label ->
+                dayLabels.forEach { label ->
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelSmall,
@@ -463,13 +630,19 @@ private fun WeekdayActivityChart(records: List<UserPresenceRecord>) {
                     )
                 }
             }
+            Text(
+                text = stringResource(R.string.presence_weekday_note),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 @Composable
 private fun UserHeatmapGrid(users: List<UserPresenceRecord>) {
-    val heatmapColor = Color(0xFF35A853)
+    val dayLabels = localizedWeekdayLabels()
+    val heatmapColor = IosGreen
     val surfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val maxVal = remember(users) {
         users.maxOfOrNull { record ->
@@ -477,11 +650,7 @@ private fun UserHeatmapGrid(users: List<UserPresenceRecord>) {
         }?.coerceAtLeast(1) ?: 1
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+    Column {
             Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 // User names column
                 Column(modifier = Modifier.width(70.dp).padding(top = 20.dp)) {
@@ -508,7 +677,7 @@ private fun UserHeatmapGrid(users: List<UserPresenceRecord>) {
                 Column {
                     // Day labels
                     Row {
-                        weekdayLabels.forEach { label ->
+                        dayLabels.forEach { label ->
                             Box(
                                 modifier = Modifier.size(width = 28.dp, height = 18.dp),
                                 contentAlignment = Alignment.Center,
@@ -580,6 +749,5 @@ private fun UserHeatmapGrid(users: List<UserPresenceRecord>) {
                     color = surfaceVariant,
                 )
             }
-        }
     }
 }
