@@ -462,6 +462,7 @@
     <!-- History -->
     <string name="history_title">历史</string>
     <string name="history_empty">暂无访问记录</string>
+    <string name="history_empty_description">你的访问记录会显示在这里。</string>
     <string name="history_today">今天</string>
     <string name="history_yesterday">昨天</string>
     <string name="history_event_detail">事件详情</string>

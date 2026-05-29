@@ -163,6 +163,45 @@ fun HistoryScreen(
     }
 }
 
+/** Stateless History (large-title + grouped log list) for the DEBUG parity harness. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun HistoryScreenContent(logs: List<AccessLog>) {
+    val groupedLogs = remember(logs) {
+        logs.groupBy { log ->
+            try {
+                Instant.parse(log.displayTime).atZone(ZoneId.systemDefault()).toLocalDate()
+            } catch (_: Exception) {
+                LocalDate.now()
+            }
+        }.toSortedMap(compareByDescending { it })
+    }
+    val sections = remember(groupedLogs) { groupedLogs.entries.toList() }
+    val listState = rememberLazyListState()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        HistoryLargeHeader(title = stringResource(R.string.history_title), onBack = {})
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainer),
+        ) {
+            HistoryContent(
+                modifier = Modifier.fillMaxSize(),
+                isLoading = false,
+                isLoadingMore = false,
+                sections = sections,
+                listState = listState,
+                onRefresh = {},
+                onLogClick = {},
+            )
+        }
+    }
+}
+
 @Composable
 private fun HistoryLargeHeader(title: String, onBack: () -> Unit) {
     Column(
@@ -216,6 +255,7 @@ private fun HistoryContent(
             MistyEmptyState(
                 icon = Icons.Default.History,
                 title = stringResource(R.string.history_empty),
+                description = stringResource(R.string.history_empty_description),
             )
         } else {
             LazyColumn(
