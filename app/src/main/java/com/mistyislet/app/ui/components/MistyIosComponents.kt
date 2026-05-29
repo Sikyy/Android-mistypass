@@ -73,7 +73,7 @@ import androidx.compose.ui.unit.sp
 val MistyPagePadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
 val MistyBottomNavInset = 100.dp
 val MistyGroupedListPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = MistyBottomNavInset)
-val MistyCardCorner = 12.dp
+val MistyCardCorner = 16.dp // iOS grouped-card corner radius
 val MistyInputCorner = 22.dp
 val MistyListRowHeight = 48.dp
 val MistyUnlockButtonHeight = 44.dp // matches iOS hold-to-unlock bar (44pt)
@@ -98,7 +98,7 @@ fun MistyLargeTitle(
 ) {
     Text(
         text = text,
-        style = MaterialTheme.typography.headlineLarge.copy(fontSize = 34.sp, lineHeight = 40.sp),
+        style = MaterialTheme.typography.headlineLarge.copy(fontSize = 30.sp, lineHeight = 37.sp),
         fontWeight = FontWeight.Bold,
         modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 112.dp, bottom = 0.dp),
     )
