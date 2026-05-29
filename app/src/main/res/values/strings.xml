@@ -466,6 +466,7 @@
     <!-- History -->
     <string name="history_title">History</string>
     <string name="history_empty">No access records</string>
+    <string name="history_empty_description">Your access history will appear here.</string>
     <string name="history_today">Today</string>
     <string name="history_yesterday">Yesterday</string>
     <string name="history_event_detail">Event Detail</string>

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.mistyislet.app.domain.model.AccessLog
 import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.MobileCredential
 import com.mistyislet.app.domain.model.UserInfo
@@ -16,6 +17,7 @@ import com.mistyislet.app.ui.credentials.CredentialsScreenContent
 import com.mistyislet.app.ui.credentials.CredentialsUiState
 import com.mistyislet.app.ui.dashboard.DashboardScreenContent
 import com.mistyislet.app.ui.doors.DoorsScreenContent
+import com.mistyislet.app.ui.history.HistoryScreenContent
 import com.mistyislet.app.ui.doors.DoorsTab
 import com.mistyislet.app.ui.doors.DoorsUiState
 import com.mistyislet.app.ui.profile.ProfileMainView
@@ -45,6 +47,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "pass" -> PassPreview()
                     "profile" -> ProfilePreview()
                     "dashboard" -> DashboardPreview()
+                    "history" -> HistoryPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -169,6 +172,25 @@ private fun DashboardPreview() {
             orgId = "tenant_demo_jakarta",
             onNavigate = {},
         )
+        MistyFloatingBottomNav(
+            currentRoute = Routes.DASHBOARD,
+            onSelected = {},
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun HistoryPreview() {
+    val logs = listOf(
+        AccessLog(id = "1", doorName = "A-23 East Wing", result = "allow", method = "ble", at = "2026-05-30T09:41:00Z"),
+        AccessLog(id = "2", doorName = "C-5 Server Room", result = "deny", method = "nfc", reason = "No permission for this door", at = "2026-05-30T08:15:00Z"),
+        AccessLog(id = "3", doorName = "B-12 West Lobby", result = "allow", method = "app", at = "2026-05-30T07:50:00Z"),
+        AccessLog(id = "4", doorName = "Parking Gate P1", result = "allow", method = "ble", at = "2026-05-29T18:30:00Z"),
+        AccessLog(id = "5", doorName = "A-23 East Wing", result = "allow", method = "card", at = "2026-05-29T09:05:00Z"),
+    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        HistoryScreenContent(logs = logs)
         MistyFloatingBottomNav(
             currentRoute = Routes.DASHBOARD,
             onSelected = {},
