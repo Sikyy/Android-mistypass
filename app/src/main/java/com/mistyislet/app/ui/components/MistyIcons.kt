@@ -58,6 +58,40 @@ val MistyDoorIcon: ImageVector by lazy {
 }
 
 /**
+ * Custom incident glyph approximating iOS's `exclamationmark.shield` — a shield outline with
+ * an exclamation mark (vs Material's `GppMaybe` shield-with-question-mark).
+ */
+val MistyIncidentIcon: ImageVector by lazy {
+    ImageVector.Builder(
+        name = "MistyIncident",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        val s = SolidColor(Color.Black)
+        // Shield outline.
+        path(stroke = s, strokeLineWidth = 1.7f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round) {
+            moveTo(12f, 3f)
+            lineTo(19f, 5.6f)
+            lineTo(19f, 11.2f)
+            curveTo(19f, 16.2f, 15.9f, 19.6f, 12f, 21f)
+            curveTo(8.1f, 19.6f, 5f, 16.2f, 5f, 11.2f)
+            lineTo(5f, 5.6f)
+            close()
+        }
+        // Exclamation stem.
+        path(stroke = s, strokeLineWidth = 1.7f, strokeLineCap = StrokeCap.Round) {
+            moveTo(12f, 8f); lineTo(12f, 13f)
+        }
+        // Exclamation dot.
+        path(stroke = s, strokeLineWidth = 1.9f, strokeLineCap = StrokeCap.Round) {
+            moveTo(12f, 16f); lineTo(12f, 16.05f)
+        }
+    }.build()
+}
+
+/**
  * Custom Face ID glyph approximating iOS's `faceid` SF Symbol — a rounded bracket frame with
  * eyes, nose and a smile — instead of Material's smiley `Face` icon.
  */

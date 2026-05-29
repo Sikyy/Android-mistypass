@@ -33,8 +33,14 @@ import androidx.compose.material.icons.outlined.PeopleAlt
 import androidx.compose.material.icons.outlined.PersonSearch
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.IosShare
+import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SettingsInputAntenna
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.SupervisedUserCircle
+import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.HorizontalDivider
@@ -54,6 +60,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.R
 import com.mistyislet.app.ui.components.MistyBottomNavInset
 import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyDoorIcon
+import com.mistyislet.app.ui.components.MistyIncidentIcon
 import com.mistyislet.app.ui.components.MistyLargeTitle
 import com.mistyislet.app.ui.components.MistyPage
 import com.mistyislet.app.ui.components.MistySectionTitle
@@ -86,8 +94,17 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    DashboardScreenContent(placeId = uiState.placeId, orgId = uiState.orgId, onNavigate = onNavigate)
+}
 
-    if (uiState.placeId == null) {
+/** Stateless Dashboard content — driven by placeId/orgId so it renders in the DEBUG parity harness. */
+@Composable
+internal fun DashboardScreenContent(
+    placeId: String?,
+    orgId: String?,
+    onNavigate: (String) -> Unit,
+) {
+    if (placeId == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -133,7 +150,7 @@ fun DashboardScreen(
                         onClick = { onNavigate("admin_events") },
                     ),
                     DashboardAction(
-                        icon = Icons.Outlined.GppMaybe,
+                        icon = MistyIncidentIcon,
                         iconTint = IosRed,
                         title = stringResource(R.string.dashboard_incidents),
                         onClick = { onNavigate("admin_incidents") },
@@ -152,7 +169,7 @@ fun DashboardScreen(
                         onClick = { onNavigate("admin_users") },
                     ),
                     DashboardAction(
-                        icon = Icons.Outlined.PeopleAlt,
+                        icon = Icons.Outlined.SupervisedUserCircle,
                         iconTint = IosMint,
                         title = stringResource(R.string.dashboard_groups),
                         onClick = { onNavigate("admin_groups") },
@@ -189,7 +206,7 @@ fun DashboardScreen(
                         onClick = { onNavigate("admin_alarms") },
                     ),
                     DashboardAction(
-                        icon = Icons.Outlined.PersonSearch,
+                        icon = Icons.Outlined.RecordVoiceOver,
                         iconTint = IosGreen,
                         title = stringResource(R.string.dashboard_live_activity),
                         onClick = { onNavigate("admin_live_activity") },
@@ -259,7 +276,7 @@ fun DashboardScreen(
                         onClick = { onNavigate("admin_user_presence") },
                     ),
                     DashboardAction(
-                        icon = Icons.Outlined.Upload,
+                        icon = Icons.Outlined.IosShare,
                         iconTint = IosOrange,
                         title = stringResource(R.string.dashboard_export_events),
                         onClick = { onNavigate("admin_export") },
@@ -272,7 +289,7 @@ fun DashboardScreen(
                 title = stringResource(R.string.dashboard_access_control),
                 actions = listOf(
                     DashboardAction(
-                        icon = Icons.Outlined.Shield,
+                        icon = Icons.Outlined.AdminPanelSettings,
                         iconTint = IosRed,
                         title = stringResource(R.string.dashboard_access_rights),
                         onClick = { onNavigate("admin_access_rights") },
@@ -285,19 +302,19 @@ fun DashboardScreen(
                 title = stringResource(R.string.dashboard_my_device),
                 actions = listOf(
                     DashboardAction(
-                        icon = Icons.Outlined.MeetingRoom,
+                        icon = MistyDoorIcon,
                         iconTint = MaterialTheme.colorScheme.primary,
                         title = stringResource(R.string.dashboard_door_controllers),
                         onClick = { onNavigate("admin_controllers") },
                     ),
                     DashboardAction(
-                        icon = Icons.Outlined.Router,
+                        icon = Icons.Outlined.SettingsInputAntenna,
                         iconTint = IosTeal,
                         title = stringResource(R.string.dashboard_gateways),
                         onClick = { onNavigate("admin_gateways") },
                     ),
                     DashboardAction(
-                        icon = Icons.Outlined.CameraAlt,
+                        icon = Icons.Outlined.Videocam,
                         iconTint = IosBlue,
                         title = stringResource(R.string.dashboard_cameras),
                         onClick = { onNavigate("admin_cameras") },
@@ -305,7 +322,7 @@ fun DashboardScreen(
                 ),
             ),
         )
-        if (uiState.orgId != null) {
+        if (orgId != null) {
             add(
                 DashboardSectionData(
                     title = stringResource(R.string.dashboard_org_settings_section),
