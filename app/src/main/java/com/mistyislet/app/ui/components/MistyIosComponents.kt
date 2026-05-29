@@ -76,7 +76,7 @@ val MistyGroupedListPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.
 val MistyCardCorner = 12.dp
 val MistyInputCorner = 22.dp
 val MistyListRowHeight = 48.dp
-val MistyUnlockButtonHeight = 36.dp
+val MistyUnlockButtonHeight = 44.dp // matches iOS hold-to-unlock bar (44pt)
 
 @Composable
 fun MistyPage(
@@ -660,8 +660,8 @@ fun MistySearchField(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
-                    .clip(RoundedCornerShape(MistyInputCorner))
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(20.dp))
                     .background(Color(0xFFEAEAEE))
                     .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -780,9 +780,9 @@ fun MistySegmentedControl(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(30.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .height(32.dp)
+            // No clip: lets the selected thumb's subtle shadow show (iOS look).
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
             .border(0.7.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.20f), RoundedCornerShape(20.dp))
             .padding(2.dp),
     ) {
@@ -803,6 +803,12 @@ fun MistySegmentedControl(
                 .offset(x = selectedOffset)
                 .width(itemWidth)
                 .fillMaxHeight()
+                .shadow(
+                    elevation = 3.dp,
+                    shape = RoundedCornerShape(18.dp),
+                    spotColor = Color.Black.copy(alpha = 0.18f),
+                    ambientColor = Color.Black.copy(alpha = 0.10f),
+                )
                 .clip(RoundedCornerShape(18.dp))
                 .background(MaterialTheme.colorScheme.surface),
         )

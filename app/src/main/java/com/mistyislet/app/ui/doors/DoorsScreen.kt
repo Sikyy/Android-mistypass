@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -83,6 +84,7 @@ import com.mistyislet.app.domain.model.displayStatus
 import com.mistyislet.app.ui.components.MistyBottomSheet
 import com.mistyislet.app.ui.components.MistyBottomNavInset
 import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyDoorIcon
 import com.mistyislet.app.ui.components.MistyEmptyState
 import com.mistyislet.app.ui.components.MistyGroupedSection
 import com.mistyislet.app.ui.components.MistyPillActionButton
@@ -111,6 +113,68 @@ fun DoorsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val biometricEnabled by viewModel.biometricEnabled.collectAsStateWithLifecycle(false)
+
+    DoorsScreenContent(
+        uiState = uiState,
+        onBack = viewModel::back,
+        onSearchChange = viewModel::setSearchQuery,
+        onTabChange = viewModel::setTab,
+        onRefresh = viewModel::refresh,
+        onToggleFavorite = { viewModel.toggleFavorite(it) },
+        onToggleLockdown = viewModel::toggleLockdown,
+        onDismissUnlockResult = viewModel::dismissUnlockResult,
+        onTapDoor = { selectedDoor = it },
+        onUnlock = { door ->
+            if (biometricEnabled) {
+                scope.launch {
+                    val activity = context as? FragmentActivity
+                    if (activity != null) {
+                        val ok = viewModel.biometricHelper.authenticate(
+                            activity,
+                            title = context.getString(R.string.biometric_unlock_title),
+                            subtitle = context.getString(R.string.biometric_unlock_subtitle, door.name),
+                        )
+                        if (ok) viewModel.unlock(door)
+                    } else {
+                        viewModel.unlock(door)
+                    }
+                }
+            } else {
+                viewModel.unlock(door)
+            }
+        },
+    )
+
+    // Door details bottom sheet
+    selectedDoor?.let { door ->
+        DoorDetailsSheet(
+            door = door,
+            placeId = uiState.placeId,
+            viewModel = viewModel,
+            onDismiss = { selectedDoor = null },
+        )
+    }
+}
+
+/**
+ * Stateless Doors screen content — driven entirely by [uiState] + callbacks so it can be
+ * rendered in a DEBUG harness / preview with mock data (no Hilt, no backend). This is the
+ * exact UI shown in production; tune iOS-parity fidelity here.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DoorsScreenContent(
+    uiState: DoorsUiState,
+    onBack: () -> Unit,
+    onSearchChange: (String) -> Unit,
+    onTabChange: (DoorsTab) -> Unit,
+    onRefresh: () -> Unit,
+    onToggleFavorite: (AccessibleDoor) -> Unit,
+    onToggleLockdown: () -> Unit,
+    onDismissUnlockResult: () -> Unit,
+    onTapDoor: (AccessibleDoor) -> Unit,
+    onUnlock: (AccessibleDoor) -> Unit,
+) {
     val visibleDoors = remember(uiState.doors, uiState.tab, uiState.searchQuery, uiState.sort) {
         uiState.doors
             .filter { door ->
@@ -134,31 +198,44 @@ fun DoorsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(), // proper status-bar inset (cross-device) instead of hardcoded 56dp
+        ) {
+            // iOS 26 nav bar: teal chevron inside a circular white "glass" button + soft shadow.
+            Spacer(modifier = Modifier.height(6.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 56.dp, bottom = 16.dp),
+                    .padding(start = 12.dp, end = 16.dp),
             ) {
                 Box(
                     modifier = Modifier
                         .size(42.dp)
-                        .shadow(14.dp, CircleShape, clip = false)
+                        .shadow(
+                            elevation = 10.dp,
+                            shape = CircleShape,
+                            clip = false,
+                            spotColor = Color.Black.copy(alpha = 0.18f),
+                            ambientColor = Color.Black.copy(alpha = 0.10f),
+                        )
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
-                        .clickable(onClick = viewModel::back),
+                        .clickable(onClick = onBack),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBackIosNew,
                         contentDescription = stringResource(R.string.places_back),
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
 
+            // Large title — iOS leaves generous space above & below it.
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -167,7 +244,7 @@ fun DoorsScreen(
             ) {
                 Text(
                     text = uiState.placeName ?: stringResource(R.string.nav_doors),
-                    style = MaterialTheme.typography.headlineLarge.copy(fontSize = 34.sp, lineHeight = 40.sp),
+                    style = MaterialTheme.typography.headlineLarge.copy(fontSize = 30.sp, lineHeight = 37.sp),
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -175,11 +252,11 @@ fun DoorsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(0.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             MistySearchField(
                 value = uiState.searchQuery,
-                onValueChange = viewModel::setSearchQuery,
+                onValueChange = onSearchChange,
                 placeholder = stringResource(R.string.search_doors),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -195,7 +272,7 @@ fun DoorsScreen(
                 ),
                 selectedIndex = if (uiState.tab == DoorsTab.ALL) 0 else 1,
                 onSelected = { index ->
-                    viewModel.setTab(if (index == 0) DoorsTab.ALL else DoorsTab.FAVORITES)
+                    onTabChange(if (index == 0) DoorsTab.ALL else DoorsTab.FAVORITES)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -249,7 +326,7 @@ fun DoorsScreen(
             Box(modifier = Modifier.weight(1f)) {
                 PullToRefreshBox(
                     isRefreshing = uiState.isRefreshing,
-                    onRefresh = viewModel::refresh,
+                    onRefresh = onRefresh,
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (visibleDoors.isEmpty() && !uiState.isRefreshing) {
@@ -269,27 +346,9 @@ fun DoorsScreen(
                                 DoorListCard(
                                     door = door,
                                     isUnlocking = uiState.unlockingDoorId == door.id,
-                                    onUnlock = {
-                                        if (biometricEnabled) {
-                                            scope.launch {
-                                                val activity = context as? FragmentActivity
-                                                if (activity != null) {
-                                                    val ok = viewModel.biometricHelper.authenticate(
-                                                        activity,
-                                                        title = context.getString(R.string.biometric_unlock_title),
-                                                        subtitle = context.getString(R.string.biometric_unlock_subtitle, door.name),
-                                                    )
-                                                    if (ok) viewModel.unlock(door)
-                                                } else {
-                                                    viewModel.unlock(door)
-                                                }
-                                            }
-                                        } else {
-                                            viewModel.unlock(door)
-                                        }
-                                    },
-                                    onTap = { selectedDoor = door },
-                                    onToggleFavorite = { viewModel.toggleFavorite(door) },
+                                    onUnlock = { onUnlock(door) },
+                                    onTap = { onTapDoor(door) },
+                                    onToggleFavorite = { onToggleFavorite(door) },
                                 )
                             }
                         }
@@ -299,7 +358,7 @@ fun DoorsScreen(
 
             // Lockdown banner (bottom)
             if (uiState.isLockdown) {
-                LockdownBanner(onDisable = viewModel::toggleLockdown)
+                LockdownBanner(onDisable = onToggleLockdown)
             }
         }
 
@@ -318,19 +377,9 @@ fun DoorsScreen(
             }
             UnlockResultDialog(
                 state = dialogState,
-                onDismiss = viewModel::dismissUnlockResult,
+                onDismiss = onDismissUnlockResult,
             )
         }
-    }
-
-    // Door details bottom sheet
-    selectedDoor?.let { door ->
-        DoorDetailsSheet(
-            door = door,
-            placeId = uiState.placeId,
-            viewModel = viewModel,
-            onDismiss = { selectedDoor = null },
-        )
     }
 }
 
@@ -628,6 +677,9 @@ private fun DoorListCard(
 
     MistyCard(
         cornerRadius = 16.dp,
+        // iOS Liquid-Glass cards read as a low-contrast, slightly translucent panel — not a
+        // crisp pure-white block. Soften the fill so it sits closer to the grouped background.
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
         borderColor = Color.Transparent,
         onClick = onTap,
     ) {
@@ -648,7 +700,7 @@ private fun DoorListCard(
                     ) {
                         Icons.Outlined.DirectionsCar
                     } else {
-                        Icons.Outlined.DoorFront
+                        MistyDoorIcon
                     },
                     contentDescription = null,
                     modifier = Modifier.size(22.dp),

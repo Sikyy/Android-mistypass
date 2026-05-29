@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -80,6 +81,7 @@ import com.mistyislet.app.ui.admin.AdminUserPresenceScreen
 import com.mistyislet.app.ui.admin.AdminUserDetailScreen
 import com.mistyislet.app.ui.admin.AdminUsersScreen
 import com.mistyislet.app.ui.admin.AdminZonesScreen
+import com.mistyislet.app.ui.components.MistyDoorIcon
 import com.mistyislet.app.ui.credentials.BindCardScreen
 import com.mistyislet.app.ui.credentials.CredentialsScreen
 import com.mistyislet.app.ui.credentials.QRPassScreen
@@ -141,7 +143,7 @@ data class BottomNavItem(
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem(Routes.DOORS, Icons.Outlined.DoorFront, R.string.nav_doors),
+    BottomNavItem(Routes.DOORS, MistyDoorIcon, R.string.nav_doors),
     BottomNavItem(Routes.PASS, Icons.Outlined.Badge, R.string.nav_pass),
     BottomNavItem(Routes.DASHBOARD, Icons.Outlined.Dashboard, R.string.nav_dashboard),
     BottomNavItem(Routes.PROFILE, Icons.Outlined.AccountCircle, R.string.nav_profile),
@@ -351,7 +353,7 @@ private fun MainScreen(onLogout: () -> Unit) {
 }
 
 @Composable
-private fun MistyFloatingBottomNav(
+internal fun MistyFloatingBottomNav(
     currentRoute: String?,
     onSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -360,17 +362,19 @@ private fun MistyFloatingBottomNav(
         modifier = modifier
             .fillMaxWidth()
             .blockBottomNavScrollThrough()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .navigationBarsPadding() // float above the gesture/nav inset (cross-device)
+            .padding(horizontal = 16.dp)
+            .padding(top = 10.dp, bottom = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp)
-                .shadow(18.dp, RoundedCornerShape(40.dp), clip = false)
-                .clip(RoundedCornerShape(40.dp))
+                .height(56.dp)
+                .shadow(18.dp, RoundedCornerShape(26.dp), clip = false)
+                .clip(RoundedCornerShape(26.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-                .border(0.7.dp, Color.White.copy(alpha = 0.65f), RoundedCornerShape(40.dp))
+                .border(0.7.dp, Color.White.copy(alpha = 0.65f), RoundedCornerShape(26.dp))
                 .padding(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -396,14 +400,14 @@ private fun MistyFloatingBottomNav(
                         imageVector = item.icon,
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
-                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text = stringResource(item.labelResId),
                         fontSize = 11.sp,
                         lineHeight = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
