@@ -14,6 +14,7 @@ import com.mistyislet.app.domain.model.MobileCredential
 import com.mistyislet.app.domain.model.UserInfo
 import com.mistyislet.app.ui.credentials.CredentialsScreenContent
 import com.mistyislet.app.ui.credentials.CredentialsUiState
+import com.mistyislet.app.ui.dashboard.DashboardScreenContent
 import com.mistyislet.app.ui.doors.DoorsScreenContent
 import com.mistyislet.app.ui.doors.DoorsTab
 import com.mistyislet.app.ui.doors.DoorsUiState
@@ -43,6 +44,7 @@ class ParityPreviewActivity : ComponentActivity() {
                 when (screen) {
                     "pass" -> PassPreview()
                     "profile" -> ProfilePreview()
+                    "dashboard" -> DashboardPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -153,6 +155,22 @@ private fun ProfilePreview() {
         ProfileMainView(uiState = state)
         MistyFloatingBottomNav(
             currentRoute = Routes.PROFILE,
+            onSelected = {},
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun DashboardPreview() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        DashboardScreenContent(
+            placeId = "building_demo_001",
+            orgId = "tenant_demo_jakarta",
+            onNavigate = {},
+        )
+        MistyFloatingBottomNav(
+            currentRoute = Routes.DASHBOARD,
             onSelected = {},
             modifier = Modifier.align(Alignment.BottomCenter),
         )
