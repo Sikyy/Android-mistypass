@@ -6,6 +6,17 @@
             android:name=".ui.profile.TCPAuthTestActivity"
             android:exported="false"
             android:theme="@style/Theme.Mistyislet" />
+
+        <!--
+          iOS-parity preview harness. Renders a screen with mock data (no Hilt/backend) so we
+          can capture on-device screenshots and compare against the iOS app. Debug builds only.
+          Launch: adb shell am start -n com.mistyislet.app/com.mistyislet.app.debug.ParityPreviewActivity -e screen doors
+        -->
+        <activity
+            android:name=".debug.ParityPreviewActivity"
+            android:exported="true"
+            android:label="Parity Preview"
+            android:theme="@style/Theme.Mistyislet" />
     </application>
 
 </manifest>
