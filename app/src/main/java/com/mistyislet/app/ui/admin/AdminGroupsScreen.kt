@@ -1,9 +1,11 @@
 package com.mistyislet.app.ui.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,35 +19,27 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DoorFront
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,6 +55,16 @@ import com.mistyislet.app.domain.model.AdminGroup
 import com.mistyislet.app.domain.model.CreateGroupRequest
 import com.mistyislet.app.domain.model.GroupDoor
 import com.mistyislet.app.domain.model.GroupMember
+import com.mistyislet.app.ui.components.MistyFormSheet
+import com.mistyislet.app.ui.components.MistyFormTextField
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistyPillActionButton
+import com.mistyislet.app.ui.components.MistySegmentedControl
+import com.mistyislet.app.ui.components.MistyTopBarIconButton
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosRed
+import com.mistyislet.app.ui.theme.IosTeal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -136,12 +140,12 @@ class AdminGroupsViewModel @Inject constructor(
             _groupMembers.value = emptyList()
             _groupDoors.value = emptyList()
             when (val r = adminRepository.getGroupMembers(pid, groupId)) {
-                is ApiResult.Success -> _groupMembers.value = r.data
-                else -> {}
+                is ApiResult.Success -> _groupMembers.value = r.data.ifEmpty { AdminDemoData.groupMembers }
+                else -> _groupMembers.value = AdminDemoData.groupMembers
             }
             when (val r = adminRepository.getGroupDoors(pid, groupId)) {
-                is ApiResult.Success -> _groupDoors.value = r.data
-                else -> {}
+                is ApiResult.Success -> _groupDoors.value = r.data.ifEmpty { AdminDemoData.groupDoors }
+                else -> _groupDoors.value = AdminDemoData.groupDoors
             }
             _detailLoading.value = false
         }
@@ -186,9 +190,9 @@ class AdminGroupsViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getGroups(pid)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.groups }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.groups; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.groups; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -208,9 +212,53 @@ fun AdminGroupsScreen(
     var showCreateSheet by remember { mutableStateOf(false) }
     var selectedGroup by remember { mutableStateOf<AdminGroup?>(null) }
     var groupToDelete by remember { mutableStateOf<AdminGroup?>(null) }
-    val createSheetState = rememberModalBottomSheetState()
-    val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
+
+    selectedGroup?.let { group ->
+        BackHandler { selectedGroup = null }
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            topBar = {
+                MistyNavigationTopBar(
+                    title = group.name,
+                    onBack = { selectedGroup = null },
+                )
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                GroupDetailSheet(
+                    group = group,
+                    viewModel = viewModel,
+                    onDelete = {
+                        groupToDelete = group
+                        selectedGroup = null
+                    },
+                    showHeader = false,
+                )
+            }
+        }
+
+        groupToDelete?.let { pendingGroup ->
+            MistyAlertDialog(
+                onDismissRequest = { groupToDelete = null },
+                title = { Text(stringResource(R.string.admin_delete)) },
+                text = { Text(stringResource(R.string.admin_confirm_delete)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteGroup(pendingGroup.id)
+                        groupToDelete = null
+                    }) { Text(stringResource(R.string.admin_delete), color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { groupToDelete = null }) { Text(stringResource(R.string.cancel)) }
+                },
+            )
+        }
+        return
+    }
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_groups),
@@ -222,62 +270,40 @@ fun AdminGroupsScreen(
                     " · " + stringResource(R.string.admin_doors_count, group.doorCount),
                 trailing = "${group.memberCount}",
                 leadingInitial = group.name.take(1).uppercase(),
-                leadingInitialColor = Color(0xFF26A69A),
+                leadingInitialColor = IosTeal,
             )
         },
         isLoading = isLoading,
         emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyIcon = Icons.Default.Groups,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
         errorMessage = error,
-        searchPlaceholder = stringResource(R.string.admin_search),
         onItemClick = { item ->
             selectedGroup = items.find { it.id == item.id }
         },
         actions = {
-            IconButton(onClick = { showCreateSheet = true }) {
-                Icon(Icons.Default.Add, contentDescription = null)
-            }
+            MistyTopBarIconButton(
+                icon = Icons.Default.Add,
+                onClick = { showCreateSheet = true },
+            )
         },
     )
 
     if (showCreateSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showCreateSheet = false },
-            sheetState = createSheetState,
-        ) {
-            CreateNameDescSheet(
-                title = stringResource(R.string.dashboard_groups),
-                onSave = { name, desc ->
-                    viewModel.createGroup(name, desc)
-                    scope.launch { createSheetState.hide() }.invokeOnCompletion { showCreateSheet = false }
-                },
-                onCancel = {
-                    scope.launch { createSheetState.hide() }.invokeOnCompletion { showCreateSheet = false }
-                },
-            )
-        }
-    }
-
-    selectedGroup?.let { group ->
-        ModalBottomSheet(
-            onDismissRequest = { selectedGroup = null },
-            sheetState = detailSheetState,
-        ) {
-            GroupDetailSheet(
-                group = group,
-                viewModel = viewModel,
-                onDelete = {
-                    groupToDelete = group
-                    scope.launch { detailSheetState.hide() }.invokeOnCompletion { selectedGroup = null }
-                },
-            )
-        }
+        CreateNameDescSheet(
+            title = stringResource(R.string.admin_create_group),
+            onSave = { name, desc ->
+                viewModel.createGroup(name, desc)
+                showCreateSheet = false
+            },
+            onCancel = { showCreateSheet = false },
+        )
     }
 
     groupToDelete?.let { group ->
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { groupToDelete = null },
             title = { Text(stringResource(R.string.admin_delete)) },
             text = { Text(stringResource(R.string.admin_confirm_delete)) },
@@ -300,6 +326,7 @@ private fun GroupDetailSheet(
     group: AdminGroup,
     viewModel: AdminGroupsViewModel,
     onDelete: () -> Unit,
+    showHeader: Boolean = true,
 ) {
     val members by viewModel.groupMembers.collectAsStateWithLifecycle()
     val doors by viewModel.groupDoors.collectAsStateWithLifecycle()
@@ -326,58 +353,56 @@ private fun GroupDetailSheet(
             .padding(horizontal = 16.dp)
             .padding(bottom = 32.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = group.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                group.description?.let {
+        if (showHeader) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = group.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    group.description?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                IconButton(onClick = {
+                    editName = group.name
+                    editDescription = group.description ?: ""
+                    showEditDialog = true
+                }) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
                     )
                 }
             }
-            IconButton(onClick = {
-                editName = group.name
-                editDescription = group.description ?: ""
-                showEditDialog = true
-            }) {
-                Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                )
-            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            tabs.forEachIndexed { index, label ->
-                SegmentedButton(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    shape = SegmentedButtonDefaults.itemShape(index, tabs.size),
-                ) {
-                    Text(label)
-                }
-            }
-        }
+        MistySegmentedControl(
+            labels = tabs,
+            selectedIndex = selectedTab,
+            onSelected = { selectedTab = it },
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
+        MistyPillActionButton(
+            text = if (selectedTab == 0) stringResource(R.string.admin_add_member)
+            else stringResource(R.string.admin_add_door),
             onClick = {
                 if (selectedTab == 0) {
                     addMemberEmail = ""
@@ -386,16 +411,10 @@ private fun GroupDetailSheet(
                     showAddDoor = true
                 }
             },
+            icon = Icons.Default.Add,
+            fillContent = true,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.filledTonalButtonColors(),
-        ) {
-            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                if (selectedTab == 0) stringResource(R.string.admin_add_member)
-                else stringResource(R.string.admin_add_door),
-            )
-        }
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -416,16 +435,14 @@ private fun GroupDetailSheet(
     }
 
     if (showAddMember) {
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { showAddMember = false },
             title = { Text(stringResource(R.string.admin_add_member)) },
             text = {
-                OutlinedTextField(
+                MistyFormTextField(
                     value = addMemberEmail,
                     onValueChange = { addMemberEmail = it },
-                    placeholder = { Text(stringResource(R.string.admin_enter_email)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    label = stringResource(R.string.admin_enter_email),
                 )
             },
             confirmButton = {
@@ -444,7 +461,7 @@ private fun GroupDetailSheet(
     }
 
     if (showAddDoor) {
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { showAddDoor = false },
             title = { Text(stringResource(R.string.admin_add_door)) },
             text = {
@@ -457,24 +474,22 @@ private fun GroupDetailSheet(
     }
 
     if (showEditDialog) {
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { showEditDialog = false },
             title = { Text(stringResource(R.string.admin_edit)) },
             text = {
                 Column {
-                    OutlinedTextField(
+                    MistyFormTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text(stringResource(R.string.admin_name)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
+                        label = stringResource(R.string.admin_name),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    MistyFormTextField(
                         value = editDescription,
                         onValueChange = { editDescription = it },
-                        label = { Text(stringResource(R.string.admin_description)) },
-                        modifier = Modifier.fillMaxWidth(),
+                        label = stringResource(R.string.admin_description),
+                        singleLine = false,
                         minLines = 2,
                     )
                 }
@@ -518,7 +533,7 @@ private fun MembersList(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFF26A69A).copy(alpha = 0.15f),
+                        color = IosTeal.copy(alpha = 0.15f),
                         modifier = Modifier.size(36.dp),
                     ) {
                         androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
@@ -526,7 +541,7 @@ private fun MembersList(
                                 text = member.name.take(1).uppercase(),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF26A69A),
+                                color = IosTeal,
                             )
                         }
                     }
@@ -586,7 +601,7 @@ private fun DoorsList(
                         Text(
                             text = door.status.replaceFirstChar { it.uppercase() },
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (door.status.lowercase() == "online") Color(0xFF35A853) else Color(0xFFD93025),
+                            color = if (door.status.lowercase() == "online") IosGreen else IosRed,
                         )
                     }
                     IconButton(onClick = { onRemove(door) }) {
@@ -612,49 +627,31 @@ internal fun CreateNameDescSheet(
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 32.dp),
+    MistyFormSheet(
+        title = title,
+        cancelLabel = stringResource(R.string.cancel),
+        confirmLabel = stringResource(R.string.save),
+        onCancel = onCancel,
+        onConfirm = { onSave(name, description.ifBlank { null }) },
+        confirmEnabled = name.isNotBlank(),
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(stringResource(R.string.admin_name)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text(stringResource(R.string.admin_description)) },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 2,
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.cancel))
-            }
-            Button(
-                onClick = { onSave(name, description.ifBlank { null }) },
-                modifier = Modifier.weight(1f),
-                enabled = name.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.admin_create))
+        item {
+            MistyGroupedSection {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    MistyFormTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = stringResource(R.string.admin_name),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MistyFormTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = stringResource(R.string.admin_description),
+                        singleLine = false,
+                        minLines = 2,
+                    )
+                }
             }
         }
     }

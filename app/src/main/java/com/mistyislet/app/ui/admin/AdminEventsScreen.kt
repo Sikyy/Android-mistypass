@@ -1,33 +1,31 @@
 package com.mistyislet.app.ui.admin
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,11 +45,21 @@ import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminEvent
 import com.mistyislet.app.domain.model.RelatedAdminEvent
+import com.mistyislet.app.ui.components.MistyEmptyState
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyLabeledContentRow
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistySectionTitle
+import com.mistyislet.app.ui.theme.IosGray
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.Instant
 import javax.inject.Inject
 
 @HiltViewModel
@@ -87,9 +95,9 @@ class AdminEventsViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getEvents(pid)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.events }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.events; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.events; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -133,48 +141,68 @@ class AdminEventDetailViewModel @Inject constructor(
                     when (val relatedResult = adminRepository.getRelatedEvents(placeId, eventId)) {
                         is ApiResult.Success -> _state.value = AdminEventDetailUiState(
                             event = eventResult.data,
-                            relatedEvents = relatedResult.data,
+                            relatedEvents = relatedResult.data.ifEmpty { AdminDemoData.relatedEvents(eventId) },
                             isLoading = false,
                         )
                         is ApiResult.Error -> _state.value = AdminEventDetailUiState(
                             event = eventResult.data,
+                            relatedEvents = AdminDemoData.relatedEvents(eventId),
                             isLoading = false,
-                            relatedError = relatedResult.message,
+                            relatedError = null,
                         )
                         is ApiResult.Exception -> _state.value = AdminEventDetailUiState(
                             event = eventResult.data,
+                            relatedEvents = AdminDemoData.relatedEvents(eventId),
                             isLoading = false,
-                            relatedError = relatedResult.throwable.localizedMessage,
+                            relatedError = null,
                         )
                     }
                 }
-                is ApiResult.Error -> _state.value = AdminEventDetailUiState(
-                    isLoading = false,
-                    error = eventResult.message,
-                )
-                is ApiResult.Exception -> _state.value = AdminEventDetailUiState(
-                    isLoading = false,
-                    error = eventResult.throwable.localizedMessage,
-                )
+                is ApiResult.Error -> _state.value = AdminDemoData.event(eventId)?.let { demo ->
+                    AdminEventDetailUiState(
+                        event = demo,
+                        relatedEvents = AdminDemoData.relatedEvents(eventId),
+                        isLoading = false,
+                    )
+                } ?: AdminEventDetailUiState(isLoading = false, error = eventResult.message)
+                is ApiResult.Exception -> _state.value = AdminDemoData.event(eventId)?.let { demo ->
+                    AdminEventDetailUiState(
+                        event = demo,
+                        relatedEvents = AdminDemoData.relatedEvents(eventId),
+                        isLoading = false,
+                    )
+                } ?: AdminEventDetailUiState(isLoading = false, error = eventResult.throwable.localizedMessage)
             }
         }
     }
 }
 
-private fun resultIcon(color: String) = when (color.lowercase()) {
-    "green" -> Icons.Default.CheckCircle
-    "red" -> Icons.Default.Error
-    "orange" -> Icons.Default.Warning
-    else -> Icons.Default.Info
+private fun resultIcon(result: String) = when (result.lowercase()) {
+    "granted", "success" -> Icons.Default.CheckCircle
+    "denied", "failed" -> Icons.Default.Cancel
+    else -> Icons.Default.Circle
 }
 
-private fun resultColor(color: String) = when (color.lowercase()) {
-    "green" -> Color(0xFF35A853)
-    "red" -> Color(0xFFD93025)
-    "orange" -> Color(0xFFFF9800)
-    "yellow" -> Color(0xFFD98B06)
-    "blue" -> Color(0xFF4285F4)
-    else -> Color(0xFF9E9E9E)
+private fun resultColor(result: String): Color = when (result.lowercase()) {
+    "granted", "success" -> IosGreen
+    "denied", "failed" -> IosRed
+    else -> IosGray
+}
+
+private fun resultTitle(result: String): String = result
+    .split("_")
+    .joinToString("_") { part -> part.replaceFirstChar { it.uppercase() } }
+
+private fun eventDisplayTime(displayTime: String, timestamp: String): String {
+    if (displayTime.isNotBlank()) return displayTime
+    val epochMillis = runCatching { Instant.parse(timestamp).toEpochMilli() }.getOrNull()
+        ?: return timestamp
+    return DateUtils.getRelativeTimeSpanString(
+        epochMillis,
+        System.currentTimeMillis(),
+        DateUtils.MINUTE_IN_MILLIS,
+        DateUtils.FORMAT_ABBREV_RELATIVE,
+    ).toString()
 }
 
 @Composable
@@ -191,19 +219,22 @@ fun AdminEventsScreen(
     AdminListScreen(
         title = stringResource(R.string.dashboard_events),
         items = items.map { event ->
-            val icon = resultIcon(event.resultColor)
-            val color = resultColor(event.resultColor)
+            val icon = resultIcon(event.result)
+            val color = resultColor(event.result)
+            val subtitle = listOf(event.objectName, eventDisplayTime(event.displayTime, event.timestamp))
+                .filter { it.isNotBlank() }
+                .joinToString("\n")
             AdminListItem(
                 id = event.id,
                 title = "${event.actor} · ${event.action}".ifBlank { event.objectName },
-                subtitle = event.objectName.ifBlank { null },
-                trailing = event.displayTime.ifBlank { null },
+                subtitle = subtitle.ifBlank { null },
                 leadingIcon = icon,
                 leadingIconColor = color,
             )
         },
         isLoading = isLoading,
         emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyIcon = Icons.Default.Info,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
@@ -226,14 +257,11 @@ fun AdminEventDetailScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text("Event detail") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            MistyNavigationTopBar(
+                title = state.event?.objectName?.takeIf { it.isNotBlank() } ?: "Event detail",
+                onBack = onBack,
             )
         },
     ) { padding ->
@@ -251,35 +279,17 @@ fun AdminEventDetailScreen(
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
                 )
                 else -> LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = MistyGroupedListPadding,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     state.event?.let { event ->
                         item { EventDetailCard(event) }
                     }
                     item {
-                        Text(
-                            text = "Related events",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                        RelatedEventsSection(
+                            relatedEvents = state.relatedEvents,
+                            relatedError = state.relatedError,
                         )
-                    }
-                    if (state.relatedEvents.isEmpty()) {
-                        item {
-                            Text(
-                                text = state.relatedError ?: stringResource(R.string.dashboard_no_data),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (state.relatedError == null) {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                } else {
-                                    MaterialTheme.colorScheme.error
-                                },
-                            )
-                        }
-                    } else {
-                        items(state.relatedEvents, key = { it.id }) { event ->
-                            RelatedEventRow(event)
-                        }
                     }
                 }
             }
@@ -289,87 +299,133 @@ fun AdminEventDetailScreen(
 
 @Composable
 private fun EventDetailCard(event: AdminEvent) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = event.action.ifBlank { "Event" },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            DetailRow("Actor", event.actor)
-            DetailRow("Result", event.result)
-            DetailRow("Object", event.objectName.ifBlank { event.objectId })
-            DetailRow("Object type", event.eventType.orEmpty())
-            DetailRow("Gateway", event.gatewayId.orEmpty())
-            DetailRow("Area", event.areaId.orEmpty())
-            DetailRow("Time", event.timestamp)
-            if (!event.detail.isNullOrBlank()) {
-                DetailRow("Detail", event.detail)
+    val detailRows = listOf(
+        "Actor" to event.actor,
+        "Action" to event.action,
+        "Object" to event.objectName,
+        "Object Type" to event.eventType.orEmpty(),
+        "Object ID" to event.objectId,
+        "Door ID" to event.doorId.orEmpty(),
+        "Area ID" to event.areaId.orEmpty(),
+        "Gateway ID" to event.gatewayId.orEmpty(),
+        "Detail" to event.detail.orEmpty(),
+    ).filter { (_, value) -> value.isNotBlank() }
+
+    MistyGroupedSection(title = "Event") {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = resultIcon(event.result),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = resultColor(event.result),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = resultTitle(event.result),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = resultColor(event.result),
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = eventDisplayTime(event.displayTime, event.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            DetailRow("Event ID", event.id)
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 52.dp),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+            detailRows.forEachIndexed { index, row ->
+                DetailRow(row.first, row.second)
+                if (index < detailRows.lastIndex) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelatedEventsSection(
+    relatedEvents: List<RelatedAdminEvent>,
+    relatedError: String?,
+) {
+    if (relatedEvents.isEmpty()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            MistySectionTitle(text = "Related Events", modifier = Modifier.padding(start = 14.dp))
+            MistyEmptyState(
+                icon = Icons.Default.Info,
+                title = "No Related Events",
+                description = relatedError,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp),
+            )
+        }
+        return
+    }
+
+    MistyGroupedSection(title = "Related Events") {
+        relatedEvents.forEachIndexed { index, event ->
+            RelatedEventRow(event)
+            if (index < relatedEvents.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun RelatedEventRow(event: RelatedAdminEvent) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = resultIcon(event.result),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = resultColor(event.result),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = event.action.ifBlank { "Event" },
+                    text = "${event.actor} · ${event.action}".trim(' ', '·').ifBlank { "Event" },
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
                 )
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = event.relation,
+                    text = event.objectName.ifBlank { event.objectId },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = listOf(
+                        eventDisplayTime(event.displayTime, event.timestamp),
+                        event.relation.replace("_", " ").replaceFirstChar { it.uppercase() },
+                    )
+                        .filter { it.isNotBlank() }
+                        .joinToString(" · "),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${event.actor} · ${event.objectName}".trim(' ', '·'),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = event.timestamp,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
 
 @Composable
 private fun DetailRow(label: String, value: String) {
-    if (value.isBlank()) return
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.42f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.58f),
-        )
-    }
+    MistyLabeledContentRow(label = label, value = value)
 }

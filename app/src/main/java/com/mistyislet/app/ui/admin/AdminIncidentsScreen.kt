@@ -1,11 +1,9 @@
 package com.mistyislet.app.ui.admin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,27 +13,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,9 +43,16 @@ import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminIncident
+import com.mistyislet.app.domain.model.IncidentEvent
 import com.mistyislet.app.domain.model.IncidentOccurrence
-import com.mistyislet.app.ui.admin.components.StatusBadge
 import com.mistyislet.app.ui.admin.components.severityColor
+import com.mistyislet.app.ui.components.MistyEmptyState
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyLabeledContentRow
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistySectionTitle
+import com.mistyislet.app.ui.theme.IosOrange
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -90,8 +91,8 @@ class AdminIncidentsViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getIncidents(pid)) {
-            is ApiResult.Success -> _items.value = result.data
-            else -> {}
+            is ApiResult.Success -> _items.value = result.data.ifEmpty { AdminDemoData.incidents }
+            else -> _items.value = AdminDemoData.incidents
         }
         _isLoading.value = false
     }
@@ -135,35 +136,42 @@ class AdminIncidentDetailViewModel @Inject constructor(
                     when (val occurrencesResult = adminRepository.getIncidentOccurrences(placeId, incidentId)) {
                         is ApiResult.Success -> _state.value = AdminIncidentDetailUiState(
                             incident = incidentResult.data,
-                            occurrences = occurrencesResult.data,
+                            occurrences = occurrencesResult.data.ifEmpty { AdminDemoData.incidentOccurrences },
                             isLoading = false,
                         )
                         is ApiResult.Error -> _state.value = AdminIncidentDetailUiState(
                             incident = incidentResult.data,
+                            occurrences = AdminDemoData.incidentOccurrences,
                             isLoading = false,
-                            occurrencesError = occurrencesResult.message,
+                            occurrencesError = null,
                         )
                         is ApiResult.Exception -> _state.value = AdminIncidentDetailUiState(
                             incident = incidentResult.data,
+                            occurrences = AdminDemoData.incidentOccurrences,
                             isLoading = false,
-                            occurrencesError = occurrencesResult.throwable.localizedMessage,
+                            occurrencesError = null,
                         )
                     }
                 }
-                is ApiResult.Error -> _state.value = AdminIncidentDetailUiState(
-                    isLoading = false,
-                    error = incidentResult.message,
-                )
-                is ApiResult.Exception -> _state.value = AdminIncidentDetailUiState(
-                    isLoading = false,
-                    error = incidentResult.throwable.localizedMessage,
-                )
+                is ApiResult.Error -> _state.value = AdminDemoData.incident(incidentId)?.let { demo ->
+                    AdminIncidentDetailUiState(
+                        incident = demo,
+                        occurrences = AdminDemoData.incidentOccurrences,
+                        isLoading = false,
+                    )
+                } ?: AdminIncidentDetailUiState(isLoading = false, error = incidentResult.message)
+                is ApiResult.Exception -> _state.value = AdminDemoData.incident(incidentId)?.let { demo ->
+                    AdminIncidentDetailUiState(
+                        incident = demo,
+                        occurrences = AdminDemoData.incidentOccurrences,
+                        isLoading = false,
+                    )
+                } ?: AdminIncidentDetailUiState(isLoading = false, error = incidentResult.throwable.localizedMessage)
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminIncidentsScreen(
     onBack: () -> Unit,
@@ -174,52 +182,32 @@ fun AdminIncidentsScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_incidents)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+    AdminListScreen(
+        title = stringResource(R.string.dashboard_incidents),
+        items = items.map { incident ->
+            AdminListItem(
+                id = incident.id,
+                title = incident.title.replace("_", " ").replaceFirstChar { it.uppercase() },
+                subtitle = listOfNotNull(
+                    incident.description?.takeIf { it.isNotBlank() },
+                    incident.state.takeIf { it.isNotBlank() }?.replace("_", " ")?.replaceFirstChar { it.uppercase() },
+                ).joinToString("\n").ifBlank { null },
+                trailing = incident.severity.uppercase(),
+                trailingColor = severityColor(incident.severity),
+                trailingChip = true,
+                leadingDotColor = severityColor(incident.severity),
             )
         },
-    ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = viewModel::refresh,
-            modifier = Modifier.padding(padding),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (isLoading && items.isEmpty()) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else if (items.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.dashboard_no_data),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        items(items, key = { it.id }) { incident ->
-                            IncidentRow(
-                                incident = incident,
-                                onClick = { onIncidentClick(incident.id) },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+        isLoading = isLoading,
+        emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyIcon = Icons.Default.Warning,
+        onBack = onBack,
+        onRefresh = viewModel::refresh,
+        isRefreshing = isRefreshing,
+        onItemClick = { onIncidentClick(it.id) },
+    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminIncidentDetailScreen(
     incidentId: String,
@@ -233,14 +221,11 @@ fun AdminIncidentDetailScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text("Incident detail") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            MistyNavigationTopBar(
+                title = state.incident?.title?.replace("_", " ")?.replaceFirstChar { it.uppercase() } ?: "Incident detail",
+                onBack = onBack,
             )
         },
     ) { padding ->
@@ -258,35 +243,20 @@ fun AdminIncidentDetailScreen(
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
                 )
                 else -> LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = MistyGroupedListPadding,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     state.incident?.let { incident ->
                         item { IncidentDetailCard(incident) }
+                        if (incident.events.isNotEmpty()) {
+                            item { IncidentEventsSection(incident.events) }
+                        }
                     }
                     item {
-                        Text(
-                            text = "Occurrences",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                        OccurrencesSection(
+                            occurrences = state.occurrences,
+                            occurrencesError = state.occurrencesError,
                         )
-                    }
-                    if (state.occurrences.isEmpty()) {
-                        item {
-                            Text(
-                                text = state.occurrencesError ?: stringResource(R.string.dashboard_no_data),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (state.occurrencesError == null) {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                } else {
-                                    MaterialTheme.colorScheme.error
-                                },
-                            )
-                        }
-                    } else {
-                        items(state.occurrences, key = { it.eventId }) { occurrence ->
-                            OccurrenceRow(occurrence)
-                        }
                     }
                 }
             }
@@ -295,55 +265,83 @@ fun AdminIncidentDetailScreen(
 }
 
 @Composable
-private fun IncidentRow(
-    incident: AdminIncident,
-    onClick: () -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        ) {
+private fun IncidentDetailCard(incident: AdminIncident) {
+    val detailRows = listOf(
+        "Type" to incident.title.replace("_", " ").replaceFirstChar { it.uppercase() },
+        "State" to incident.state.replace("_", " ").replaceFirstChar { it.uppercase() },
+        "Subject Type" to incident.subjectType.replace("_", " ").replaceFirstChar { it.uppercase() },
+        "Subject ID" to incident.subjectId,
+        "Count" to incident.count.takeIf { it > 0 }?.toString().orEmpty(),
+        "Created" to incident.createdAt.orEmpty(),
+    ).filter { (_, value) -> value.isNotBlank() }
+
+    MistyGroupedSection(title = "Incident") {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(severityColor(incident.severity)),
-                )
-                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = incident.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    text = incident.severity.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(severityColor(incident.severity).copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    color = severityColor(incident.severity),
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                StatusBadge(incident.status)
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = incident.status.replace("_", " ").replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             if (!incident.description.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = incident.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 8.dp),
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
-            if (incident.createdAt != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = incident.createdAt.take(10),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            detailRows.forEachIndexed { index, row ->
+                IncidentDetailRow(row.first, row.second)
+                if (index < detailRows.lastIndex) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OccurrencesSection(
+    occurrences: List<IncidentOccurrence>,
+    occurrencesError: String?,
+) {
+    if (occurrences.isEmpty()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            MistySectionTitle(text = "Occurrences", modifier = Modifier.padding(start = 14.dp))
+            MistyEmptyState(
+                icon = Icons.Default.Warning,
+                title = "No Occurrences",
+                description = occurrencesError,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp),
+            )
+        }
+        return
+    }
+
+    MistyGroupedSection(title = "Occurrences") {
+        occurrences.forEachIndexed { index, occurrence ->
+            OccurrenceRow(occurrence)
+            if (index < occurrences.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 16.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
                 )
             }
         }
@@ -351,84 +349,83 @@ private fun IncidentRow(
 }
 
 @Composable
-private fun IncidentDetailCard(incident: AdminIncident) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(severityColor(incident.severity)),
-                )
-                Spacer(modifier = Modifier.width(10.dp))
+private fun IncidentEventsSection(events: List<IncidentEvent>) {
+    MistyGroupedSection(title = "Events") {
+        events.forEachIndexed { index, event ->
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                 Text(
-                    text = incident.title.ifBlank { "Incident" },
-                    style = MaterialTheme.typography.titleMedium,
+                    text = event.actor.ifBlank { "Event" },
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                StatusBadge(incident.status)
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = event.eventId,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = event.timestamp,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            IncidentDetailRow("Severity", incident.severity)
-            IncidentDetailRow("State", incident.state)
-            IncidentDetailRow("Subject", listOf(incident.subjectType, incident.subjectId).filter { it.isNotBlank() }.joinToString(" · "))
-            IncidentDetailRow("Count", incident.count.takeIf { it > 0 }?.toString().orEmpty())
-            IncidentDetailRow("Created", incident.createdAt.orEmpty())
-            if (!incident.description.isNullOrBlank()) {
-                IncidentDetailRow("Description", incident.description)
+            if (index < events.lastIndex) {
+                androidx.compose.material3.HorizontalDivider(
+                    modifier = Modifier.padding(start = 16.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                )
             }
-            IncidentDetailRow("Incident ID", incident.id)
         }
     }
 }
 
 @Composable
 private fun OccurrenceRow(occurrence: IncidentOccurrence) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.Top,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        val denied = occurrence.result.equals("denied", ignoreCase = true)
+        Icon(
+            imageVector = if (denied) Icons.Default.Error else Icons.Default.Warning,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = if (denied) MaterialTheme.colorScheme.error else IosOrange,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = occurrence.eventId.ifBlank { "Occurrence" },
+                text = occurrence.actor ?: occurrence.gatewayId ?: occurrence.eventId,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            IncidentDetailRow("Actor", occurrence.actor.orEmpty())
-            IncidentDetailRow("Door", occurrence.doorId.orEmpty())
-            IncidentDetailRow("Gateway", occurrence.gatewayId.orEmpty())
-            IncidentDetailRow("Result", occurrence.result)
-            IncidentDetailRow("Time", occurrence.occurredAt)
-            if (!occurrence.detail.isNullOrBlank()) {
-                IncidentDetailRow("Detail", occurrence.detail)
-            }
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = occurrence.doorId ?: occurrence.detail ?: occurrence.gatewayId ?: occurrence.eventId,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = occurrence.occurredAt,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+            )
         }
     }
 }
 
 @Composable
 private fun IncidentDetailRow(label: String, value: String) {
-    if (value.isBlank()) return
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.42f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.58f),
-        )
-    }
+    MistyLabeledContentRow(label = label, value = value)
 }

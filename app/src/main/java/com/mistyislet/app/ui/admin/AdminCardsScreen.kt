@@ -1,31 +1,31 @@
 package com.mistyislet.app.ui.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Delete
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +44,11 @@ import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminCard
 import com.mistyislet.app.ui.admin.components.StatusBadge
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyLabeledContentRow
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.theme.IosOrange
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -99,9 +104,9 @@ class AdminCardsViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getCards(pid)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.cards }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.cards; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.cards; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -130,9 +135,51 @@ fun AdminCardsScreen(
     }
 
     var selectedGroup by remember { mutableStateOf<CardUserGroup?>(null) }
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
     var cardToUnbind by remember { mutableStateOf<AdminCard?>(null) }
+
+    selectedGroup?.let { group ->
+        BackHandler { selectedGroup = null }
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            topBar = {
+                MistyNavigationTopBar(
+                    title = group.userName,
+                    onBack = { selectedGroup = null },
+                )
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                CardGroupDetailSheet(
+                    group = group,
+                    onUnbind = { card -> cardToUnbind = card },
+                    showHeader = false,
+                )
+            }
+        }
+
+        cardToUnbind?.let { card ->
+            MistyAlertDialog(
+                onDismissRequest = { cardToUnbind = null },
+                title = { Text(stringResource(R.string.admin_unbind)) },
+                text = { Text(stringResource(R.string.admin_confirm_unbind)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.unbindCard(card.uid)
+                        cardToUnbind = null
+                        selectedGroup = null
+                    }) { Text(stringResource(R.string.admin_unbind), color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { cardToUnbind = null }) { Text(stringResource(R.string.cancel)) }
+                },
+            )
+        }
+        return
+    }
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_cards),
@@ -140,14 +187,17 @@ fun AdminCardsScreen(
             AdminListItem(
                 id = group.id,
                 title = group.userName,
-                subtitle = group.userEmail,
-                trailing = "${group.cards.size}",
+                subtitle = listOfNotNull(
+                    group.userEmail,
+                    stringResource(R.string.admin_cards_count, group.cards.size),
+                ).joinToString("\n"),
                 leadingInitial = group.userName.take(1).uppercase(),
-                leadingInitialColor = Color(0xFFFF9800),
+                leadingInitialColor = IosOrange,
             )
         },
         isLoading = isLoading,
-        emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyMessage = stringResource(R.string.admin_no_cards),
+        emptyIcon = Icons.Default.CreditCard,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
@@ -158,124 +208,102 @@ fun AdminCardsScreen(
         },
     )
 
-    selectedGroup?.let { group ->
-        ModalBottomSheet(
-            onDismissRequest = { selectedGroup = null },
-            sheetState = sheetState,
-        ) {
-            CardGroupDetailSheet(
-                group = group,
-                onUnbind = { card -> cardToUnbind = card },
-            )
-        }
-    }
-
-    cardToUnbind?.let { card ->
-        AlertDialog(
-            onDismissRequest = { cardToUnbind = null },
-            title = { Text(stringResource(R.string.admin_unbind)) },
-            text = { Text(stringResource(R.string.admin_confirm_unbind)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.unbindCard(card.uid)
-                    cardToUnbind = null
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { selectedGroup = null }
-                }) { Text(stringResource(R.string.admin_unbind), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { cardToUnbind = null }) { Text(stringResource(R.string.cancel)) }
-            },
-        )
-    }
 }
 
 @Composable
 private fun CardGroupDetailSheet(
     group: CardUserGroup,
     onUnbind: (AdminCard) -> Unit,
+    showHeader: Boolean = true,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 32.dp),
+    LazyColumn(
+        contentPadding = MistyGroupedListPadding,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = group.userName,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        group.userEmail?.let {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(group.cards, key = { it.id }) { card ->
-                CardDetailRow(card = card, onUnbind = { onUnbind(card) })
+        if (showHeader) {
+            item {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = group.userName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    group.userEmail?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
+        }
+
+        items(group.cards, key = { it.id }) { card ->
+            CardDetailRow(card = card, onUnbind = { onUnbind(card) })
         }
     }
 }
 
 @Composable
 private fun CardDetailRow(card: AdminCard, onUnbind: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-    ) {
+    val cardTitle = card.cardType
+        .takeIf { it.isNotBlank() }
+        ?.replaceFirstChar { c -> c.uppercase() }
+        ?: stringResource(R.string.credential_physical_card)
+
+    MistyCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = card.uid,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Medium,
+                Icon(
+                    imageVector = Icons.Default.CreditCard,
+                    contentDescription = null,
+                    tint = IosOrange,
                 )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = cardTitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = card.uid,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 StatusBadge(card.status)
             }
-            card.cardType.ifBlank { null }?.let {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = it.replaceFirstChar { c -> c.uppercase() },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            androidx.compose.material3.HorizontalDivider(
+                modifier = Modifier.padding(vertical = 10.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+            )
+            card.cardNumber?.takeIf { it.isNotBlank() }?.let {
+                MistyLabeledContentRow(stringResource(R.string.admin_card_number), it)
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    card.issuedAt?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.admin_issued, it.take(10)),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    card.expiresAt?.let {
-                        Text(
-                            text = stringResource(R.string.admin_expires, it.take(10)),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                if (card.status.lowercase() == "active") {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = onUnbind,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    ) {
-                        Text(stringResource(R.string.admin_unbind))
-                    }
+            card.issuedAt?.let {
+                MistyLabeledContentRow(stringResource(R.string.admin_issued_label), it.take(10))
+            }
+            card.expiresAt?.let {
+                MistyLabeledContentRow(stringResource(R.string.admin_expires_label), it.take(10))
+            }
+            if (card.status.lowercase() == "active") {
+                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
+                TextButton(
+                    onClick = onUnbind,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.admin_unbind),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         }

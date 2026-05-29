@@ -47,13 +47,14 @@ import com.mistyislet.app.domain.model.RenameRequest
 import com.mistyislet.app.domain.model.ReportExportRequest
 import com.mistyislet.app.domain.model.RelatedEventsResponse
 import com.mistyislet.app.domain.model.ScheduleWriteRequest
-import com.mistyislet.app.domain.model.ShareAccessRequest
 import com.mistyislet.app.domain.model.TeamAccessRight
 import com.mistyislet.app.domain.model.TeamMember
 import com.mistyislet.app.domain.model.UserLogin
 import com.mistyislet.app.domain.model.ReportExportResponse
 import com.mistyislet.app.domain.model.UserPresenceRecord
 import com.mistyislet.app.domain.model.UserRoleUpdateRequest
+import com.mistyislet.app.domain.model.EmptyRequest
+import com.mistyislet.app.domain.model.UserAccessShare
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -120,8 +121,8 @@ interface AdminApi {
     suspend fun shareUserAccess(
         @Path("placeId") placeId: String,
         @Path("userId") userId: String,
-        @Body request: ShareAccessRequest,
-    ): AccessRight
+        @Body request: EmptyRequest,
+    ): UserAccessShare
 
     @GET(MobileApiRoutes.getAppPlacesPlaceIdGroupsRetrofitPath)
     suspend fun listGroups(@Path("placeId") placeId: String): PaginatedResponse<AdminGroup>

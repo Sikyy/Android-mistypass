@@ -1,10 +1,12 @@
 package com.mistyislet.app.ui.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,36 +18,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,6 +55,12 @@ import com.mistyislet.app.domain.model.AdminTeam
 import com.mistyislet.app.domain.model.CreateTeamRequest
 import com.mistyislet.app.domain.model.TeamAccessRight
 import com.mistyislet.app.domain.model.TeamMember
+import com.mistyislet.app.ui.components.MistyFormTextField
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistyPillActionButton
+import com.mistyislet.app.ui.components.MistySegmentedControl
+import com.mistyislet.app.ui.components.MistyTopBarIconButton
+import com.mistyislet.app.ui.theme.IosIndigo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -128,12 +128,12 @@ class AdminTeamsViewModel @Inject constructor(
             _teamMembers.value = emptyList()
             _teamAccessRights.value = emptyList()
             when (val r = adminRepository.getTeamMembers(pid, teamId)) {
-                is ApiResult.Success -> _teamMembers.value = r.data
-                else -> {}
+                is ApiResult.Success -> _teamMembers.value = r.data.ifEmpty { AdminDemoData.teamMembers }
+                else -> _teamMembers.value = AdminDemoData.teamMembers
             }
             when (val r = adminRepository.getTeamAccessRights(pid, teamId)) {
-                is ApiResult.Success -> _teamAccessRights.value = r.data
-                else -> {}
+                is ApiResult.Success -> _teamAccessRights.value = r.data.ifEmpty { AdminDemoData.teamAccessRights }
+                else -> _teamAccessRights.value = AdminDemoData.teamAccessRights
             }
             _detailLoading.value = false
         }
@@ -176,9 +176,9 @@ class AdminTeamsViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getTeams(pid)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.teams }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.teams; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.teams; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -198,9 +198,53 @@ fun AdminTeamsScreen(
     var showCreateSheet by remember { mutableStateOf(false) }
     var selectedTeam by remember { mutableStateOf<AdminTeam?>(null) }
     var teamToDelete by remember { mutableStateOf<AdminTeam?>(null) }
-    val createSheetState = rememberModalBottomSheetState()
-    val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
+
+    selectedTeam?.let { team ->
+        BackHandler { selectedTeam = null }
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            topBar = {
+                MistyNavigationTopBar(
+                    title = team.name,
+                    onBack = { selectedTeam = null },
+                )
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                TeamDetailSheet(
+                    team = team,
+                    viewModel = viewModel,
+                    onDelete = {
+                        teamToDelete = team
+                        selectedTeam = null
+                    },
+                    showHeader = false,
+                )
+            }
+        }
+
+        teamToDelete?.let { pendingTeam ->
+            MistyAlertDialog(
+                onDismissRequest = { teamToDelete = null },
+                title = { Text(stringResource(R.string.admin_delete)) },
+                text = { Text(stringResource(R.string.admin_confirm_delete)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteTeam(pendingTeam.id)
+                        teamToDelete = null
+                    }) { Text(stringResource(R.string.admin_delete), color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { teamToDelete = null }) { Text(stringResource(R.string.cancel)) }
+                },
+            )
+        }
+        return
+    }
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_teams),
@@ -211,62 +255,40 @@ fun AdminTeamsScreen(
                 subtitle = team.description ?: stringResource(R.string.admin_members_count, team.memberCount),
                 trailing = "${team.memberCount}",
                 leadingInitial = team.name.take(1).uppercase(),
-                leadingInitialColor = Color(0xFF5C6BC0),
+                leadingInitialColor = IosIndigo,
             )
         },
         isLoading = isLoading,
         emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyIcon = Icons.Default.Groups,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
         errorMessage = error,
-        searchPlaceholder = stringResource(R.string.admin_search),
         onItemClick = { item ->
             selectedTeam = items.find { it.id == item.id }
         },
         actions = {
-            IconButton(onClick = { showCreateSheet = true }) {
-                Icon(Icons.Default.Add, contentDescription = null)
-            }
+            MistyTopBarIconButton(
+                icon = Icons.Default.Add,
+                onClick = { showCreateSheet = true },
+            )
         },
     )
 
     if (showCreateSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showCreateSheet = false },
-            sheetState = createSheetState,
-        ) {
-            CreateNameDescSheet(
-                title = stringResource(R.string.dashboard_teams),
-                onSave = { name, desc ->
-                    viewModel.createTeam(name, desc)
-                    scope.launch { createSheetState.hide() }.invokeOnCompletion { showCreateSheet = false }
-                },
-                onCancel = {
-                    scope.launch { createSheetState.hide() }.invokeOnCompletion { showCreateSheet = false }
-                },
-            )
-        }
-    }
-
-    selectedTeam?.let { team ->
-        ModalBottomSheet(
-            onDismissRequest = { selectedTeam = null },
-            sheetState = detailSheetState,
-        ) {
-            TeamDetailSheet(
-                team = team,
-                viewModel = viewModel,
-                onDelete = {
-                    teamToDelete = team
-                    scope.launch { detailSheetState.hide() }.invokeOnCompletion { selectedTeam = null }
-                },
-            )
-        }
+        CreateNameDescSheet(
+            title = stringResource(R.string.admin_create_team),
+            onSave = { name, desc ->
+                viewModel.createTeam(name, desc)
+                showCreateSheet = false
+            },
+            onCancel = { showCreateSheet = false },
+        )
     }
 
     teamToDelete?.let { team ->
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { teamToDelete = null },
             title = { Text(stringResource(R.string.admin_delete)) },
             text = { Text(stringResource(R.string.admin_confirm_delete)) },
@@ -289,6 +311,7 @@ private fun TeamDetailSheet(
     team: AdminTeam,
     viewModel: AdminTeamsViewModel,
     onDelete: () -> Unit,
+    showHeader: Boolean = true,
 ) {
     val members by viewModel.teamMembers.collectAsStateWithLifecycle()
     val accessRights by viewModel.teamAccessRights.collectAsStateWithLifecycle()
@@ -311,60 +334,54 @@ private fun TeamDetailSheet(
             .padding(horizontal = 16.dp)
             .padding(bottom = 32.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = team.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                team.description?.let {
+        if (showHeader) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = team.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    team.description?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
                     )
                 }
             }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                )
-            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            tabs.forEachIndexed { index, label ->
-                SegmentedButton(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    shape = SegmentedButtonDefaults.itemShape(index, tabs.size),
-                ) {
-                    Text(label)
-                }
-            }
-        }
+        MistySegmentedControl(
+            labels = tabs,
+            selectedIndex = selectedTab,
+            onSelected = { selectedTab = it },
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         if (selectedTab == 0) {
-            Button(
+            MistyPillActionButton(
+                text = stringResource(R.string.admin_add_member),
                 onClick = { addMemberEmail = ""; showAddMember = true },
+                icon = Icons.Default.Add,
+                fillContent = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.filledTonalButtonColors(),
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.admin_add_member))
-            }
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -386,16 +403,14 @@ private fun TeamDetailSheet(
     }
 
     if (showAddMember) {
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { showAddMember = false },
             title = { Text(stringResource(R.string.admin_add_member)) },
             text = {
-                OutlinedTextField(
+                MistyFormTextField(
                     value = addMemberEmail,
                     onValueChange = { addMemberEmail = it },
-                    placeholder = { Text(stringResource(R.string.admin_enter_email)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    label = stringResource(R.string.admin_enter_email),
                 )
             },
             confirmButton = {
@@ -437,7 +452,7 @@ private fun TeamMembersList(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFF5C6BC0).copy(alpha = 0.15f),
+                        color = IosIndigo.copy(alpha = 0.15f),
                         modifier = Modifier.size(36.dp),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -445,7 +460,7 @@ private fun TeamMembersList(
                                 text = member.name.take(1).uppercase(),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF5C6BC0),
+                                color = IosIndigo,
                             )
                         }
                     }

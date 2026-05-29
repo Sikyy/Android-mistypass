@@ -1,6 +1,8 @@
 package com.mistyislet.app.ui.admin
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,24 +16,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,12 +38,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyBottomNavInset
+import com.mistyislet.app.ui.components.MistyEmptyState
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistySearchField
+import com.mistyislet.app.ui.components.MistySectionTitle
+import com.mistyislet.app.ui.theme.IosGray
 
 data class AdminListItem(
     val id: String,
@@ -53,10 +60,19 @@ data class AdminListItem(
     val subtitle: String? = null,
     val trailing: String? = null,
     val trailingColor: Color? = null,
+    val trailingChip: Boolean = false,
     val leadingIcon: ImageVector? = null,
     val leadingIconColor: Color? = null,
     val leadingInitial: String? = null,
     val leadingInitialColor: Color? = null,
+    val leadingDotColor: Color? = null,
+)
+
+private val AdminListGroupedPadding = PaddingValues(
+    start = 16.dp,
+    top = 28.dp,
+    end = 16.dp,
+    bottom = MistyBottomNavInset,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,30 +82,33 @@ fun AdminListScreen(
     items: List<AdminListItem>,
     isLoading: Boolean,
     emptyMessage: String,
+    emptyDescription: String? = null,
+    emptyIcon: ImageVector = Icons.Default.Search,
     onBack: () -> Unit,
     onRefresh: (() -> Unit)? = null,
     isRefreshing: Boolean = false,
     onItemClick: ((AdminListItem) -> Unit)? = null,
+    onItemLongClick: ((AdminListItem) -> Unit)? = null,
     searchPlaceholder: String? = null,
     errorMessage: String? = null,
     headerContent: (@Composable () -> Unit)? = null,
+    listSectionTitle: String? = null,
     actions: (@Composable () -> Unit)? = null,
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val filteredItems = if (searchQuery.isBlank()) items else items.filter { item ->
-        item.title.contains(searchQuery, ignoreCase = true) ||
-            (item.subtitle?.contains(searchQuery, ignoreCase = true) == true)
+    val trimmedQuery = searchQuery.trim()
+    val filteredItems = if (trimmedQuery.isBlank()) {
+        items
+    } else {
+        items.filter { it.matchesSearch(trimmedQuery) }
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            MistyNavigationTopBar(
+                title = title,
+                onBack = onBack,
                 actions = { actions?.invoke() },
             )
         },
@@ -105,60 +124,56 @@ fun AdminListScreen(
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
                     !isLoading && items.isEmpty() && errorMessage != null -> {
-                        Text(
-                            text = errorMessage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.align(Alignment.Center).padding(32.dp),
+                        AdminListUnavailableState(
+                            icon = Icons.Default.Warning,
+                            title = errorMessage,
+                            description = emptyDescription,
                         )
                     }
                     !isLoading && items.isEmpty() -> {
-                        Text(
-                            text = emptyMessage,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.align(Alignment.Center),
+                        AdminListUnavailableState(
+                            icon = emptyIcon,
+                            title = emptyMessage,
+                            description = emptyDescription,
                         )
                     }
                     else -> {
                         LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            contentPadding = AdminListGroupedPadding,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            if (searchPlaceholder != null) {
+                            if (!searchPlaceholder.isNullOrBlank()) {
                                 item {
-                                    OutlinedTextField(
+                                    MistySearchField(
                                         value = searchQuery,
                                         onValueChange = { searchQuery = it },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        placeholder = {
-                                            Text(
-                                                text = searchPlaceholder,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Search,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        },
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(12.dp),
+                                        placeholder = searchPlaceholder,
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
                             }
                             if (headerContent != null) {
                                 item { headerContent() }
                             }
-                            items(filteredItems, key = { it.id }) { item ->
-                                AdminListRow(
-                                    item = item,
-                                    onClick = onItemClick?.let { { it(item) } },
-                                )
+                            if (filteredItems.isEmpty()) {
+                                item {
+                                    MistyEmptyState(
+                                        icon = emptyIcon,
+                                        title = emptyMessage,
+                                        description = emptyDescription,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(280.dp),
+                                    )
+                                }
+                            } else {
+                                item {
+                                    AdminListGroupWithTitle(
+                                        title = listSectionTitle,
+                                        items = filteredItems,
+                                        onItemClick = onItemClick,
+                                        onItemLongClick = onItemLongClick,
+                                    )
+                                }
                             }
                         }
                     }
@@ -178,60 +193,56 @@ fun AdminListScreen(
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                         }
                         !isLoading && items.isEmpty() && errorMessage != null -> {
-                            Text(
-                                text = errorMessage,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.align(Alignment.Center).padding(32.dp),
+                            AdminListUnavailableState(
+                                icon = Icons.Default.Warning,
+                                title = errorMessage,
+                                description = emptyDescription,
                             )
                         }
                         !isLoading && items.isEmpty() -> {
-                            Text(
-                                text = emptyMessage,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.align(Alignment.Center),
+                            AdminListUnavailableState(
+                                icon = emptyIcon,
+                                title = emptyMessage,
+                                description = emptyDescription,
                             )
                         }
                         else -> {
                             LazyColumn(
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                contentPadding = AdminListGroupedPadding,
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                if (searchPlaceholder != null) {
+                                if (!searchPlaceholder.isNullOrBlank()) {
                                     item {
-                                        OutlinedTextField(
+                                        MistySearchField(
                                             value = searchQuery,
                                             onValueChange = { searchQuery = it },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            placeholder = {
-                                                Text(
-                                                    text = searchPlaceholder,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Default.Search,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                            },
-                                            singleLine = true,
-                                            shape = RoundedCornerShape(12.dp),
+                                            placeholder = searchPlaceholder,
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
                                     }
                                 }
                                 if (headerContent != null) {
                                     item { headerContent() }
                                 }
-                                items(filteredItems, key = { it.id }) { item ->
-                                    AdminListRow(
-                                        item = item,
-                                        onClick = onItemClick?.let { { it(item) } },
-                                    )
+                                if (filteredItems.isEmpty()) {
+                                    item {
+                                        MistyEmptyState(
+                                            icon = emptyIcon,
+                                            title = emptyMessage,
+                                            description = emptyDescription,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(280.dp),
+                                        )
+                                    }
+                                } else {
+                                    item {
+                                        AdminListGroupWithTitle(
+                                            title = listSectionTitle,
+                                            items = filteredItems,
+                                            onItemClick = onItemClick,
+                                            onItemLongClick = onItemLongClick,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -244,72 +255,221 @@ fun AdminListScreen(
     }
 }
 
+private fun AdminListItem.matchesSearch(query: String): Boolean {
+    val q = query.lowercase()
+    return title.lowercase().contains(q) ||
+        subtitle.orEmpty().lowercase().contains(q) ||
+        trailing.orEmpty().lowercase().contains(q)
+}
+
 @Composable
-private fun AdminListRow(item: AdminListItem, onClick: (() -> Unit)?) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+private fun AdminListUnavailableState(
+    icon: ImageVector,
+    title: String,
+    description: String?,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = AdminListGroupedPadding,
     ) {
-        Row(
+        item {
+            MistyEmptyState(
+                icon = icon,
+                title = title,
+                description = description,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminListGroupWithTitle(
+    title: String?,
+    items: List<AdminListItem>,
+    onItemClick: ((AdminListItem) -> Unit)?,
+    onItemLongClick: ((AdminListItem) -> Unit)?,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (!title.isNullOrBlank()) {
+            MistySectionTitle(text = title, modifier = Modifier.padding(start = 14.dp))
+        }
+        AdminListGroup(
+            items = items,
+            onItemClick = onItemClick,
+            onItemLongClick = onItemLongClick,
+        )
+    }
+}
+
+@Composable
+private fun AdminListGroup(
+    items: List<AdminListItem>,
+    onItemClick: ((AdminListItem) -> Unit)?,
+    onItemLongClick: ((AdminListItem) -> Unit)?,
+) {
+    MistyCard(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column {
+            items.forEachIndexed { index, item ->
+                AdminListRow(
+                    item = item,
+                    onClick = onItemClick?.let { { it(item) } },
+                    onLongClick = onItemLongClick?.let { { it(item) } },
+                )
+                if (index < items.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(
+                            start = when {
+                                item.leadingIcon != null -> 52.dp
+                                item.leadingInitial != null -> 64.dp
+                                item.leadingDotColor != null -> 40.dp
+                                else -> 16.dp
+                            },
+                            end = 16.dp,
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AdminListRow(
+    item: AdminListItem,
+    onClick: (() -> Unit)?,
+    onLongClick: (() -> Unit)?,
+) {
+    val interactionModifier = when {
+        onClick != null || onLongClick != null -> Modifier.combinedClickable(
+            onClick = onClick ?: {},
+            onLongClick = onLongClick,
+        )
+        else -> Modifier
+    }
+    Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (item.leadingIcon != null) {
-                Icon(
-                    imageVector = item.leadingIcon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = item.leadingIconColor ?: MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(12.dp))
+                .then(interactionModifier)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (item.leadingIcon != null) {
+            Icon(
+                imageVector = item.leadingIcon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = item.leadingIconColor ?: MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        if (item.leadingInitial != null) {
+            Surface(
+                shape = CircleShape,
+                color = (item.leadingInitialColor ?: MaterialTheme.colorScheme.primary).copy(alpha = 0.15f),
+                modifier = Modifier.size(36.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = item.leadingInitial,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 20.sp),
+                        fontWeight = FontWeight.SemiBold,
+                        color = item.leadingInitialColor ?: MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
-            if (item.leadingInitial != null) {
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        if (item.leadingDotColor != null) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .padding(1.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 Surface(
                     shape = CircleShape,
-                    color = (item.leadingInitialColor ?: MaterialTheme.colorScheme.primary).copy(alpha = 0.15f),
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = item.leadingInitial,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = item.leadingInitialColor ?: MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    color = item.leadingDotColor,
+                    modifier = Modifier.size(10.dp),
+                    content = {},
                 )
-                if (item.subtitle != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        val subtitleLines = item.subtitle
+            ?.split('\n')
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 13.5.sp,
+                    lineHeight = 17.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (subtitleLines.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                subtitleLines.take(2).forEachIndexed { lineIndex, line ->
                     Text(
-                        text = item.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        text = line,
+                        style = if (lineIndex == 0) {
+                            MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp)
+                        } else {
+                            MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 13.sp)
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = if (lineIndex == 0) 1f else 0.74f,
+                        ),
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            if (item.trailing != null) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = item.trailing,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = item.trailingColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        }
+        if (item.trailing != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            val trailingColor = item.trailingColor ?: MaterialTheme.colorScheme.onSurfaceVariant
+            val trailingChipBackground = if (trailingColor == MaterialTheme.colorScheme.onSurface) {
+                MaterialTheme.colorScheme.surfaceVariant
+            } else {
+                trailingColor.copy(alpha = 0.15f)
             }
+            Text(
+                text = item.trailing,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 13.sp),
+                fontWeight = if (item.trailingChip) FontWeight.SemiBold else FontWeight.Normal,
+                color = trailingColor,
+                modifier = if (item.trailingChip) {
+                    Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(trailingChipBackground)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                } else {
+                    Modifier
+                },
+            )
+        }
+        if (onClick != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = IosGray.copy(alpha = 0.65f),
+            )
         }
     }
 }

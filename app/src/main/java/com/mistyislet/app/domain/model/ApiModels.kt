@@ -38,6 +38,9 @@ data class UserInfo(
     @SerialName("tenant_id") val tenantId: String,
     val language: String? = null,
     val avatar: String? = null,
+    @SerialName("organization_name") val organizationName: String? = null,
+    val role: String? = null,
+    @SerialName("role_display_label") val roleDisplayLabel: String? = null,
 )
 
 @Serializable
