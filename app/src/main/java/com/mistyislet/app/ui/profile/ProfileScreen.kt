@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -85,6 +86,8 @@ import kotlinx.coroutines.launch
 import com.mistyislet.app.domain.model.UserLogin
 import com.mistyislet.app.ui.components.MistyCard
 import com.mistyislet.app.ui.components.MistyBottomNavInset
+import com.mistyislet.app.ui.components.MistyFaceIdIcon
+import com.mistyislet.app.ui.components.MistyKeyIcon
 import com.mistyislet.app.ui.components.MistyGroupedListPadding
 import com.mistyislet.app.ui.components.MistyGroupedSection
 import com.mistyislet.app.ui.components.MistyLargeTitle
@@ -164,6 +167,7 @@ fun ProfileScreen(
         ) {
             MistyLargeTitle(text = stringResource(R.string.profile_title))
 
+            Spacer(modifier = Modifier.height(10.dp))
             MistySegmentedControl(
                 labels = listOf(
                     stringResource(R.string.profile_tab_main),
@@ -201,38 +205,76 @@ private fun MainSettingsTab(
 ) {
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
-
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri ->
-        uri?.let { viewModel.uploadAvatar(it) }
-    }
+    ) { uri -> uri?.let { viewModel.uploadAvatar(it) } }
 
+    ProfileMainContent(
+        uiState = uiState,
+        onPickAvatar = {
+            photoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        },
+        onChangePassword = { onNavigateSubpage(PROFILE_PAGE_CHANGE_PASSWORD) },
+        onLanguage = { onNavigateSubpage(PROFILE_PAGE_LANGUAGE) },
+        onGeofence = { onNavigateSubpage(PROFILE_PAGE_GEOFENCE) },
+        onLogout = viewModel::logout,
+        onToggleBiometric = { enabled ->
+            if (enabled) {
+                val activity = context as? FragmentActivity
+                if (activity != null) {
+                    scope.launch {
+                        val ok = viewModel.biometricHelper.authenticate(
+                            activity,
+                            title = context.getString(R.string.biometric_prompt_title),
+                            subtitle = context.getString(R.string.biometric_prompt_subtitle),
+                        )
+                        if (ok) viewModel.toggleBiometric(true)
+                    }
+                }
+            } else {
+                viewModel.toggleBiometric(false)
+            }
+        },
+    )
+}
+
+/**
+ * Stateless main Profile tab content — driven by [uiState] + callbacks so it renders in the
+ * DEBUG parity harness with mock data. Exact production UI.
+ */
+@Composable
+internal fun ProfileMainContent(
+    uiState: ProfileUiState,
+    onPickAvatar: () -> Unit = {},
+    onChangePassword: () -> Unit = {},
+    onToggleBiometric: (Boolean) -> Unit = {},
+    onLanguage: () -> Unit = {},
+    onGeofence: () -> Unit = {},
+    onLogout: () -> Unit = {},
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
             .padding(top = 40.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         MistyCard(modifier = Modifier.fillMaxWidth()) {
             if (uiState.user != null) {
                 Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape)
-                            .clickable {
-                                photoPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                )
-                            },
+                            .clickable(onClick = onPickAvatar),
                     ) {
                         if (uiState.user.avatar != null) {
                             AsyncImage(
@@ -324,36 +366,20 @@ private fun MainSettingsTab(
             MistyCard(modifier = Modifier.fillMaxWidth()) {
             Column {
                 ProfileRow(
-                    icon = Icons.Outlined.Key,
+                    icon = MistyKeyIcon,
                     title = stringResource(R.string.settings_password),
-                    onClick = { onNavigateSubpage(PROFILE_PAGE_CHANGE_PASSWORD) },
+                    onClick = onChangePassword,
                 )
                 ProfileDivider()
 
                 ProfileRow(
-                    icon = if (uiState.biometricTypeName.contains("Face")) Icons.Outlined.Face else Icons.Outlined.Fingerprint,
+                    icon = if (uiState.biometricTypeName.contains("Face")) MistyFaceIdIcon else Icons.Outlined.Fingerprint,
                     title = if (uiState.biometricAvailable) uiState.biometricTypeName else stringResource(R.string.settings_biometric),
                     showChevron = false,
                     trailing = {
                         Switch(
                             checked = uiState.biometricEnabled,
-                            onCheckedChange = { enabled ->
-                                if (enabled) {
-                                    val activity = context as? FragmentActivity
-                                    if (activity != null) {
-                                        scope.launch {
-                                            val ok = viewModel.biometricHelper.authenticate(
-                                                activity,
-                                                title = context.getString(R.string.biometric_prompt_title),
-                                                subtitle = context.getString(R.string.biometric_prompt_subtitle),
-                                            )
-                                            if (ok) viewModel.toggleBiometric(true)
-                                        }
-                                    }
-                                } else {
-                                    viewModel.toggleBiometric(false)
-                                }
-                            },
+                            onCheckedChange = onToggleBiometric,
                             enabled = uiState.biometricAvailable,
                             colors = SwitchDefaults.colors(
                                 checkedTrackColor = MaterialTheme.colorScheme.primary,
@@ -378,13 +404,13 @@ private fun MainSettingsTab(
                     icon = Icons.Outlined.Language,
                     title = stringResource(R.string.profile_language),
                     value = currentLabel,
-                    onClick = { onNavigateSubpage(PROFILE_PAGE_LANGUAGE) },
+                    onClick = onLanguage,
                 )
                 ProfileDivider()
                 ProfileRow(
-                    icon = Icons.Outlined.LocationOn,
+                    icon = Icons.Outlined.NearMe,
                     title = stringResource(R.string.profile_auto_unlock_zone),
-                    onClick = { onNavigateSubpage(PROFILE_PAGE_GEOFENCE) },
+                    onClick = onGeofence,
                 )
             }
             }
@@ -394,7 +420,7 @@ private fun MainSettingsTab(
 
         MistyCard(
             modifier = Modifier.fillMaxWidth(),
-            onClick = viewModel::logout,
+            onClick = onLogout,
         ) {
             Row(
                 modifier = Modifier
@@ -403,7 +429,7 @@ private fun MainSettingsTab(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ExitToApp, contentDescription = null, tint = Danger)
+                Icon(Icons.AutoMirrored.Outlined.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     stringResource(R.string.settings_sign_out),
@@ -414,6 +440,37 @@ private fun MainSettingsTab(
         }
 
         Spacer(modifier = Modifier.height(MistyBottomNavInset))
+    }
+}
+
+/** Large title + segmented header + main settings — used by the DEBUG parity harness. */
+@Composable
+internal fun ProfileMainView(uiState: ProfileUiState) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface),
+        ) {
+            MistyLargeTitle(text = stringResource(R.string.profile_title))
+            Spacer(modifier = Modifier.height(10.dp))
+            MistySegmentedControl(
+                labels = listOf(
+                    stringResource(R.string.profile_tab_main),
+                    stringResource(R.string.profile_tab_logins),
+                    stringResource(R.string.profile_tab_help),
+                ),
+                selectedIndex = 0,
+                onSelected = {},
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+        }
+        ProfileMainContent(uiState = uiState)
     }
 }
 

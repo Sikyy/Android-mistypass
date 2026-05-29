@@ -67,6 +67,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.ui.components.MistyBottomNavInset
+import com.mistyislet.app.ui.components.MistyDoorIcon
 import com.mistyislet.app.ui.components.MistyLargeTitle
 import com.mistyislet.app.ui.components.MistyPillActionButton
 import com.mistyislet.app.ui.theme.IosGreen
@@ -95,6 +96,18 @@ fun CredentialsScreen(
     viewModel: CredentialsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    CredentialsScreenContent(uiState = uiState, onRefreshQr = viewModel::manualRefreshQr)
+}
+
+/**
+ * Stateless Pass/credentials content — driven entirely by [uiState] so it can render in the
+ * DEBUG parity harness with mock data (no Hilt). This is the exact production UI.
+ */
+@Composable
+internal fun CredentialsScreenContent(
+    uiState: CredentialsUiState,
+    onRefreshQr: () -> Unit = {},
+) {
     var expandedPassId by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
@@ -141,7 +154,7 @@ fun CredentialsScreen(
                 qrExpiresAt = uiState.qrExpiresAt,
                 qrErrorMessage = uiState.qrErrorMessage,
                 isQrLoading = uiState.isQrLoading,
-                onRefreshQr = viewModel::manualRefreshQr,
+                onRefreshQr = onRefreshQr,
             )
 
             // PIN Pass card
@@ -256,7 +269,7 @@ private fun PassCard(
         PassType.DEVICE_CREDENTIAL -> DeviceCredentialBg
     }
     val cardHeight by animateDpAsState(
-        targetValue = if (isExpanded) 234.dp else 180.dp,
+        targetValue = if (isExpanded) 260.dp else 200.dp,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "passCardHeight",
     )
@@ -354,7 +367,7 @@ private fun HeaderRow(passType: PassType, organizationName: String) {
                     modifier = Modifier.width(22.dp),
                 )
                 PassType.ACCESS_PASS -> Icon(
-                    imageVector = Icons.Outlined.DoorFront,
+                    imageVector = MistyDoorIcon,
                     contentDescription = null,
                     tint = CardFg,
                     modifier = Modifier.size(22.dp),

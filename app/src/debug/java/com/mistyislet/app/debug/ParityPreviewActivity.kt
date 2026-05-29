@@ -10,9 +10,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.mistyislet.app.domain.model.AccessibleDoor
+import com.mistyislet.app.domain.model.MobileCredential
+import com.mistyislet.app.domain.model.UserInfo
+import com.mistyislet.app.ui.credentials.CredentialsScreenContent
+import com.mistyislet.app.ui.credentials.CredentialsUiState
 import com.mistyislet.app.ui.doors.DoorsScreenContent
 import com.mistyislet.app.ui.doors.DoorsTab
 import com.mistyislet.app.ui.doors.DoorsUiState
+import com.mistyislet.app.ui.profile.ProfileMainView
+import com.mistyislet.app.ui.profile.ProfileUiState
 import com.mistyislet.app.ui.navigation.MistyFloatingBottomNav
 import com.mistyislet.app.ui.navigation.Routes
 import com.mistyislet.app.ui.theme.MistyisletTheme
@@ -35,6 +41,8 @@ class ParityPreviewActivity : ComponentActivity() {
         setContent {
             MistyisletTheme {
                 when (screen) {
+                    "pass" -> PassPreview()
+                    "profile" -> ProfilePreview()
                     else -> DoorsPreview()
                 }
             }
@@ -93,6 +101,58 @@ private fun DoorsPreview() {
         )
         MistyFloatingBottomNav(
             currentRoute = Routes.DOORS,
+            onSelected = {},
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun PassPreview() {
+    // Mirrors the iOS "Pass" tab for "MistyPass Jakarta Demo" (Access + PIN cards).
+    val state = CredentialsUiState(
+        organizationName = "MistyPass Jakarta Demo",
+        placeName = "Sudirman Hub",
+        mobileCredentials = listOf(
+            MobileCredential(
+                id = "dev1",
+                platform = "android",
+                deviceModel = "iPhone",
+                status = "active",
+                expiresAt = "2026-08-23T00:00:00Z",
+            ),
+        ),
+    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        CredentialsScreenContent(uiState = state)
+        MistyFloatingBottomNav(
+            currentRoute = Routes.PASS,
+            onSelected = {},
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun ProfilePreview() {
+    val state = ProfileUiState(
+        user = UserInfo(
+            id = "u1",
+            email = "siky@mistyislet.com",
+            name = "Siky",
+            tenantId = "t1",
+            organizationName = "MistyPass Jakarta Demo",
+            role = "building_admin",
+            roleDisplayLabel = "Building Admin",
+        ),
+        biometricAvailable = true,
+        biometricEnabled = true,
+        biometricTypeName = "Face ID",
+    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        ProfileMainView(uiState = state)
+        MistyFloatingBottomNav(
+            currentRoute = Routes.PROFILE,
             onSelected = {},
             modifier = Modifier.align(Alignment.BottomCenter),
         )
