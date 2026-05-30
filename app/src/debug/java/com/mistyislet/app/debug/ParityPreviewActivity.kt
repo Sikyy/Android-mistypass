@@ -6,6 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,8 +19,12 @@ import com.mistyislet.app.domain.model.MobileCredential
 import com.mistyislet.app.domain.model.UserInfo
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MeetingRoom
+import com.mistyislet.app.ui.admin.AdminDemoData
 import com.mistyislet.app.ui.admin.AdminListItem
 import com.mistyislet.app.ui.admin.AdminListScreen
+import com.mistyislet.app.ui.admin.AdminUserDetailDataState
+import com.mistyislet.app.ui.admin.UserDetailPageContent
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
 import com.mistyislet.app.ui.credentials.CredentialsScreenContent
 import com.mistyislet.app.ui.credentials.CredentialsUiState
 import com.mistyislet.app.ui.dashboard.DashboardScreenContent
@@ -64,6 +72,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "doordetail" -> DoorDetailPreview()
                     "adminusers" -> AdminUsersPreview()
                     "admincontrollers" -> AdminControllersPreview()
+                    "adminuserdetail" -> AdminUserDetailPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -353,4 +362,30 @@ private fun AdminControllersPreview() {
         onBack = {},
         onItemClick = {},
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AdminUserDetailPreview() {
+    // iOS Dashboard > Users > (tap a user) detail (AdminCRUDViews): profile card + info + actions.
+    val user = AdminDemoData.placeUsers[0]
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = { MistyNavigationTopBar(title = user.name, onBack = {}) },
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            UserDetailPageContent(
+                user = user,
+                detailState = AdminUserDetailDataState(
+                    user = user,
+                    logins = AdminDemoData.userLogins,
+                    accessRights = AdminDemoData.userAccessRights,
+                ),
+                onSignOut = {},
+                onRemove = {},
+                onRoleChange = {},
+                onShareAccess = {},
+            )
+        }
+    }
 }
