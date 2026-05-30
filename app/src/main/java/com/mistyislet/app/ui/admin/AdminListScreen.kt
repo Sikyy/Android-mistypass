@@ -359,7 +359,7 @@ private fun AdminListRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(interactionModifier)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (item.leadingIcon != null) {
@@ -372,9 +372,10 @@ private fun AdminListRow(
             Spacer(modifier = Modifier.width(12.dp))
         }
         if (item.leadingInitial != null) {
+            // iOS people avatars are a neutral gray circle, not brand-tinted.
             Surface(
                 shape = CircleShape,
-                color = (item.leadingInitialColor ?: MaterialTheme.colorScheme.primary).copy(alpha = 0.15f),
+                color = (item.leadingInitialColor ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(alpha = 0.15f),
                 modifier = Modifier.size(36.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -382,7 +383,7 @@ private fun AdminListRow(
                         text = item.leadingInitial,
                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 20.sp),
                         fontWeight = FontWeight.SemiBold,
-                        color = item.leadingInitialColor ?: MaterialTheme.colorScheme.primary,
+                        color = item.leadingInitialColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -413,11 +414,11 @@ private fun AdminListRow(
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.5.sp,
-                    lineHeight = 17.sp,
+                    fontSize = 15.sp,
+                    lineHeight = 19.sp,
                     fontWeight = FontWeight.Medium,
                 ),
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             if (subtitleLines.isNotEmpty()) {
@@ -426,14 +427,14 @@ private fun AdminListRow(
                     Text(
                         text = line,
                         style = if (lineIndex == 0) {
-                            MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp)
+                            MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp, lineHeight = 16.sp)
                         } else {
                             MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 13.sp)
                         },
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                             alpha = if (lineIndex == 0) 1f else 0.74f,
                         ),
-                        maxLines = 1,
+                        maxLines = if (lineIndex == 0) 3 else 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -449,7 +450,7 @@ private fun AdminListRow(
             }
             Text(
                 text = item.trailing,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 13.sp),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp, lineHeight = 16.sp),
                 fontWeight = if (item.trailingChip) FontWeight.SemiBold else FontWeight.Normal,
                 color = trailingColor,
                 modifier = if (item.trailingChip) {
