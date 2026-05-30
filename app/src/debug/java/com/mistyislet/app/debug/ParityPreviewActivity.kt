@@ -13,6 +13,8 @@ import com.mistyislet.app.domain.model.AccessLog
 import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.MobileCredential
 import com.mistyislet.app.domain.model.UserInfo
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MeetingRoom
 import com.mistyislet.app.ui.admin.AdminListItem
 import com.mistyislet.app.ui.admin.AdminListScreen
 import com.mistyislet.app.ui.credentials.CredentialsScreenContent
@@ -61,6 +63,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "geofence" -> GeofencePreview()
                     "doordetail" -> DoorDetailPreview()
                     "adminusers" -> AdminUsersPreview()
+                    "admincontrollers" -> AdminControllersPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -312,6 +315,41 @@ private fun AdminUsersPreview() {
         ),
         isLoading = false,
         emptyMessage = "No users",
+        onBack = {},
+        onItemClick = {},
+    )
+}
+
+@Composable
+private fun AdminControllersPreview() {
+    // Icon-based admin list — regression check for the shared AdminListScreen.
+    AdminListScreen(
+        title = "Controllers",
+        items = listOf(
+            AdminListItem(
+                id = "1",
+                title = "A-23 East Wing Main Entrance Controller",
+                subtitle = "Gateway online",
+                trailing = "Online",
+                leadingIcon = Icons.Outlined.MeetingRoom,
+            ),
+            AdminListItem(
+                id = "2",
+                title = "B-12 West Lobby",
+                subtitle = "Gateway online",
+                trailing = "Online",
+                leadingIcon = Icons.Outlined.MeetingRoom,
+            ),
+            AdminListItem(
+                id = "3",
+                title = "C-5 Server Room",
+                subtitle = "Gateway offline",
+                trailing = "Offline",
+                leadingIcon = Icons.Outlined.MeetingRoom,
+            ),
+        ),
+        isLoading = false,
+        emptyMessage = "No controllers",
         onBack = {},
         onItemClick = {},
     )
