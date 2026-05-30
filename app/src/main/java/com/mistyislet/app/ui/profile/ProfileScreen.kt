@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.Person
@@ -41,7 +42,10 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.FrontHand
+import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.NearMe
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -123,19 +127,19 @@ fun ProfileScreen(
     subpage?.let { page ->
         BackHandler { subpage = null }
         when (page) {
-            PROFILE_PAGE_CHANGE_PASSWORD -> ChangePasswordPage(
-                viewModel = viewModel,
+            PROFILE_PAGE_CHANGE_PASSWORD -> ChangePasswordContent(
                 uiState = uiState,
                 onBack = {
                     subpage = null
                     viewModel.clearPasswordState()
                 },
+                onSubmit = viewModel::changePassword,
             )
-            PROFILE_PAGE_LANGUAGE -> LanguageSettingsPage(
+            PROFILE_PAGE_LANGUAGE -> LanguageSettingsContent(
                 onBack = { subpage = null },
-                viewModel = viewModel,
+                onSelect = viewModel::setLanguage,
             )
-            PROFILE_PAGE_GEOFENCE -> GeofenceSettingsPage(onBack = { subpage = null })
+            PROFILE_PAGE_GEOFENCE -> GeofenceSettingsContent(onBack = { subpage = null })
             PROFILE_PAGE_ABOUT -> AboutPage(
                 viewModel = viewModel,
                 onBack = { subpage = null },
@@ -392,7 +396,7 @@ internal fun ProfileMainContent(
                 )
                 ProfileDivider()
 
-                val languages = listOf("English" to "en", "中文" to "zh", "Indonesia" to "in")
+                val languages = listOf("中文" to "zh", "English" to "en", "Bahasa Indonesia" to "in")
                 val currentLocale = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
                     .toLanguageTags().takeIf { it.isNotBlank() }
                 val fallbackLanguage = Locale.getDefault().language
@@ -533,10 +537,10 @@ private fun ProfileRow(
 }
 
 @Composable
-private fun ChangePasswordPage(
-    viewModel: ProfileViewModel,
+internal fun ChangePasswordContent(
     uiState: ProfileUiState,
     onBack: () -> Unit,
+    onSubmit: (String, String) -> Unit,
 ) {
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
@@ -620,18 +624,30 @@ private fun ChangePasswordPage(
 
             item {
                 MistyGroupedSection {
-                    MistyPillActionButton(
-                        text = stringResource(R.string.profile_update_password),
-                        onClick = { viewModel.changePassword(currentPassword, newPassword) },
-                        enabled = isValid,
-                        fillContent = true,
-                        tint = MaterialTheme.colorScheme.primary,
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    // iOS renders the form action as plain tinted text, not a filled pill.
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                    )
+                            .height(52.dp)
+                            .then(
+                                if (isValid) {
+                                    Modifier.clickable { onSubmit(currentPassword, newPassword) }
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.profile_update_password),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isValid) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -639,11 +655,11 @@ private fun ChangePasswordPage(
 }
 
 @Composable
-private fun LanguageSettingsPage(
+internal fun LanguageSettingsContent(
     onBack: () -> Unit,
-    viewModel: ProfileViewModel,
+    onSelect: (String) -> Unit,
 ) {
-    val languages = listOf("English" to "en", "中文" to "zh", "Indonesia" to "in")
+    val languages = listOf("中文" to "zh", "English" to "en", "Bahasa Indonesia" to "in")
     val currentLocale = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
         .toLanguageTags().takeIf { it.isNotBlank() }
     val fallbackLanguage = Locale.getDefault().language
@@ -674,20 +690,21 @@ private fun LanguageSettingsPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp)
-                                .clickable { viewModel.setLanguage(code) }
+                                .clickable { onSelect(code) }
                                 .padding(horizontal = 16.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.weight(1f),
                             )
                             if (selected) {
                                 Icon(
-                                    imageVector = Icons.Default.CheckCircle,
+                                    imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(22.dp),
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                             }
@@ -703,7 +720,7 @@ private fun LanguageSettingsPage(
 }
 
 @Composable
-private fun GeofenceSettingsPage(onBack: () -> Unit) {
+internal fun GeofenceSettingsContent(onBack: () -> Unit) {
     var enabled by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -776,17 +793,17 @@ private fun GeofenceSettingsPage(onBack: () -> Unit) {
                     )
                     HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
                     GeofenceInstructionRow(
-                        icon = Icons.Default.CheckCircle,
+                        icon = Icons.Outlined.Notifications,
                         text = stringResource(R.string.geofence_step_2),
                     )
                     HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
                     GeofenceInstructionRow(
-                        icon = Icons.Outlined.Fingerprint,
+                        icon = Icons.Outlined.LockOpen,
                         text = stringResource(R.string.geofence_step_3),
                     )
                     HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
                     GeofenceInstructionRow(
-                        icon = Icons.AutoMirrored.Filled.Help,
+                        icon = Icons.Outlined.FrontHand,
                         text = stringResource(R.string.geofence_step_4),
                     )
                 }

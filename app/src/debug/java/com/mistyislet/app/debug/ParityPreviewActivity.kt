@@ -21,6 +21,9 @@ import com.mistyislet.app.ui.history.EventDetailContent
 import com.mistyislet.app.ui.history.HistoryScreenContent
 import com.mistyislet.app.ui.doors.DoorsTab
 import com.mistyislet.app.ui.doors.DoorsUiState
+import com.mistyislet.app.ui.profile.ChangePasswordContent
+import com.mistyislet.app.ui.profile.GeofenceSettingsContent
+import com.mistyislet.app.ui.profile.LanguageSettingsContent
 import com.mistyislet.app.ui.profile.ProfileMainView
 import com.mistyislet.app.ui.profile.ProfileUiState
 import com.mistyislet.app.ui.navigation.MistyFloatingBottomNav
@@ -50,6 +53,9 @@ class ParityPreviewActivity : ComponentActivity() {
                     "dashboard" -> DashboardPreview()
                     "history" -> HistoryPreview()
                     "eventdetail" -> EventDetailPreview()
+                    "changepassword" -> ChangePasswordPreview()
+                    "language" -> LanguagePreview()
+                    "geofence" -> GeofencePreview()
                     else -> DoorsPreview()
                 }
             }
@@ -217,4 +223,27 @@ private fun HistoryPreview() {
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
+}
+
+// --- Profile subpages: pushed screens with their own top bar, no tab bar
+// (matches the real Android app shell; iOS keeps its tab bar = intentional paradigm diff).
+
+@Composable
+private fun ChangePasswordPreview() {
+    // Empty form, no error — matches iOS ChangePasswordView pushed from Profile settings.
+    ChangePasswordContent(
+        uiState = ProfileUiState(),
+        onBack = {},
+        onSubmit = { _, _ -> },
+    )
+}
+
+@Composable
+private fun LanguagePreview() {
+    LanguageSettingsContent(onBack = {}, onSelect = {})
+}
+
+@Composable
+private fun GeofencePreview() {
+    GeofenceSettingsContent(onBack = {})
 }
