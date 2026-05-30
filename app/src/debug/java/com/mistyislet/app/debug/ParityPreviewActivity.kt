@@ -17,6 +17,7 @@ import com.mistyislet.app.ui.credentials.CredentialsScreenContent
 import com.mistyislet.app.ui.credentials.CredentialsUiState
 import com.mistyislet.app.ui.dashboard.DashboardScreenContent
 import com.mistyislet.app.ui.doors.DoorsScreenContent
+import com.mistyislet.app.ui.history.EventDetailContent
 import com.mistyislet.app.ui.history.HistoryScreenContent
 import com.mistyislet.app.ui.doors.DoorsTab
 import com.mistyislet.app.ui.doors.DoorsUiState
@@ -48,6 +49,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "profile" -> ProfilePreview()
                     "dashboard" -> DashboardPreview()
                     "history" -> HistoryPreview()
+                    "eventdetail" -> EventDetailPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -178,6 +180,24 @@ private fun DashboardPreview() {
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
+}
+
+@Composable
+private fun EventDetailPreview() {
+    // Mirrors the iOS Event Detail reached by tapping the first History row (Main Entrance, granted, BLE).
+    val log = AccessLog(
+        id = "1",
+        doorName = "Main Entrance",
+        result = "allow",
+        method = "ble",
+        at = "2026-05-30T08:34:00Z",
+    )
+    EventDetailContent(
+        log = log,
+        media = emptyList(),
+        isLoadingMedia = false,
+        onBack = {},
+    )
 }
 
 @Composable

@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.AccessLog
+import com.mistyislet.app.domain.model.EventMedia
 import com.mistyislet.app.ui.components.MistyCard
 import com.mistyislet.app.ui.components.MistyEmptyState
 import com.mistyislet.app.ui.components.MistyGroupedListPadding
@@ -408,13 +410,31 @@ private fun MethodBadge(method: String) {
 
 @Composable
 private fun EventDetailPage(log: AccessLog, viewModel: HistoryViewModel, onBack: () -> Unit) {
-    val isSuccess = isGranted(log)
     val media by viewModel.eventMedia.collectAsStateWithLifecycle()
     val isLoadingMedia by viewModel.isLoadingMedia.collectAsStateWithLifecycle()
 
     LaunchedEffect(log.id) {
         viewModel.loadEventMedia(log.id)
     }
+
+    EventDetailContent(
+        log = log,
+        media = media,
+        isLoadingMedia = isLoadingMedia,
+        onBack = onBack,
+    )
+}
+
+/** Stateless Event Detail (info section + camera snapshots) for the DEBUG parity harness. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun EventDetailContent(
+    log: AccessLog,
+    media: List<EventMedia>,
+    isLoadingMedia: Boolean,
+    onBack: () -> Unit,
+) {
+    val isSuccess = isGranted(log)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -430,26 +450,26 @@ private fun EventDetailPage(log: AccessLog, viewModel: HistoryViewModel, onBack:
                 .fillMaxWidth()
                 .padding(padding),
             contentPadding = MistyGroupedListPadding,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             item {
                 MistyGroupedSection {
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                         HistoryDetailRow(stringResource(R.string.history_door), log.displayName)
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        IosFormDivider()
                         HistoryDetailRow(stringResource(R.string.history_time), formatFullTime(log.displayTime))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        IosFormDivider()
                         HistoryDetailRow(
                             label = stringResource(R.string.history_result),
                             value = if (isSuccess) stringResource(R.string.history_granted) else stringResource(R.string.history_denied),
                             valueColor = if (isSuccess) IosGreen else IosRed,
                         )
                         log.displayMethod?.let { method ->
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            IosFormDivider()
                             HistoryDetailRow(stringResource(R.string.history_method), method.uppercase())
                         }
                         log.reason?.takeIf { it.isNotBlank() }?.let { reason ->
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            IosFormDivider()
                             HistoryDetailRow("", reason)
                         }
                     }
@@ -510,7 +530,7 @@ private fun EventDetailPage(log: AccessLog, viewModel: HistoryViewModel, onBack:
                                     }
                                 }
                                 if (index < media.lastIndex) {
-                                    HorizontalDivider(modifier = Modifier.padding(start = 112.dp, end = 16.dp))
+                                    IosFormDivider(startInset = 112.dp)
                                 }
                             }
                         }
@@ -519,6 +539,16 @@ private fun EventDetailPage(log: AccessLog, viewModel: HistoryViewModel, onBack:
             }
         }
     }
+}
+
+/** iOS inset-grouped form separator: hairline, faint, leading-inset (full to the right edge). */
+@Composable
+private fun IosFormDivider(startInset: Dp = 0.dp) {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = startInset),
+        thickness = 0.5.dp,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+    )
 }
 
 @Composable
