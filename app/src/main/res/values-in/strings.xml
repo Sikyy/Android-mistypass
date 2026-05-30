@@ -294,6 +294,9 @@
     <string name="admin_no_doors">Tidak ada pintu</string>
     <string name="admin_access_rights">Hak Akses</string>
     <string name="admin_no_access_rights">Tidak ada hak akses</string>
+    <string name="admin_access_via_group">Melalui grup</string>
+    <string name="admin_access_via_role">Melalui peran</string>
+    <string name="admin_access_via_group_role">Melalui grup &amp; peran</string>
     <string name="admin_add_member">Tambah Anggota</string>
     <string name="admin_add_door">Tambah Pintu</string>
     <string name="admin_add_access_right">Tambah Hak Akses</string>

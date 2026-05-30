@@ -281,9 +281,9 @@ object AdminDemoData {
     )
 
     val userAccessRights = listOf(
-        AccessRight("right-001", teamName = "Facilities", doorName = "Main Entrance", scheduleName = "Business Hours"),
-        AccessRight("right-002", teamName = "Security Ops", doorName = "Parking Gate", scheduleName = "Always"),
-        AccessRight("right-003", teamName = "Engineering", doorName = "Meeting Room A", scheduleName = "Business Hours"),
+        AccessRight(doorId = "door-001", doorName = "Main Entrance", kind = "door", status = "active", source = "group", canAccess = true),
+        AccessRight(doorId = "door-002", doorName = "Parking Gate", kind = "gate", status = "active", source = "role", canAccess = true),
+        AccessRight(doorId = "door-003", doorName = "Meeting Room A", kind = "door", status = "active", source = "group+role", canAccess = true),
     )
 
     val schedules = listOf(
