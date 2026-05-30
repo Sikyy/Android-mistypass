@@ -13,6 +13,8 @@ import com.mistyislet.app.domain.model.AccessLog
 import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.MobileCredential
 import com.mistyislet.app.domain.model.UserInfo
+import com.mistyislet.app.ui.admin.AdminListItem
+import com.mistyislet.app.ui.admin.AdminListScreen
 import com.mistyislet.app.ui.credentials.CredentialsScreenContent
 import com.mistyislet.app.ui.credentials.CredentialsUiState
 import com.mistyislet.app.ui.dashboard.DashboardScreenContent
@@ -58,6 +60,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "language" -> LanguagePreview()
                     "geofence" -> GeofencePreview()
                     "doordetail" -> DoorDetailPreview()
+                    "adminusers" -> AdminUsersPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -269,5 +272,47 @@ private fun DoorDetailPreview() {
         schedules = emptyList(),
         onToggleLockdown = {},
         onDismiss = {},
+    )
+}
+
+@Composable
+private fun AdminUsersPreview() {
+    // Mirrors the iOS Dashboard -> Users admin list (shared AdminListScreen).
+    AdminListScreen(
+        title = "Users",
+        items = listOf(
+            AdminListItem(
+                id = "1",
+                title = "Sudirman Building Admin",
+                subtitle = "building.admin.sudirman@mistypass.local",
+                trailing = "Building Admin",
+                leadingInitial = "S",
+            ),
+            AdminListItem(
+                id = "2",
+                title = "Andri Pratama",
+                subtitle = "andri.pratama@mistypass.local",
+                trailing = "Employee",
+                leadingInitial = "A",
+            ),
+            AdminListItem(
+                id = "3",
+                title = "Jakarta Resident",
+                subtitle = "resident.jakarta@mistypass.local",
+                trailing = "Employee",
+                leadingInitial = "J",
+            ),
+            AdminListItem(
+                id = "4",
+                title = "Siky",
+                subtitle = "siky@mistyislet.com",
+                trailing = "Tenant Admin",
+                leadingInitial = "S",
+            ),
+        ),
+        isLoading = false,
+        emptyMessage = "No users",
+        onBack = {},
+        onItemClick = {},
     )
 }
