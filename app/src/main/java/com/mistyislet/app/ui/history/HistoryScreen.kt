@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -62,7 +63,7 @@ import com.mistyislet.app.domain.model.AccessLog
 import com.mistyislet.app.domain.model.EventMedia
 import com.mistyislet.app.ui.components.MistyCard
 import com.mistyislet.app.ui.components.MistyEmptyState
-import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyBottomNavInset
 import com.mistyislet.app.ui.components.MistyGroupedSection
 import com.mistyislet.app.ui.components.MistyLargeTitle
 import com.mistyislet.app.ui.components.MistyNavigationTopBar
@@ -449,8 +450,13 @@ internal fun EventDetailContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(padding),
-            contentPadding = MistyGroupedListPadding,
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = 24.dp,
+                end = 16.dp,
+                bottom = MistyBottomNavInset,
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 MistyGroupedSection {
@@ -562,7 +568,8 @@ private fun HistoryDetailRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .heightIn(min = 44.dp)
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (label.isNotBlank()) {
