@@ -350,10 +350,13 @@ data class ReportExportResponse(
 
 @Serializable
 data class AccessRight(
-    val id: String,
-    @SerialName("team_name") val teamName: String = "",
+    @SerialName("door_id") val doorId: String = "",
     @SerialName("door_name") val doorName: String = "",
-    @SerialName("schedule_name") val scheduleName: String? = null,
+    @SerialName("place_id") val placeId: String = "",
+    val kind: String = "",
+    val status: String = "",
+    val source: String = "",
+    @SerialName("can_access") val canAccess: Boolean = false,
 )
 
 @Serializable

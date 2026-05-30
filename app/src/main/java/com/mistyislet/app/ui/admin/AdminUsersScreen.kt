@@ -869,21 +869,30 @@ private fun AccessRightDetailRow(right: AccessRight) {
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = right.doorName.ifBlank { right.id },
+                text = right.doorName.ifBlank { right.doorId },
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
-            Text(
-                text = listOfNotNull(
-                    right.teamName.takeIf { it.isNotBlank() },
-                    right.scheduleName?.takeIf { it.isNotBlank() },
-                ).joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            )
+            val sourceLabel = when (right.source.lowercase()) {
+                "group" -> stringResource(R.string.admin_access_via_group)
+                "role" -> stringResource(R.string.admin_access_via_role)
+                "group+role" -> stringResource(R.string.admin_access_via_group_role)
+                else -> right.source
+            }
+            val subtitle = listOfNotNull(
+                sourceLabel.takeIf { it.isNotBlank() },
+                right.status.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() },
+            ).joinToString(" · ")
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

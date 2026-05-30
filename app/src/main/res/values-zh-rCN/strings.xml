@@ -294,6 +294,9 @@
     <string name="admin_no_doors">暂无门禁</string>
     <string name="admin_access_rights">访问权限</string>
     <string name="admin_no_access_rights">暂无访问权限</string>
+    <string name="admin_access_via_group">通过群组</string>
+    <string name="admin_access_via_role">通过角色</string>
+    <string name="admin_access_via_group_role">通过群组和角色</string>
     <string name="admin_add_member">添加成员</string>
     <string name="admin_add_door">添加门点</string>
     <string name="admin_add_access_right">添加访问权限</string>

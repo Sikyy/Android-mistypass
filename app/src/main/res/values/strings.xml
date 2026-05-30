@@ -294,6 +294,9 @@
     <string name="admin_no_doors">No doors</string>
     <string name="admin_access_rights">Access Rights</string>
     <string name="admin_no_access_rights">No access rights</string>
+    <string name="admin_access_via_group">Via group</string>
+    <string name="admin_access_via_role">Via role</string>
+    <string name="admin_access_via_group_role">Via group &amp; role</string>
     <string name="admin_add_member">Add Member</string>
     <string name="admin_add_door">Add Door</string>
     <string name="admin_add_access_right">Add Access Right</string>
