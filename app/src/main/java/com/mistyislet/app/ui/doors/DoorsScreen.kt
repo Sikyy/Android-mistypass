@@ -43,8 +43,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.DoorFront
+import androidx.compose.material.icons.outlined.SettingsInputAntenna
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -80,6 +82,8 @@ import androidx.fragment.app.FragmentActivity
 import com.mistyislet.app.R
 import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.DoorDisplayStatus
+import com.mistyislet.app.domain.model.DoorRestriction
+import com.mistyislet.app.domain.model.DoorSchedule
 import com.mistyislet.app.domain.model.displayStatus
 import com.mistyislet.app.ui.components.MistyBottomSheet
 import com.mistyislet.app.ui.components.MistyBottomNavInset
@@ -422,14 +426,33 @@ private fun DoorDetailsSheet(
     viewModel: DoorsViewModel,
     onDismiss: () -> Unit,
 ) {
-    val displayStatus = door.displayStatus()
     val restrictions by viewModel.doorRestrictions.collectAsStateWithLifecycle()
     val schedules by viewModel.doorSchedules.collectAsStateWithLifecycle()
-    val isLockedDown = door.status == "locked_down"
-
     androidx.compose.runtime.LaunchedEffect(door.id) {
         viewModel.loadDoorExtras(door.id)
     }
+    DoorDetailsContent(
+        door = door,
+        placeId = placeId,
+        restrictions = restrictions,
+        schedules = schedules,
+        onToggleLockdown = { viewModel.toggleLockdown() },
+        onDismiss = onDismiss,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DoorDetailsContent(
+    door: AccessibleDoor,
+    placeId: String?,
+    restrictions: List<DoorRestriction>,
+    schedules: List<DoorSchedule>,
+    onToggleLockdown: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val displayStatus = door.displayStatus()
+    val isLockedDown = door.status == "locked_down"
 
     val statusColor = when (displayStatus) {
         DoorDisplayStatus.ONLINE_UNLOCKABLE -> IosGreen
@@ -484,43 +507,41 @@ private fun DoorDetailsSheet(
 
             item {
                 MistyGroupedSection(title = stringResource(R.string.doors_info)) {
+                    // iOS info rows: gray icon, small gray label, prominent plain value.
                     door.groupName?.let {
-                        DoorDetailRow(
+                        DoorInfoRow(
                             icon = Icons.Default.LocationOn,
                             label = stringResource(R.string.doors_location),
                             value = it,
                         )
                         DoorSheetDivider()
                     }
-                    DoorDetailRow(
-                        icon = Icons.Default.Router,
+                    DoorInfoRow(
+                        icon = Icons.Outlined.SettingsInputAntenna,
                         label = stringResource(R.string.doors_gateway),
                         value = if (door.gatewayStatus == "online") stringResource(R.string.doors_online) else stringResource(R.string.door_offline),
-                        valueColor = if (door.gatewayStatus == "online") IosGreen else IosOrange,
                     )
                     if (door.lastUnlockAt != null || door.kind != null || door.canUnlock) {
                         DoorSheetDivider()
                     }
                     door.lastUnlockAt?.let { timestamp ->
-                        DoorDetailRow(
-                            icon = Icons.Default.Lock,
+                        DoorInfoRow(
+                            icon = Icons.Outlined.AccessTime,
                             label = stringResource(R.string.doors_last_unlocked),
                             value = timestamp.replace("T", " ").take(16),
                         )
                         DoorSheetDivider()
                     }
-                    DoorDetailRow(
+                    DoorInfoRow(
                         icon = Icons.Outlined.DoorFront,
                         label = stringResource(R.string.doors_type),
                         value = door.kind?.replaceFirstChar { it.uppercase() } ?: stringResource(R.string.doors_type_door),
                     )
                     DoorSheetDivider()
-                    DoorDetailRow(
-                        icon = Icons.Default.Circle,
-                        iconTint = if (door.canUnlock) IosGreen else IosRed,
+                    DoorInfoRow(
+                        icon = if (door.canUnlock) Icons.Default.LockOpen else Icons.Default.Lock,
                         label = stringResource(R.string.doors_access),
                         value = if (door.canUnlock) stringResource(R.string.doors_access_allowed) else stringResource(R.string.doors_access_denied),
-                        valueColor = if (door.canUnlock) IosGreen else IosRed,
                     )
                 }
             }
@@ -536,7 +557,7 @@ private fun DoorDetailsSheet(
                             trailing = {
                                 Switch(
                                     checked = isLockedDown,
-                                    onCheckedChange = { viewModel.toggleLockdown() },
+                                    onCheckedChange = { onToggleLockdown() },
                                 )
                             },
                         )
@@ -594,6 +615,44 @@ private fun DoorDetailsSheet(
 @Composable
 private fun DoorSheetDivider() {
     HorizontalDivider(modifier = Modifier.padding(start = 64.dp, end = 16.dp))
+}
+
+/** iOS-style info row: gray secondary icon, small gray caption label, prominent value below. */
+@Composable
+private fun DoorInfoRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (value.isNotBlank()) {
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
 }
 
 @Composable

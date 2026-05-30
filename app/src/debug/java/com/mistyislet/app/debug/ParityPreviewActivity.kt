@@ -16,6 +16,7 @@ import com.mistyislet.app.domain.model.UserInfo
 import com.mistyislet.app.ui.credentials.CredentialsScreenContent
 import com.mistyislet.app.ui.credentials.CredentialsUiState
 import com.mistyislet.app.ui.dashboard.DashboardScreenContent
+import com.mistyislet.app.ui.doors.DoorDetailsContent
 import com.mistyislet.app.ui.doors.DoorsScreenContent
 import com.mistyislet.app.ui.history.EventDetailContent
 import com.mistyislet.app.ui.history.HistoryScreenContent
@@ -56,6 +57,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "changepassword" -> ChangePasswordPreview()
                     "language" -> LanguagePreview()
                     "geofence" -> GeofencePreview()
+                    "doordetail" -> DoorDetailPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -246,4 +248,26 @@ private fun LanguagePreview() {
 @Composable
 private fun GeofencePreview() {
     GeofenceSettingsContent(onBack = {})
+}
+
+@Composable
+private fun DoorDetailPreview() {
+    // Mirrors tapping a door card on the iOS Doors tab -> "Door Details" sheet.
+    val door = AccessibleDoor(
+        id = "d1",
+        name = "A-23 East Wing",
+        buildingId = "b1",
+        status = "online",
+        gatewayStatus = "online",
+        canUnlock = true,
+        kind = "office",
+    )
+    DoorDetailsContent(
+        door = door,
+        placeId = "building_demo_001",
+        restrictions = emptyList(),
+        schedules = emptyList(),
+        onToggleLockdown = {},
+        onDismiss = {},
+    )
 }
