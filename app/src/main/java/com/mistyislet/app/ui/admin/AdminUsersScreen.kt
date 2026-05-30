@@ -521,7 +521,7 @@ fun AdminUserDetailScreen(
 }
 
 @Composable
-private fun UserDetailPageContent(
+internal fun UserDetailPageContent(
     user: AdminUser,
     detailState: AdminUserDetailDataState,
     onSignOut: () -> Unit,
