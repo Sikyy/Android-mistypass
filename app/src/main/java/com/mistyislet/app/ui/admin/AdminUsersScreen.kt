@@ -22,11 +22,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.DesktopWindows
+import androidx.compose.material.icons.filled.LaptopMac
 import androidx.compose.material.icons.filled.MobileOff
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.PhoneIphone
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.TabletMac
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Shield
 import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -76,7 +83,9 @@ import com.mistyislet.app.ui.components.MistyGroupedSection
 import com.mistyislet.app.ui.components.MistyNavigationTopBar
 import com.mistyislet.app.ui.components.MistyPickerSheet
 import com.mistyislet.app.ui.components.MistyTopBarIconButton
+import com.mistyislet.app.ui.theme.IosGreen
 import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosPurple
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -780,22 +789,38 @@ private fun UserLoginDetailRow(login: UserLogin) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = Icons.Default.PhoneAndroid,
+            imageVector = loginPlatformIcon(login.platform),
             contentDescription = null,
             modifier = Modifier.size(24.dp),
             tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = login.deviceName.ifBlank { login.platform },
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = login.deviceName.ifBlank { login.platform },
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (login.isCurrent) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.settings_login_current),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = IosGreen,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(IosGreen.copy(alpha = 0.15f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
             Text(
                 text = listOfNotNull(
-                    login.platform.takeIf { it.isNotBlank() },
+                    loginPlatformLabel(login.platform).takeIf { it.isNotBlank() },
                     login.lastActive.takeIf { it.isNotBlank() }?.take(10),
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
@@ -807,6 +832,26 @@ private fun UserLoginDetailRow(login: UserLogin) {
     }
 }
 
+private fun loginPlatformIcon(platform: String): ImageVector = when (platform.lowercase()) {
+    "ios" -> Icons.Filled.PhoneIphone
+    "ipados" -> Icons.Filled.TabletMac
+    "android" -> Icons.Filled.PhoneAndroid
+    "macos", "mac" -> Icons.Filled.LaptopMac
+    "windows" -> Icons.Filled.DesktopWindows
+    "web" -> Icons.Filled.Public
+    else -> Icons.Filled.Computer
+}
+
+private fun loginPlatformLabel(platform: String): String = when (platform.lowercase()) {
+    "ios" -> "iOS"
+    "ipados" -> "iPadOS"
+    "android" -> "Android"
+    "macos", "mac" -> "macOS"
+    "windows" -> "Windows"
+    "web" -> "Web"
+    else -> platform
+}
+
 @Composable
 private fun AccessRightDetailRow(right: AccessRight) {
     Row(
@@ -816,10 +861,10 @@ private fun AccessRightDetailRow(right: AccessRight) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = Icons.Outlined.Lock,
+            imageVector = Icons.Outlined.Shield,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.primary,
+            tint = IosPurple,
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
