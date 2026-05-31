@@ -372,10 +372,12 @@ private fun AdminListRow(
             Spacer(modifier = Modifier.width(12.dp))
         }
         if (item.leadingInitial != null) {
-            // iOS people avatars are a neutral gray circle, not brand-tinted.
+            // iOS people avatars use the brand-primary tint (teal) for both the circle fill and the
+            // initial — see AdminUsersListView.userRow and the AdminCRUDViews user-detail header.
+            val avatarColor = item.leadingInitialColor ?: MaterialTheme.colorScheme.primary
             Surface(
                 shape = CircleShape,
-                color = (item.leadingInitialColor ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(alpha = 0.15f),
+                color = avatarColor.copy(alpha = 0.15f),
                 modifier = Modifier.size(36.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -383,7 +385,7 @@ private fun AdminListRow(
                         text = item.leadingInitial,
                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 20.sp),
                         fontWeight = FontWeight.SemiBold,
-                        color = item.leadingInitialColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = avatarColor,
                     )
                 }
             }
