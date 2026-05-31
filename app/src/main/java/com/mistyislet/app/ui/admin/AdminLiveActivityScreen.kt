@@ -112,6 +112,26 @@ fun AdminLiveActivityScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
+    AdminLiveActivityContent(
+        items = items,
+        isLoading = isLoading,
+        isRefreshing = isRefreshing,
+        error = error,
+        onBack = onBack,
+        onRefresh = viewModel::refresh,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun AdminLiveActivityContent(
+    items: List<LiveActivityRecord>,
+    isLoading: Boolean,
+    isRefreshing: Boolean,
+    error: String?,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
@@ -123,7 +143,7 @@ fun AdminLiveActivityScreen(
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = viewModel::refresh,
+            onRefresh = onRefresh,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
