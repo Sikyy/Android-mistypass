@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -177,12 +178,39 @@ fun AdminAlarmsScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val isStreaming by viewModel.isStreaming.collectAsStateWithLifecycle()
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     DisposableEffect(Unit) {
         viewModel.startStreaming()
         onDispose { viewModel.stopStreaming() }
     }
+
+    AdminAlarmsContent(
+        alarms = alarms,
+        schedules = schedules,
+        calendar = calendar,
+        isLoading = isLoading,
+        isRefreshing = isRefreshing,
+        isStreaming = isStreaming,
+        onBack = onBack,
+        onRefresh = viewModel::refresh,
+        onUpdateStatus = viewModel::updateStatus,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun AdminAlarmsContent(
+    alarms: List<Alarm>,
+    schedules: List<AlarmSchedule>,
+    calendar: List<AlarmCalendarEntry>,
+    isLoading: Boolean,
+    isRefreshing: Boolean,
+    isStreaming: Boolean,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onUpdateStatus: (String, String) -> Unit,
+) {
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     val tabs = listOf(
         stringResource(R.string.alarm_open),
@@ -228,7 +256,7 @@ fun AdminAlarmsScreen(
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = viewModel::refresh,
+            onRefresh = onRefresh,
             modifier = Modifier.padding(padding),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -246,7 +274,7 @@ fun AdminAlarmsScreen(
                                     KpiItem(openAlarms.size.toString(), stringResource(R.string.alarm_open), IosRed),
                                     KpiItem(critical.toString(), stringResource(R.string.alarm_critical), IosPurple),
                                     KpiItem(high.toString(), stringResource(R.string.alarm_high), IosOrange),
-                                    KpiItem(alarms.size.toString(), stringResource(R.string.admin_total), IosBlue),
+                                    KpiItem(alarms.size.toString(), stringResource(R.string.admin_total), MaterialTheme.colorScheme.onSurface),
                                 ),
                             )
                         }
@@ -271,13 +299,13 @@ fun AdminAlarmsScreen(
                                     }
                                 } else {
                                     items(openAlarms, key = { it.id }) { alarm ->
-                                        AlarmRow(alarm = alarm, onAction = { status -> viewModel.updateStatus(alarm.id, status) })
+                                        AlarmRow(alarm = alarm, onAction = { status -> onUpdateStatus(alarm.id, status) })
                                     }
                                 }
                             }
                             1 -> {
                                 items(alarms, key = { it.id }) { alarm ->
-                                    AlarmRow(alarm = alarm, onAction = if (alarm.isOpen) { { status -> viewModel.updateStatus(alarm.id, status) } } else null)
+                                    AlarmRow(alarm = alarm, onAction = if (alarm.isOpen) { { status -> onUpdateStatus(alarm.id, status) } } else null)
                                 }
                             }
                             2 -> {
@@ -323,6 +351,15 @@ private fun AlarmRow(alarm: Alarm, onAction: ((String) -> Unit)?) {
             if (alarm.location.isNotBlank() || timeAgo.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (alarm.location.isNotBlank()) {
+                        Icon(
+                            imageVector = Icons.Outlined.Place,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
                     Text(
                         text = alarm.location,
                         style = MaterialTheme.typography.bodySmall,
@@ -350,7 +387,7 @@ private fun AlarmRow(alarm: Alarm, onAction: ((String) -> Unit)?) {
                     MistyPillActionButton(
                         text = stringResource(R.string.alarm_acknowledge),
                         onClick = { onAction("acknowledged") },
-                        tint = IosOrange,
+                        tint = IosBlue,
                     )
                     MistyPillActionButton(
                         text = stringResource(R.string.alarm_resolve),

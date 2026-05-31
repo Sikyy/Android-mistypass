@@ -19,6 +19,7 @@ import com.mistyislet.app.domain.model.MobileCredential
 import com.mistyislet.app.domain.model.UserInfo
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MeetingRoom
+import com.mistyislet.app.ui.admin.AdminAlarmsContent
 import com.mistyislet.app.ui.admin.AdminDemoData
 import com.mistyislet.app.ui.admin.AdminListItem
 import com.mistyislet.app.ui.admin.AdminListScreen
@@ -75,6 +76,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "admincontrollers" -> AdminControllersPreview()
                     "adminuserdetail" -> AdminUserDetailPreview()
                     "liveactivity" -> LiveActivityPreview()
+                    "alarms" -> AlarmsPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -363,6 +365,22 @@ private fun AdminControllersPreview() {
         emptyMessage = "No controllers",
         onBack = {},
         onItemClick = {},
+    )
+}
+
+@Composable
+private fun AlarmsPreview() {
+    // iOS Dashboard > Alarms — Open / All / Schedules / Calendar tabs, KPI summary, live badge.
+    AdminAlarmsContent(
+        alarms = AdminDemoData.alarms,
+        schedules = AdminDemoData.alarmSchedules,
+        calendar = AdminDemoData.alarmCalendar,
+        isLoading = false,
+        isRefreshing = false,
+        isStreaming = true,
+        onBack = {},
+        onRefresh = {},
+        onUpdateStatus = { _, _ -> },
     )
 }
 
