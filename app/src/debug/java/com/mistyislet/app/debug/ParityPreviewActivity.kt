@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.MeetingRoom
 import com.mistyislet.app.ui.admin.AdminDemoData
 import com.mistyislet.app.ui.admin.AdminListItem
 import com.mistyislet.app.ui.admin.AdminListScreen
+import com.mistyislet.app.ui.admin.AdminLiveActivityContent
 import com.mistyislet.app.ui.admin.AdminUserDetailDataState
 import com.mistyislet.app.ui.admin.UserDetailPageContent
 import com.mistyislet.app.ui.components.MistyNavigationTopBar
@@ -73,6 +74,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "adminusers" -> AdminUsersPreview()
                     "admincontrollers" -> AdminControllersPreview()
                     "adminuserdetail" -> AdminUserDetailPreview()
+                    "liveactivity" -> LiveActivityPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -361,6 +363,19 @@ private fun AdminControllersPreview() {
         emptyMessage = "No controllers",
         onBack = {},
         onItemClick = {},
+    )
+}
+
+@Composable
+private fun LiveActivityPreview() {
+    // iOS Dashboard > Live Activity (people currently in the building).
+    AdminLiveActivityContent(
+        items = AdminDemoData.liveActivity,
+        isLoading = false,
+        isRefreshing = false,
+        error = null,
+        onBack = {},
+        onRefresh = {},
     )
 }
 
