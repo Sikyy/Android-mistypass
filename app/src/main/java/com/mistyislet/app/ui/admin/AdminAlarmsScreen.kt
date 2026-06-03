@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,6 +64,7 @@ import com.mistyislet.app.ui.admin.components.StatusSummaryRow
 import com.mistyislet.app.ui.components.MistyCard
 import com.mistyislet.app.ui.components.MistyEmptyState
 import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
 import com.mistyislet.app.ui.components.MistyNavigationTopBar
 import com.mistyislet.app.ui.components.MistyPillActionButton
 import com.mistyislet.app.ui.theme.IosBlue
@@ -323,8 +325,22 @@ internal fun AdminAlarmsContent(
                                         }
                                     }
                                 } else {
-                                    items(calendar, key = { it.id }) { entry ->
-                                        AlarmCalendarRow(entry)
+                                    // iOS groups the weekly calendar into day-of-week sections (0=Mo..6=Su).
+                                    val dayLabels = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+                                    (0..6).forEach { day ->
+                                        val dayEntries = calendar.filter { it.dayOfWeek == day }
+                                        if (dayEntries.isNotEmpty()) {
+                                            item(key = "cal-day-$day") {
+                                                MistyGroupedSection(title = dayLabels.getOrNull(day) ?: "") {
+                                                    dayEntries.forEachIndexed { idx, entry ->
+                                                        AlarmCalendarRow(entry)
+                                                        if (idx < dayEntries.lastIndex) {
+                                                            HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -459,46 +475,40 @@ private fun AlarmScheduleRow(schedule: AlarmSchedule) {
 
 @Composable
 private fun AlarmCalendarRow(entry: AlarmCalendarEntry) {
-    MistyCard {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+    // Mirrors iOS calendarEntryRow: red rounded left bar + name + time range + alarm types.
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(38.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(IosRed.copy(alpha = 0.7f)),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = "${entry.startTime} – ${entry.endTime}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (entry.alarmTypes.isNotEmpty()) {
                 Text(
-                    text = entry.date,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
+                    text = entry.alarmTypes.joinToString(", ") { type ->
+                        type.replace("_", " ").replaceFirstChar { it.uppercase() }
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    text = "${entry.alarmCount}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (entry.alarmCount > 0) IosRed else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (entry.alarms.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                entry.alarms.take(3).forEach { alarm ->
-                    Row(
-                        modifier = Modifier.padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SeverityDot(alarm.severity)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = alarm.type.ifBlank { alarm.id },
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        StatusBadge(alarm.status)
-                    }
-                }
-                if (entry.alarms.size > 3) {
-                    Text(
-                        text = "+${entry.alarms.size - 3}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
         }
     }
