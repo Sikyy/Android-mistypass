@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.MeetingRoom
 import com.mistyislet.app.ui.admin.AdminAlarmsContent
 import com.mistyislet.app.ui.admin.AdminBookingsContent
 import com.mistyislet.app.ui.admin.AdminDemoData
+import com.mistyislet.app.ui.admin.AdminGuestManagementContent
 import com.mistyislet.app.ui.admin.AdminListItem
 import com.mistyislet.app.ui.admin.AdminListScreen
 import com.mistyislet.app.ui.admin.AdminLiveActivityContent
@@ -79,6 +80,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "liveactivity" -> LiveActivityPreview()
                     "alarms" -> AlarmsPreview()
                     "bookings" -> BookingsPreview()
+                    "guestmanagement" -> GuestManagementPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -383,6 +385,21 @@ private fun AlarmsPreview() {
         onBack = {},
         onRefresh = {},
         onUpdateStatus = { _, _ -> },
+    )
+}
+
+@Composable
+private fun GuestManagementPreview() {
+    // iOS Dashboard > Visitors > Guest Management — KPI summary + Expected/On Site/Completed tabs.
+    AdminGuestManagementContent(
+        guests = AdminDemoData.guestVisits,
+        isLoading = false,
+        isRefreshing = false,
+        onBack = {},
+        onRefresh = {},
+        onCreateGuest = {},
+        onUpdateStatus = { _, _ -> },
+        onDeleteGuest = {},
     )
 }
 

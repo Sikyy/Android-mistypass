@@ -17,10 +17,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.outlined.ArrowCircleLeft
+import androidx.compose.material.icons.outlined.ArrowCircleRight
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.HighlightOff
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Schedule
 import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -74,7 +77,6 @@ import com.mistyislet.app.ui.components.MistyTopBarIconButton
 import com.mistyislet.app.ui.theme.IosBlue
 import com.mistyislet.app.ui.theme.IosGreen
 import com.mistyislet.app.ui.theme.IosOrange
-import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -156,6 +158,35 @@ fun AdminGuestManagementScreen(
     val guests by viewModel.guests.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    AdminGuestManagementContent(
+        guests = guests,
+        isLoading = isLoading,
+        isRefreshing = isRefreshing,
+        onBack = onBack,
+        onRefresh = viewModel::refresh,
+        onCreateGuest = viewModel::createGuest,
+        onUpdateStatus = viewModel::updateStatus,
+        onDeleteGuest = viewModel::deleteGuest,
+    )
+}
+
+/**
+ * Stateless Guest Management UI — rendered by the wrapper above and the parity harness.
+ * Mirrors iOS `AdminGuestManagementView`: KPI summary + segmented tabs + guest rows.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminGuestManagementContent(
+    guests: List<GuestVisit>,
+    isLoading: Boolean,
+    isRefreshing: Boolean,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onCreateGuest: (CreateGuestRequest) -> Unit,
+    onUpdateStatus: (guestId: String, action: String) -> Unit,
+    onDeleteGuest: (guestId: String) -> Unit,
+) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showCreateSheet by remember { mutableStateOf(false) }
     var guestToDelete by remember { mutableStateOf<GuestVisit?>(null) }
@@ -188,7 +219,7 @@ fun AdminGuestManagementScreen(
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = viewModel::refresh,
+            onRefresh = onRefresh,
             modifier = Modifier.padding(padding),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -228,8 +259,8 @@ fun AdminGuestManagementScreen(
                                     filtered.forEachIndexed { index, guest ->
                                         GuestRow(
                                             guest = guest,
-                                            onCheckIn = { viewModel.updateStatus(guest.id, "check_in") },
-                                            onCheckOut = { viewModel.updateStatus(guest.id, "check_out") },
+                                            onCheckIn = { onUpdateStatus(guest.id, "check_in") },
+                                            onCheckOut = { onUpdateStatus(guest.id, "check_out") },
                                             onDelete = { guestToDelete = guest },
                                         )
                                         if (index < filtered.lastIndex) {
@@ -248,7 +279,7 @@ fun AdminGuestManagementScreen(
     if (showCreateSheet) {
         CreateGuestSheet(
             onSave = { request ->
-                viewModel.createGuest(request)
+                onCreateGuest(request)
                 showCreateSheet = false
             },
             onCancel = { showCreateSheet = false },
@@ -262,7 +293,7 @@ fun AdminGuestManagementScreen(
             text = { Text(stringResource(R.string.admin_confirm_delete)) },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteGuest(guest.id)
+                    onDeleteGuest(guest.id)
                     guestToDelete = null
                 }) { Text(stringResource(R.string.admin_delete), color = MaterialTheme.colorScheme.error) }
             },
@@ -341,34 +372,38 @@ private fun GuestRow(
             StatusBadge(guest.status)
         }
 
+        // iOS puts host + expected time on one line, and the ID-doc on its OWN line below.
         Row(
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             guest.hostName?.takeIf { it.isNotBlank() }?.let { host ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.width(3.dp))
+                    Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(host, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             guest.expectedAt?.takeIf { it.isNotBlank() }?.let { at ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.width(3.dp))
+                    Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(at.take(16).replace("T", " "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            guest.idDocumentType?.takeIf { it.isNotBlank() }?.let { idType ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Badge, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        "${idType.uppercase()}: ${guest.idDocumentNumber ?: "—"}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+        }
+        guest.idDocumentType?.takeIf { it.isNotBlank() }?.let { idType ->
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Outlined.CreditCard, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    "${idType.uppercase()}: ${guest.idDocumentNumber ?: "—"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
@@ -385,6 +420,7 @@ private fun GuestRow(
                 MistyPillActionButton(
                     text = stringResource(R.string.guest_check_in),
                     onClick = onCheckIn,
+                    icon = Icons.Outlined.ArrowCircleRight,
                     tint = IosGreen,
                 )
                 }
@@ -392,6 +428,7 @@ private fun GuestRow(
                 MistyPillActionButton(
                     text = stringResource(R.string.guest_check_out),
                     onClick = onCheckOut,
+                    icon = Icons.Outlined.ArrowCircleLeft,
                     tint = IosBlue,
                 )
                 }
@@ -399,7 +436,9 @@ private fun GuestRow(
                 MistyPillActionButton(
                     text = stringResource(R.string.guest_cancel),
                     onClick = onDelete,
-                    tint = IosRed,
+                    icon = Icons.Outlined.HighlightOff,
+                    // iOS Cancel is a no-tint .bordered button → global teal accent (not red).
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 }
             }
