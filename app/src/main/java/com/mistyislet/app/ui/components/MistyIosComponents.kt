@@ -72,7 +72,7 @@ import androidx.compose.ui.unit.sp
 
 val MistyPagePadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
 val MistyBottomNavInset = 100.dp
-val MistyGroupedListPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = MistyBottomNavInset)
+val MistyGroupedListPadding = PaddingValues(start = 16.dp, top = 20.dp, end = 16.dp, bottom = MistyBottomNavInset) // iOS insetGrouped sits ~20pt below the nav bar
 val MistyCardCorner = 16.dp // iOS grouped-card corner radius
 val MistyInputCorner = 22.dp
 val MistyListRowHeight = 48.dp
@@ -111,7 +111,7 @@ fun MistySectionTitle(
 ) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier.padding(top = 8.dp, bottom = 4.dp),
     )
@@ -545,11 +545,14 @@ fun MistyTopBarIconButton(
     contentDescription: String? = null,
     tint: Color = MaterialTheme.colorScheme.primary,
 ) {
+    // iOS 26 nav-bar buttons sit on a subtle circular glass background (matches the back button).
     IconButton(
         onClick = onClick,
         modifier = modifier
-            .size(44.dp)
-            .clip(CircleShape),
+            .size(40.dp)
+            .shadow(12.dp, CircleShape, clip = false)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
     ) {
         Icon(
             imageVector = icon,
