@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.FrontHand
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.CircularProgressIndicator
@@ -405,17 +407,20 @@ private fun AlarmRow(alarm: Alarm, onAction: ((String) -> Unit)?) {
                     MistyPillActionButton(
                         text = stringResource(R.string.alarm_acknowledge),
                         onClick = { onAction("acknowledged") },
+                        icon = Icons.Outlined.FrontHand,
                         tint = IosBlue,
                     )
                     MistyPillActionButton(
                         text = stringResource(R.string.alarm_resolve),
                         onClick = { onAction("resolved") },
+                        icon = Icons.Outlined.CheckCircle,
                         tint = IosGreen,
                     )
                     MistyPillActionButton(
                         text = stringResource(R.string.alarm_false_positive),
                         onClick = { onAction("false_positive") },
-                        tint = IosBlue,
+                        // iOS false-positive is a text-only, no-tint .bordered button → global teal accent.
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
