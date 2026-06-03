@@ -30,14 +30,13 @@ fun severityColor(severity: String): Color = when (severity.lowercase()) {
 }
 
 fun statusColor(status: String): Color = when (status.lowercase()) {
-    "open", "triggered" -> IosRed
-    "expected", "pending" -> IosOrange
-    "active", "available", "enabled" -> IosGreen
-    "acknowledged" -> IosBlue
-    "investigating" -> IosOrange
-    "resolved", "completed", "checked_out" -> IosGreen
-    "false_positive", "cancelled", "disabled", "full" -> IosGray
-    "checked_in", "confirmed" -> IosBlue
+    // Colors mirror the iOS status badges (BookingsView / AdminGuestManagementView / AlarmsView),
+    // which agree on the shared statuses: checked_in = green, cancelled = red, completed/checked_out = gray.
+    "open", "triggered", "cancelled", "full" -> IosRed
+    "expected", "pending", "investigating", "no_show" -> IosOrange
+    "active", "available", "enabled", "resolved", "checked_in" -> IosGreen
+    "acknowledged", "confirmed" -> IosBlue
+    "completed", "checked_out", "false_positive", "disabled" -> IosGray
     else -> IosGray
 }
 

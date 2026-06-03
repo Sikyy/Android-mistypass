@@ -20,6 +20,7 @@ import com.mistyislet.app.domain.model.UserInfo
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MeetingRoom
 import com.mistyislet.app.ui.admin.AdminAlarmsContent
+import com.mistyislet.app.ui.admin.AdminBookingsContent
 import com.mistyislet.app.ui.admin.AdminDemoData
 import com.mistyislet.app.ui.admin.AdminListItem
 import com.mistyislet.app.ui.admin.AdminListScreen
@@ -77,6 +78,7 @@ class ParityPreviewActivity : ComponentActivity() {
                     "adminuserdetail" -> AdminUserDetailPreview()
                     "liveactivity" -> LiveActivityPreview()
                     "alarms" -> AlarmsPreview()
+                    "bookings" -> BookingsPreview()
                     else -> DoorsPreview()
                 }
             }
@@ -380,6 +382,22 @@ private fun AlarmsPreview() {
         isStreaming = true,
         onBack = {},
         onRefresh = {},
+        onUpdateStatus = { _, _ -> },
+    )
+}
+
+@Composable
+private fun BookingsPreview() {
+    // iOS Dashboard > Bookings — Spaces / Active / Past sections + the create (+) action.
+    AdminBookingsContent(
+        bookings = AdminDemoData.bookings,
+        spaces = AdminDemoData.bookingSpaces,
+        spaceStatuses = AdminDemoData.bookingSpaceStatuses,
+        isLoading = false,
+        isRefreshing = false,
+        onBack = {},
+        onRefresh = {},
+        onCreateBooking = { _, _, _, _ -> },
         onUpdateStatus = { _, _ -> },
     )
 }

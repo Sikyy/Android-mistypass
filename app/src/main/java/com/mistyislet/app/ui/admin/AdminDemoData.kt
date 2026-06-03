@@ -15,6 +15,9 @@ import com.mistyislet.app.domain.model.AdminTeam
 import com.mistyislet.app.domain.model.AdminUser
 import com.mistyislet.app.domain.model.AdminZone
 import com.mistyislet.app.domain.model.AnalyticsSummary
+import com.mistyislet.app.domain.model.Booking
+import com.mistyislet.app.domain.model.BookingSpace
+import com.mistyislet.app.domain.model.BookingSpaceStatus
 import com.mistyislet.app.domain.model.Camera
 import com.mistyislet.app.domain.model.DailyTrendPoint
 import com.mistyislet.app.domain.model.FailedAttemptEvent
@@ -499,6 +502,81 @@ object AdminDemoData {
             expectedAt = "2026-05-27T11:00:00Z",
             checkedInAt = "2026-05-27T10:58:00Z",
             checkedOutAt = "2026-05-27T12:15:00Z",
+        ),
+    )
+
+    val bookingSpaces = listOf(
+        BookingSpace(
+            id = "space-1",
+            name = "Meeting Room A",
+            type = "meeting_room",
+            capacity = 8,
+            currentOccupancy = 2,
+            enabled = true,
+            requiresBooking = true,
+        ),
+        BookingSpace(
+            id = "space-2",
+            name = "Phone Booth 1",
+            type = "phone_booth",
+            capacity = 1,
+            currentOccupancy = 1,
+            enabled = true,
+            requiresBooking = true,
+        ),
+        BookingSpace(
+            id = "space-3",
+            name = "Prayer Room",
+            type = "prayer_room",
+            capacity = 0,
+            currentOccupancy = 0,
+            enabled = true,
+            requiresBooking = false,
+        ),
+    )
+
+    val bookingSpaceStatuses: Map<String, BookingSpaceStatus> = mapOf(
+        "space-1" to BookingSpaceStatus(id = "st-1", spaceId = "space-1", status = "available"),
+        "space-2" to BookingSpaceStatus(id = "st-2", spaceId = "space-2", status = "occupied"),
+        "space-3" to BookingSpaceStatus(id = "st-3", spaceId = "space-3", status = "available"),
+    )
+
+    val bookings = listOf(
+        Booking(
+            id = "bk-1",
+            spaceId = "space-1",
+            bookedBy = "Siky",
+            startTime = "2026-05-31T09:00:00",
+            endTime = "2026-05-31T09:30:00",
+            status = "confirmed",
+            title = "Team Standup",
+        ),
+        Booking(
+            id = "bk-2",
+            spaceId = "space-2",
+            bookedBy = "Andri Pratama",
+            startTime = "2026-05-31T10:00:00",
+            endTime = "2026-05-31T11:00:00",
+            status = "checked_in",
+            title = "Client Call",
+        ),
+        Booking(
+            id = "bk-3",
+            spaceId = "space-1",
+            bookedBy = "Siky",
+            startTime = "2026-05-30T14:00:00",
+            endTime = "2026-05-30T15:00:00",
+            status = "completed",
+            title = "Sprint Review",
+        ),
+        Booking(
+            id = "bk-4",
+            spaceId = "space-3",
+            bookedBy = "Jakarta Resident",
+            startTime = "2026-05-29T16:00:00",
+            endTime = "2026-05-29T16:30:00",
+            status = "cancelled",
+            title = "1:1 Sync",
         ),
     )
 

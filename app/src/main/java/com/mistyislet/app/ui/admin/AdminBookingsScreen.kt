@@ -16,7 +16,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.ArrowCircleLeft
+import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.HighlightOff
 import androidx.compose.material.icons.outlined.LocalPhone
 import androidx.compose.material.icons.outlined.SelfImprovement
 import androidx.compose.material3.CircularProgressIndicator
@@ -234,6 +237,36 @@ fun AdminBookingsScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
+    AdminBookingsContent(
+        bookings = bookings,
+        spaces = spaces,
+        spaceStatuses = spaceStatuses,
+        isLoading = isLoading,
+        isRefreshing = isRefreshing,
+        onBack = onBack,
+        onRefresh = viewModel::refresh,
+        onCreateBooking = viewModel::createBooking,
+        onUpdateStatus = viewModel::updateBookingStatus,
+    )
+}
+
+/**
+ * Stateless Bookings UI — rendered by the production wrapper above and by the parity harness.
+ * Mirrors iOS `BookingsView`: Spaces / Active / Past sections + the create-booking sheet.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminBookingsContent(
+    bookings: List<Booking>,
+    spaces: List<BookingSpace>,
+    spaceStatuses: Map<String, BookingSpaceStatus>,
+    isLoading: Boolean,
+    isRefreshing: Boolean,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onCreateBooking: (spaceId: String, title: String?, startTime: String, endTime: String) -> Unit,
+    onUpdateStatus: (bookingId: String, action: String) -> Unit,
+) {
     val active = bookings.filter { it.status.lowercase() in listOf("confirmed", "checked_in") }
     val past = bookings.filter { it.status.lowercase() !in listOf("confirmed", "checked_in") }
     var showCreateSheet by remember { mutableStateOf(false) }
@@ -256,7 +289,7 @@ fun AdminBookingsScreen(
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = viewModel::refresh,
+            onRefresh = onRefresh,
             modifier = Modifier.padding(padding),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -291,7 +324,7 @@ fun AdminBookingsScreen(
                                         BookingRow(
                                             booking = booking,
                                             spaceName = spaces.find { it.id == booking.spaceId }?.name ?: booking.spaceId,
-                                            onAction = { action -> viewModel.updateBookingStatus(booking.id, action) },
+                                            onAction = { action -> onUpdateStatus(booking.id, action) },
                                         )
                                         if (index < active.lastIndex) {
                                             HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
@@ -327,7 +360,7 @@ fun AdminBookingsScreen(
         CreateBookingSheet(
             spaces = spaces,
             onBook = { spaceId, title, start, end ->
-                viewModel.createBooking(spaceId, title, start, end)
+                onCreateBooking(spaceId, title, start, end)
                 showCreateSheet = false
             },
             onCancel = { showCreateSheet = false },
@@ -476,19 +509,25 @@ private fun SpaceRow(space: BookingSpace, status: BookingSpaceStatus? = null) {
         space.readableType().takeIf { it.isNotBlank() },
         space.capacityText().takeIf { it.isNotBlank() },
     ).joinToString(" · ")
+    // iOS keys availability off the live space status, falling back to capacity (BookingsView.spaceRow).
+    val isAvailable = status?.status?.equals("available", ignoreCase = true)
+        ?: !(space.capacity > 0 && space.currentOccupancy >= space.capacity)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = space.bookingIcon(),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(32.dp),
-        )
-        Spacer(modifier = Modifier.width(16.dp))
+        // iOS renders the type glyph at .title3 (~20pt) centered in a 32-wide frame.
+        Box(modifier = Modifier.width(32.dp), contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = space.bookingIcon(),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(space.name, style = MaterialTheme.typography.bodyLarge)
             Text(
@@ -497,7 +536,7 @@ private fun SpaceRow(space: BookingSpace, status: BookingSpaceStatus? = null) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        StatusBadge(if (space.enabled) "available" else "full")
+        StatusBadge(if (isAvailable) "available" else "full")
     }
 }
 
@@ -509,13 +548,13 @@ private fun BookingRow(booking: Booking, spaceName: String, onAction: ((String) 
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // iOS bookingRow title has no line limit (wraps); keep parity.
             Text(
                 booking.title ?: booking.spaceId,
                 style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            Spacer(modifier = Modifier.width(8.dp))
             StatusBadge(booking.status)
         }
         Spacer(modifier = Modifier.height(4.dp))
@@ -543,6 +582,7 @@ private fun BookingRow(booking: Booking, spaceName: String, onAction: ((String) 
                     MistyPillActionButton(
                         text = stringResource(R.string.booking_check_in),
                         onClick = { onAction("check_in") },
+                        icon = Icons.Outlined.ArrowCircleRight,
                         tint = IosGreen,
                     )
                 }
@@ -550,6 +590,7 @@ private fun BookingRow(booking: Booking, spaceName: String, onAction: ((String) 
                     MistyPillActionButton(
                         text = stringResource(R.string.booking_check_out),
                         onClick = { onAction("check_out") },
+                        icon = Icons.Outlined.ArrowCircleLeft,
                         tint = IosBlue,
                     )
                 }
@@ -557,6 +598,10 @@ private fun BookingRow(booking: Booking, spaceName: String, onAction: ((String) 
                     MistyPillActionButton(
                         text = stringResource(R.string.booking_cancel),
                         onClick = { onAction("cancel") },
+                        icon = Icons.Outlined.HighlightOff,
+                        // iOS Cancel is a no-tint .bordered button; it picks up the global teal
+                        // accent (verified on device), NOT destructive red.
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
