@@ -583,11 +583,17 @@ data class FailedAttemptEvent(
 
 @Serializable
 data class AlarmCalendarEntry(
-    val id: String,
-    val date: String = "",
-    @SerialName("alarm_count") val alarmCount: Int = 0,
-    val alarms: List<Alarm> = emptyList(),
-)
+    @SerialName("schedule_id") val scheduleId: String = "",
+    val name: String = "",
+    @SerialName("day_of_week") val dayOfWeek: Int = 0,
+    @SerialName("start_time") val startTime: String = "",
+    @SerialName("end_time") val endTime: String = "",
+    @SerialName("alarm_types") val alarmTypes: List<String> = emptyList(),
+) {
+    // Backend (GetWeeklyCalendar) sends no id for calendar entries; derive a stable
+    // list key from schedule + day, mirroring iOS AlarmCalendarEntry.id.
+    val id: String get() = "$scheduleId-$dayOfWeek"
+}
 
 @Serializable
 data class CameraSnapshotResponse(

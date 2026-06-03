@@ -630,19 +630,13 @@ object AdminDemoData {
         ),
     )
 
+    // iOS/backend model the alarm calendar as a recurring WEEKLY schedule
+    // (day_of_week 0=Mo..6=Su), grouped into day sections — not per-date occurrences.
     val alarmCalendar = listOf(
-        AlarmCalendarEntry(
-            id = "alarm-calendar-001",
-            date = LocalDate.now().format(dateFormatter),
-            alarmCount = alarms.size,
-            alarms = alarms,
-        ),
-        AlarmCalendarEntry(
-            id = "alarm-calendar-002",
-            date = LocalDate.now().minusDays(1).format(dateFormatter),
-            alarmCount = 1,
-            alarms = alarms.takeLast(1),
-        ),
+        AlarmCalendarEntry(scheduleId = "sched-001", name = "After-Hours Lockdown", dayOfWeek = 0, startTime = "18:00", endTime = "06:00", alarmTypes = listOf("door_forced", "motion_detected")),
+        AlarmCalendarEntry(scheduleId = "sched-001", name = "After-Hours Lockdown", dayOfWeek = 2, startTime = "18:00", endTime = "06:00", alarmTypes = listOf("door_forced", "motion_detected")),
+        AlarmCalendarEntry(scheduleId = "sched-002", name = "Weekend Perimeter", dayOfWeek = 5, startTime = "00:00", endTime = "23:59", alarmTypes = listOf("perimeter_breach")),
+        AlarmCalendarEntry(scheduleId = "sched-002", name = "Weekend Perimeter", dayOfWeek = 6, startTime = "00:00", endTime = "23:59", alarmTypes = listOf("perimeter_breach")),
     )
 
     val liveActivity = listOf(
