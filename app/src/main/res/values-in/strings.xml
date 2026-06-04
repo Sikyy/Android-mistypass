@@ -496,11 +496,8 @@
     <string name="visitors_new">Pengunjung Baru</string>
     <string name="visitor_expired">Kedaluwarsa</string>
     <string name="visitors_hours">%1$d jam</string>
-    <string name="delivery_email">Email</string>
     <string name="delivery_email_qr">Email + QR</string>
-    <string name="delivery_whatsapp">WhatsApp</string>
-    <string name="delivery_whatsapp_qr">WhatsApp + QR</string>
-    <string name="delivery_sms">SMS</string>
+    <string name="delivery_wallet">Dompet</string>
     <string name="visitors_notes">Catatan</string>
     <string name="visitors_notes_description">Pengunjung akan menerima kredensial akses melalui metode pengiriman yang dipilih. Pass akan kedaluwarsa setelah durasi yang dipilih.</string>
     <string name="visitor_copy_link">Salin Tautan</string>
