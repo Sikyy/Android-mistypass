@@ -22,19 +22,23 @@ import javax.inject.Singleton
 @Singleton
 class AlarmStreamManager @Inject constructor(
     private val tokenStore: TokenStore,
+    private val authInterceptor: AuthInterceptor,
 ) {
     private val json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
     }
 
-    // Dedicated SSE client — longer timeouts, no body logging
-    private val sseClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.MINUTES)  // SSE streams are long-lived
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .retryOnConnectionFailure(true)
-        .build()
+    // Dedicated SSE client — longer timeouts, includes auth interceptor for token refresh
+    private val sseClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.MINUTES)  // SSE streams are long-lived
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor(authInterceptor)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
 
     /**
      * Returns a Flow of Alarm events from the SSE stream.
@@ -46,15 +50,14 @@ class AlarmStreamManager @Inject constructor(
         var retryCount = 0
 
         while (isActive && retryCount < MAX_RETRIES) {
-            val token = tokenStore.accessToken
-            if (token == null) {
+            if (tokenStore.accessToken == null) {
                 delay(retryDelay)
                 continue
             }
 
+            // AuthInterceptor handles Authorization header and token refresh
             val request = Request.Builder()
                 .url("${BuildConfig.API_BASE_URL}app/alarms/stream")
-                .header("Authorization", "Bearer $token")
                 .header("Accept", "text/event-stream")
                 .build()
 
