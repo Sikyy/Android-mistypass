@@ -10,11 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -44,6 +42,17 @@ private data class DeliveryMethodOption(
     val icon: ImageVector,
 )
 
+/**
+ * delivery_method values accepted by the backend's normalizeDeliveryMethod
+ * (api/internal/modules/access/service_policies.go). Any other value is
+ * rejected with HTTP 400, so the picker must offer only these. Kept as plain
+ * strings (no Compose types) so the contract can be unit-tested directly.
+ */
+internal val supportedDeliveryMethodKeys: List<String> = listOf("email_qr", "wallet")
+
+/** Default picker selection; must be one of [supportedDeliveryMethodKeys]. */
+internal const val defaultDeliveryMethod: String = "email_qr"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateVisitorSheet(
@@ -53,18 +62,17 @@ fun CreateVisitorSheet(
 ) {
     var visitorName by remember { mutableStateOf("") }
     var selectedDurationIndex by remember { mutableIntStateOf(2) }
-    var selectedMethod by remember { mutableStateOf("whatsapp") }
+    var selectedMethod by remember { mutableStateOf(defaultDeliveryMethod) }
 
     val durations = listOf(4, 8, 24, 48, 72)
     val durationLabels = durations.map { hours -> stringResource(R.string.visitors_hours, hours) }
     val methods = remember {
-        listOf(
-            DeliveryMethodOption("email", R.string.delivery_email, Icons.Default.Email),
-            DeliveryMethodOption("email_qr", R.string.delivery_email_qr, Icons.Default.QrCode),
-            DeliveryMethodOption("whatsapp", R.string.delivery_whatsapp, Icons.AutoMirrored.Filled.Chat),
-            DeliveryMethodOption("whatsapp_qr", R.string.delivery_whatsapp_qr, Icons.Default.QrCode),
-            DeliveryMethodOption("sms", R.string.delivery_sms, Icons.Default.Sms),
-        )
+        supportedDeliveryMethodKeys.map { key ->
+            when (key) {
+                "wallet" -> DeliveryMethodOption(key, R.string.delivery_wallet, Icons.Default.AccountBalanceWallet)
+                else -> DeliveryMethodOption(key, R.string.delivery_email_qr, Icons.Default.QrCode)
+            }
+        }
     }
 
     MistyFormSheet(
