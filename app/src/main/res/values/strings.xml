@@ -501,11 +501,8 @@
     <string name="visitors_new">New Visitor</string>
     <string name="visitor_expired">Expired</string>
     <string name="visitors_hours">%1$d hours</string>
-    <string name="delivery_email">Email</string>
     <string name="delivery_email_qr">Email + QR</string>
-    <string name="delivery_whatsapp">WhatsApp</string>
-    <string name="delivery_whatsapp_qr">WhatsApp + QR</string>
-    <string name="delivery_sms">SMS</string>
+    <string name="delivery_wallet">Wallet</string>
     <string name="visitors_notes">Notes</string>
     <string name="visitors_notes_description">The visitor will receive access credentials via the selected delivery method. The pass expires after the selected duration.</string>
     <string name="visitor_copy_link">Copy Link</string>

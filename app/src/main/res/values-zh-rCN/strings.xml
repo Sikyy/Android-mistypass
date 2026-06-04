@@ -497,11 +497,8 @@
     <string name="visitors_new">新访客</string>
     <string name="visitor_expired">已过期</string>
     <string name="visitors_hours">%1$d 小时</string>
-    <string name="delivery_email">邮箱</string>
     <string name="delivery_email_qr">邮箱 + 二维码</string>
-    <string name="delivery_whatsapp">WhatsApp</string>
-    <string name="delivery_whatsapp_qr">WhatsApp + 二维码</string>
-    <string name="delivery_sms">短信</string>
+    <string name="delivery_wallet">钱包</string>
     <string name="visitors_notes">备注</string>
     <string name="visitors_notes_description">访客将通过所选发送方式收到访问凭证。通行证会在所选时长后过期。</string>
     <string name="visitor_copy_link">复制链接</string>
