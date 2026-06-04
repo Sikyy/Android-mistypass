@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import com.mistyislet.app.ui.components.MistyAlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -60,7 +62,6 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mistyislet.app.R
-import com.mistyislet.app.ui.components.MistyPillActionButton
 
 @Composable
 fun LoginScreen(
@@ -132,16 +133,13 @@ private fun EmailInputStep(state: LoginUiState, vm: LoginViewModel) {
 
             Spacer(Modifier.weight(1f))
 
-            MistyPillActionButton(
+            AuthPrimaryButton(
                 text = stringResource(R.string.continue_button),
                 onClick = {
                     focusManager.clearFocus()
                     vm.submitEmail()
                 },
                 enabled = canContinue,
-                tint = MaterialTheme.colorScheme.primary,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
             )
         },
     )
@@ -231,7 +229,7 @@ private fun PasswordInputStep(state: LoginUiState, vm: LoginViewModel) {
 
             Spacer(Modifier.weight(1f))
 
-            MistyPillActionButton(
+            AuthPrimaryButton(
                 text = stringResource(R.string.login_button),
                 onClick = {
                     focusManager.clearFocus()
@@ -239,9 +237,6 @@ private fun PasswordInputStep(state: LoginUiState, vm: LoginViewModel) {
                 },
                 enabled = isValid,
                 isLoading = state.isLoading,
-                tint = MaterialTheme.colorScheme.primary,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
             )
         },
     )
@@ -322,7 +317,7 @@ private fun MfaInputStep(state: LoginUiState, vm: LoginViewModel) {
             ErrorText(state.errorMessage)
         },
         footer = {
-            MistyPillActionButton(
+            AuthPrimaryButton(
                 text = stringResource(R.string.login_mfa_verify),
                 onClick = {
                     focusManager.clearFocus()
@@ -330,10 +325,6 @@ private fun MfaInputStep(state: LoginUiState, vm: LoginViewModel) {
                 },
                 enabled = state.mfaCode.isNotBlank() && !state.isLoading,
                 isLoading = state.isLoading,
-                fillContent = true,
-                tint = MaterialTheme.colorScheme.primary,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.fillMaxWidth(),
             )
         },
@@ -375,12 +366,10 @@ private fun MagicLinkSentStep(state: LoginUiState, vm: LoginViewModel) {
 
         Spacer(Modifier.weight(1f))
 
-        MistyPillActionButton(
+        AuthPrimaryButton(
             text = stringResource(R.string.resend),
             onClick = { vm.requestMagicLink() },
             enabled = !state.isLoading,
-            fillContent = true,
-            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -497,6 +486,34 @@ private fun AuthTextField(
         colors = authTextFieldColors(),
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+@Composable
+private fun AuthPrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+) {
+    // iOS login CTAs use .borderedProminent — a filled rounded-rect (not a full pill).
+    Button(
+        onClick = onClick,
+        enabled = enabled && !isLoading,
+        shape = RoundedCornerShape(12.dp),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+        modifier = modifier,
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        } else {
+            Text(text, fontWeight = FontWeight.SemiBold)
+        }
+    }
 }
 
 @Composable
