@@ -201,9 +201,19 @@ class AdminUsersViewModel @Inject constructor(
 
     fun shareAccessLink(userId: String) {
         val pid = placeId ?: return
+        val doorIds = _detailState.value.accessRights.shareableDoorIds()
+        if (doorIds.isEmpty()) {
+            // The UI disables sharing in this case; guard defensively so we never send an
+            // empty door_ids body (the backend rejects it with HTTP 400).
+            _detailState.value = _detailState.value.copy(
+                isSharingAccess = false,
+                shareAccessError = "No doors available to share",
+            )
+            return
+        }
         viewModelScope.launch {
             _detailState.value = _detailState.value.copy(isSharingAccess = true, shareAccessError = null)
-            when (val result = adminRepository.shareUserAccess(pid, userId)) {
+            when (val result = adminRepository.shareUserAccess(pid, userId, doorIds)) {
                 is ApiResult.Success -> _detailState.value = _detailState.value.copy(
                     shareAccess = result.data,
                     isSharingAccess = false,
@@ -657,6 +667,7 @@ internal fun UserDetailPageContent(
                 ShareAccessContent(
                     shareAccess = detailState.shareAccess,
                     isSharing = detailState.isSharingAccess,
+                    canShare = detailState.accessRights.shareableDoorIds().isNotEmpty(),
                     onShareAccess = onShareAccess,
                 )
             }
@@ -734,13 +745,19 @@ internal fun UserDetailPageContent(
 private fun ShareAccessContent(
     shareAccess: UserAccessShare?,
     isSharing: Boolean,
+    canShare: Boolean,
     onShareAccess: () -> Unit,
 ) {
+    val contentColor = if (canShare) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clickable(enabled = !isSharing, onClick = onShareAccess)
+            .clickable(enabled = canShare && !isSharing, onClick = onShareAccess)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -748,7 +765,7 @@ private fun ShareAccessContent(
             imageVector = Icons.Outlined.Share,
             contentDescription = null,
             modifier = Modifier.size(22.dp),
-            tint = MaterialTheme.colorScheme.primary,
+            tint = contentColor,
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
@@ -758,12 +775,17 @@ private fun ShareAccessContent(
                 stringResource(R.string.admin_generate_access_link)
             },
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = contentColor,
             modifier = Modifier.weight(1f),
         )
         if (isSharing) {
             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
         }
+    }
+
+    if (!canShare) {
+        DetailDivider()
+        DetailEmptyRow(stringResource(R.string.admin_no_doors_to_share))
     }
 
     shareAccess?.url?.takeIf { it.isNotBlank() }?.let { url ->

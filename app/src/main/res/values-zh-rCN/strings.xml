@@ -230,6 +230,7 @@
     <string name="admin_share_access">分享访问</string>
     <string name="admin_generate_access_link">生成访问链接</string>
     <string name="admin_generating_link">正在生成链接</string>
+    <string name="admin_no_doors_to_share">暂无可分享的门</string>
     <string name="admin_url">URL</string>
     <string name="admin_token">Token</string>
     <string name="admin_apply_role">应用角色</string>
