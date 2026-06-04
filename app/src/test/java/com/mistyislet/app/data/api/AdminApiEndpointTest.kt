@@ -1,6 +1,6 @@
 package com.mistyislet.app.data.api
 
-import com.mistyislet.app.domain.model.ShareAccessRequest
+import com.mistyislet.app.domain.model.EmptyRequest
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -49,7 +49,7 @@ class AdminApiEndpointTest {
         api.getUser("place-1", "user-1")
         api.listUserLogins("place-1", "user-1")
         api.listUserAccessRights("place-1", "user-1")
-        api.shareUserAccess("place-1", "user-1", ShareAccessRequest(doorId = "door-1"))
+        api.shareUserAccess("place-1", "user-1", EmptyRequest())
 
         assertEquals("/api/v1/app/places/place-1/users", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/users/user-1", server.takeRequest().path)
