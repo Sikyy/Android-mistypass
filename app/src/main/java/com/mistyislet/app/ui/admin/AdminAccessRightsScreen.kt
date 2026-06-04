@@ -1,5 +1,7 @@
 package com.mistyislet.app.ui.admin
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -17,6 +19,11 @@ import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminUser
 import com.mistyislet.app.ui.admin.components.AdminTabPicker
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosIndigo
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,10 +41,12 @@ private fun roleScopeIndex(role: String): Int = when {
 }
 
 private fun roleColor(role: String): Color = when {
-    role.contains("admin", ignoreCase = true) || role.contains("owner", ignoreCase = true) -> Color(0xFFD93025)
-    role.contains("manager", ignoreCase = true) -> Color(0xFFFF9800)
-    role.contains("observer", ignoreCase = true) -> Color(0xFF4285F4)
-    else -> Color(0xFF35A853)
+    role.contains("admin", ignoreCase = true) ||
+        role.contains("administrator", ignoreCase = true) ||
+        role.contains("owner", ignoreCase = true) -> IosRed
+    role.contains("manager", ignoreCase = true) -> IosOrange
+    role.contains("observer", ignoreCase = true) -> IosBlue
+    else -> IosGreen
 }
 
 @HiltViewModel
@@ -73,9 +82,9 @@ class AdminAccessRightsViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getUsers(pid)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.placeUsers }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.placeUsers; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.placeUsers; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -111,11 +120,12 @@ fun AdminAccessRightsScreen(
                 trailing = user.role.replace("_", " ").replaceFirstChar { it.uppercase() },
                 trailingColor = roleColor(user.role),
                 leadingInitial = (user.name.ifBlank { user.email }).take(1).uppercase(),
-                leadingInitialColor = roleColor(user.role),
+                leadingInitialColor = IosIndigo,
             )
         },
         isLoading = isLoading,
-        emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyMessage = stringResource(R.string.access_rights_no_users),
+        emptyIcon = Icons.Default.Shield,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,

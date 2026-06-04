@@ -1,42 +1,34 @@
 package com.mistyislet.app.ui.admin
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,7 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -60,25 +54,35 @@ import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.ReportExportRequest
 import com.mistyislet.app.domain.model.ReportExportResponse
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyDatePickerDialog
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistyPickerSheet
+import com.mistyislet.app.ui.components.MistyPillActionButton
+import com.mistyislet.app.ui.components.MistySegmentedControl
+import com.mistyislet.app.ui.theme.IosGreen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.format.FormatStyle
+import java.util.Locale
 import javax.inject.Inject
 
-private data class ReportType(val key: String, val labelResId: Int)
+private data class ReportType(val key: String, val labelResId: Int, val descriptionResId: Int)
 
 private val reportTypes = listOf(
-    ReportType("weekly_analytics", R.string.export_weekly_analytics),
-    ReportType("events", R.string.export_events),
-    ReportType("unlock_stats", R.string.export_unlock_stats),
-    ReportType("user_presence", R.string.export_user_presence),
-    ReportType("incidents", R.string.export_incidents),
-    ReportType("hardware", R.string.export_hardware),
+    ReportType("weekly_analytics", R.string.export_weekly_analytics, R.string.export_desc_weekly),
+    ReportType("events", R.string.export_events, R.string.export_desc_events),
+    ReportType("unlock_stats", R.string.export_unlock_stats, R.string.export_desc_unlock_stats),
+    ReportType("user_presence", R.string.export_user_presence, R.string.export_desc_user_presence),
+    ReportType("incidents", R.string.export_incidents, R.string.export_desc_incidents),
+    ReportType("hardware_summary", R.string.export_hardware, R.string.export_desc_hardware),
 )
 
-private data class DatePreset(val label: String, val days: Int)
+private data class DatePreset(val labelResId: Int, val days: Int)
 
 @HiltViewModel
 class AdminExportViewModel @Inject constructor(
@@ -114,6 +118,165 @@ class AdminExportViewModel @Inject constructor(
     }
 }
 
+@Composable
+private fun ExportSection(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        MistyCard {
+            Column(content = content)
+        }
+    }
+}
+
+@Composable
+private fun ExportValueRow(
+    title: String,
+    subtitle: String,
+    leadingIcon: ImageVector,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = leadingIcon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.UnfoldMore,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ExportDateRow(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ExportResultCard(res: ReportExportResponse) {
+    MistyCard(
+        modifier = Modifier.fillMaxWidth(),
+        borderColor = IosGreen.copy(alpha = 0.40f),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = IosGreen,
+                modifier = Modifier.size(24.dp),
+            )
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(
+                    stringResource(R.string.analytics_export_ready),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = IosGreen,
+                )
+                Text(
+                    res.url,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                res.expiresAt?.let {
+                    Text(
+                        stringResource(R.string.admin_expires, it.take(16)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExportErrorCard(err: String) {
+    MistyCard(
+        modifier = Modifier.fillMaxWidth(),
+        borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.40f),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.Error,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                err,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminExportScreen(
@@ -125,14 +288,16 @@ fun AdminExportScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
 
     var selectedType by remember { mutableIntStateOf(0) }
-    var selectedFormat by remember { mutableIntStateOf(0) }
-    var showTypeMenu by remember { mutableStateOf(false) }
-    val formats = listOf("PDF", "CSV")
+    var selectedFormat by remember { mutableIntStateOf(1) }
+    var showTypePicker by remember { mutableStateOf(false) }
+    val formats = listOf("CSV", "PDF")
+    val reportLabels = reportTypes.map { stringResource(it.labelResId) }
+    val reportDescriptions = reportTypes.map { stringResource(it.descriptionResId) }
     val presets = listOf(
-        DatePreset("7d", 7),
-        DatePreset("14d", 14),
-        DatePreset("30d", 30),
-        DatePreset("90d", 90),
+        DatePreset(R.string.export_preset_7d, 7),
+        DatePreset(R.string.export_preset_14d, 14),
+        DatePreset(R.string.export_preset_30d, 30),
+        DatePreset(R.string.export_preset_90d, 90),
     )
 
     val today = java.time.LocalDate.now()
@@ -140,97 +305,138 @@ fun AdminExportScreen(
     var toDate by remember { mutableStateOf(today) }
     var showFromPicker by remember { mutableStateOf(false) }
     var showToPicker by remember { mutableStateOf(false) }
-    val dateFormatter = remember { java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+    val dateFormatter = remember {
+        java.time.format.DateTimeFormatter
+            .ofLocalizedDate(FormatStyle.MEDIUM)
+            .withLocale(Locale.getDefault())
+    }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_export_events)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            MistyNavigationTopBar(
+                title = stringResource(R.string.dashboard_export_events),
+                onBack = onBack,
             )
         },
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(padding),
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = MistyGroupedListPadding,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.export_report_type), style = MaterialTheme.typography.titleSmall)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(onClick = { showTypeMenu = true }) {
-                        Text(stringResource(reportTypes[selectedType].labelResId))
+                item {
+                    ExportSection(title = stringResource(R.string.export_report_type)) {
+                        ExportValueRow(
+                            title = reportLabels[selectedType],
+                            subtitle = reportDescriptions[selectedType],
+                            leadingIcon = Icons.AutoMirrored.Outlined.ShowChart,
+                            onClick = { showTypePicker = true },
+                        )
                     }
-                    DropdownMenu(expanded = showTypeMenu, onDismissRequest = { showTypeMenu = false }) {
-                        reportTypes.forEachIndexed { index, type ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(type.labelResId)) },
-                                onClick = { selectedType = index; showTypeMenu = false },
+                }
+
+                item {
+                    ExportSection(title = stringResource(R.string.export_date_range)) {
+                        ExportDateRow(
+                            label = stringResource(R.string.export_from),
+                            value = fromDate.format(dateFormatter),
+                            onClick = { showFromPicker = true },
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                        ExportDateRow(
+                            label = stringResource(R.string.export_to),
+                            value = toDate.format(dateFormatter),
+                            onClick = { showToPicker = true },
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(presets.size) { index ->
+                            val preset = presets[index]
+                            val isSelected = java.time.temporal.ChronoUnit.DAYS.between(fromDate, toDate).toInt() == preset.days
+                            Text(
+                                text = stringResource(preset.labelResId),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(
+                                        if (isSelected) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.surface
+                                        },
+                                    )
+                                    .border(
+                                        width = 0.7.dp,
+                                        color = if (isSelected) {
+                                            Color.Transparent
+                                        } else {
+                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
+                                        },
+                                        shape = RoundedCornerShape(999.dp),
+                                    )
+                                    .clickable {
+                                        toDate = today
+                                        fromDate = today.minusDays(preset.days.toLong())
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 7.dp),
                             )
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.export_date_range), style = MaterialTheme.typography.titleSmall)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        OutlinedCard(
-                            onClick = { showFromPicker = true },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(stringResource(R.string.export_from), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(fromDate.format(dateFormatter), style = MaterialTheme.typography.bodyMedium)
-                            }
-                        }
-                        OutlinedCard(
-                            onClick = { showToPicker = true },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(stringResource(R.string.export_to), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(toDate.format(dateFormatter), style = MaterialTheme.typography.bodyMedium)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        presets.forEach { preset ->
-                            val isSelected = java.time.temporal.ChronoUnit.DAYS.between(fromDate, toDate).toInt() == preset.days
-                            AssistChip(
-                                onClick = {
-                                    toDate = today
-                                    fromDate = today.minusDays(preset.days.toLong())
+                item {
+                    ExportSection(title = stringResource(R.string.analytics_format)) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            MistySegmentedControl(
+                                labels = formats,
+                                selectedIndex = selectedFormat,
+                                onSelected = { selectedFormat = it },
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = if (formats[selectedFormat] == "PDF") {
+                                    stringResource(R.string.export_pdf_note)
+                                } else {
+                                    stringResource(R.string.export_csv_note)
                                 },
-                                label = { Text(preset.label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
+                }
+
+                item {
+                    MistyPillActionButton(
+                        text = stringResource(R.string.analytics_export),
+                        onClick = { viewModel.export(reportTypes[selectedType].key, formats[selectedFormat].lowercase(), fromDate.toString(), toDate.toString()) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        enabled = !isExporting,
+                        isLoading = isExporting,
+                        fillContent = true,
+                        tint = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+
+                result?.let { res ->
+                    item { ExportResultCard(res) }
+                }
+
+                error?.let { err ->
+                    item { ExportErrorCard(err) }
                 }
             }
 
@@ -238,145 +444,54 @@ fun AdminExportScreen(
                 val state = rememberDatePickerState(
                     initialSelectedDateMillis = fromDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
                 )
-                DatePickerDialog(
+                MistyDatePickerDialog(
+                    state = state,
+                    confirmLabel = stringResource(R.string.ok),
+                    dismissLabel = stringResource(R.string.cancel),
                     onDismissRequest = { showFromPicker = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            state.selectedDateMillis?.let { millis ->
-                                fromDate = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneOffset.UTC).toLocalDate()
-                                if (fromDate.isAfter(toDate)) toDate = fromDate
-                            }
-                            showFromPicker = false
-                        }) { Text(stringResource(R.string.ok)) }
+                    onConfirm = {
+                        state.selectedDateMillis?.let { millis ->
+                            fromDate = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                            if (fromDate.isAfter(toDate)) toDate = fromDate
+                        }
+                        showFromPicker = false
                     },
-                    dismissButton = {
-                        TextButton(onClick = { showFromPicker = false }) { Text(stringResource(R.string.cancel)) }
-                    },
-                ) { DatePicker(state = state) }
+                )
             }
             if (showToPicker) {
                 val state = rememberDatePickerState(
                     initialSelectedDateMillis = toDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
                 )
-                DatePickerDialog(
+                MistyDatePickerDialog(
+                    state = state,
+                    confirmLabel = stringResource(R.string.ok),
+                    dismissLabel = stringResource(R.string.cancel),
                     onDismissRequest = { showToPicker = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            state.selectedDateMillis?.let { millis ->
-                                toDate = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneOffset.UTC).toLocalDate()
-                                if (toDate.isBefore(fromDate)) fromDate = toDate
-                            }
-                            showToPicker = false
-                        }) { Text(stringResource(R.string.ok)) }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showToPicker = false }) { Text(stringResource(R.string.cancel)) }
-                    },
-                ) { DatePicker(state = state) }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.analytics_format), style = MaterialTheme.typography.titleSmall)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        formats.forEachIndexed { index, label ->
-                            SegmentedButton(
-                                selected = selectedFormat == index,
-                                onClick = { selectedFormat = index },
-                                shape = SegmentedButtonDefaults.itemShape(index, formats.size),
-                            ) { Text(label) }
+                    onConfirm = {
+                        state.selectedDateMillis?.let { millis ->
+                            toDate = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                            if (toDate.isBefore(fromDate)) fromDate = toDate
                         }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = { viewModel.export(reportTypes[selectedType].key, formats[selectedFormat].lowercase(), fromDate.toString(), toDate.toString()) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isExporting,
-            ) {
-                if (isExporting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp).padding(end = 8.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                }
-                Text(stringResource(R.string.analytics_export))
-            }
-
-            result?.let { res ->
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    border = BorderStroke(1.dp, Color(0xFF35A853)),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = Color(0xFF35A853),
-                            modifier = Modifier.size(24.dp),
-                        )
-                        Column(modifier = Modifier.padding(start = 12.dp)) {
-                            Text(
-                                stringResource(R.string.analytics_export_ready),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Color(0xFF35A853),
-                            )
-                            Text(
-                                res.url,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            res.expiresAt?.let {
-                                Text(
-                                    stringResource(R.string.admin_expires, it.take(16)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            error?.let { err ->
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            Icons.Default.Error,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp),
-                        )
-                        Text(
-                            err,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(start = 12.dp),
-                        )
-                    }
-                }
+                        showToPicker = false
+                    },
+                )
             }
         }
+    }
+
+    if (showTypePicker) {
+        MistyPickerSheet(
+            title = stringResource(R.string.export_report_type),
+            cancelLabel = stringResource(R.string.cancel),
+            items = reportTypes.indices.toList(),
+            itemLabel = { index -> reportLabels[index] },
+            itemDetail = { index -> reportDescriptions[index] },
+            isSelected = { index -> index == selectedType },
+            onSelect = { index ->
+                selectedType = index
+                showTypePicker = false
+            },
+            onDismiss = { showTypePicker = false },
+        )
     }
 }

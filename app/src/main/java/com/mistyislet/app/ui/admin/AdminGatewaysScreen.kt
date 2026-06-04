@@ -1,9 +1,12 @@
 package com.mistyislet.app.ui.admin
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -11,21 +14,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DoorFront
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.Router
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,8 +47,18 @@ import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.PlaceRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AccessibleDoor
+import com.mistyislet.app.domain.model.DoorDisplayStatus
+import com.mistyislet.app.domain.model.displayStatus
 import com.mistyislet.app.ui.admin.components.KpiItem
 import com.mistyislet.app.ui.admin.components.StatusSummaryRow
+import com.mistyislet.app.ui.components.MistyFormTextField
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.theme.IosGray
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,6 +73,17 @@ data class GatewayGroup(
     val doorCount: Int,
     val doors: List<AccessibleDoor> = emptyList(),
 )
+
+private fun List<AccessibleDoor>.toGatewayGroups(): List<GatewayGroup> =
+    groupBy { door -> door.gatewayId ?: door.gatewayStatus }.map { (key, doors) ->
+        GatewayGroup(
+            id = key,
+            name = doors.first().gatewayName ?: "Gateway $key",
+            status = doors.first().gatewayStatus,
+            doorCount = doors.size,
+            doors = doors,
+        )
+    }.sortedBy { it.name }
 
 @HiltViewModel
 class AdminGatewaysViewModel @Inject constructor(
@@ -106,21 +127,11 @@ class AdminGatewaysViewModel @Inject constructor(
         val pid = placeId ?: return
         when (val result = placeRepository.listPlaceDoors(pid)) {
             is ApiResult.Success -> {
-                val grouped: Map<String, List<AccessibleDoor>> =
-                    result.data.groupBy { door -> door.gatewayId ?: door.gatewayStatus }
-                _items.value = grouped.map { (key, doors) ->
-                    GatewayGroup(
-                        id = key,
-                        name = doors.first().gatewayName ?: "Gateway $key",
-                        status = doors.first().gatewayStatus,
-                        doorCount = doors.size,
-                        doors = doors,
-                    )
-                }.sortedBy { it.name }
+                _items.value = result.data.ifEmpty { AdminDemoData.accessibleDoors }.toGatewayGroups()
                 _error.value = null
             }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Error -> { _items.value = AdminDemoData.accessibleDoors.toGatewayGroups(); _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.accessibleDoors.toGatewayGroups(); _error.value = null }
         }
         _isLoading.value = false
     }
@@ -140,10 +151,34 @@ fun AdminGatewaysScreen(
     var selectedGateway by remember { mutableStateOf<GatewayGroup?>(null) }
     var renameTarget by remember { mutableStateOf<GatewayGroup?>(null) }
     var renameText by remember { mutableStateOf("") }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val online = items.count { it.status.lowercase() == "online" }
     val offline = items.count { it.status.lowercase() != "online" }
+
+    selectedGateway?.let { gw ->
+        BackHandler { selectedGateway = null }
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            topBar = {
+                MistyNavigationTopBar(
+                    title = gw.name,
+                    onBack = { selectedGateway = null },
+                )
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                GatewayDetailSheet(
+                    gateway = gw,
+                    showHeader = true,
+                )
+            }
+        }
+        return
+    }
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_gateways),
@@ -153,11 +188,14 @@ fun AdminGatewaysScreen(
                 title = gw.name,
                 subtitle = stringResource(R.string.admin_doors_count, gw.doorCount),
                 trailing = gw.status.replaceFirstChar { it.uppercase() },
-                trailingColor = if (gw.status == "online") Color(0xFF35A853) else Color(0xFFD93025),
+                trailingColor = if (gw.status == "online") IosGreen else IosRed,
+                trailingChip = true,
+                leadingDotColor = if (gw.status.lowercase() == "online") IosGreen else IosRed,
             )
         },
         isLoading = isLoading,
         emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyIcon = Icons.Default.DoorFront,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
@@ -165,43 +203,32 @@ fun AdminGatewaysScreen(
         onItemClick = { item ->
             selectedGateway = items.find { it.id == item.id }
         },
+        onItemLongClick = { item ->
+            items.find { it.id == item.id }?.let { gateway ->
+                renameText = gateway.name
+                renameTarget = gateway
+            }
+        },
         headerContent = {
             StatusSummaryRow(
                 items = listOf(
-                    KpiItem(online.toString(), stringResource(R.string.admin_online), Color(0xFF35A853)),
-                    KpiItem(offline.toString(), stringResource(R.string.admin_offline), Color(0xFFD93025)),
-                    KpiItem(items.size.toString(), stringResource(R.string.admin_total), Color(0xFF4285F4)),
+                    KpiItem(online.toString(), stringResource(R.string.admin_online), IosGreen),
+                    KpiItem(offline.toString(), stringResource(R.string.admin_offline), if (offline > 0) IosRed else IosGray),
+                    KpiItem(items.size.toString(), stringResource(R.string.admin_total), MaterialTheme.colorScheme.onSurface),
                 ),
             )
         },
     )
 
-    selectedGateway?.let { gw ->
-        ModalBottomSheet(
-            onDismissRequest = { selectedGateway = null },
-            sheetState = sheetState,
-        ) {
-            GatewayDetailSheet(
-                gateway = gw,
-                onRename = {
-                    renameText = gw.name
-                    renameTarget = gw
-                    selectedGateway = null
-                },
-            )
-        }
-    }
-
     renameTarget?.let { gw ->
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { renameTarget = null },
             title = { Text(stringResource(R.string.admin_rename)) },
             text = {
-                OutlinedTextField(
+                MistyFormTextField(
                     value = renameText,
                     onValueChange = { renameText = it },
-                    label = { Text(stringResource(R.string.admin_enter_new_name)) },
-                    singleLine = true,
+                    label = stringResource(R.string.admin_enter_new_name),
                 )
             },
             confirmButton = {
@@ -225,108 +252,154 @@ fun AdminGatewaysScreen(
 }
 
 @Composable
-private fun GatewayDetailSheet(gateway: GatewayGroup, onRename: () -> Unit = {}) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 32.dp),
+private fun GatewayDetailSheet(
+    gateway: GatewayGroup,
+    showHeader: Boolean = true,
+) {
+    LazyColumn(
+        contentPadding = MistyGroupedListPadding,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Text(
-                    text = gateway.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                IconButton(onClick = onRename) {
-                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.admin_rename), modifier = Modifier.size(20.dp))
-                }
-            }
-            Text(
-                text = gateway.status.replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.labelMedium,
-                color = if (gateway.status.lowercase() == "online") Color(0xFF35A853) else Color(0xFFD93025),
-                fontWeight = FontWeight.Medium,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.admin_doors_count, gateway.doorCount),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(R.string.admin_doors),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (gateway.doors.isEmpty()) {
-            Text(
-                text = stringResource(R.string.admin_no_doors),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            LazyColumn {
-                items(gateway.doors, key = { it.id }) { door ->
-                    Card(
+        if (showHeader) {
+            item {
+                MistyGroupedSection {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        ),
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                Icons.Default.DoorFront,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = door.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                                door.groupName?.let {
-                                    Text(
-                                        text = it,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
+                        Icon(
+                            imageVector = Icons.Outlined.Router,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = if (gateway.status.lowercase() == "online") IosGreen else IosRed,
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = door.status.replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = when (door.status.lowercase()) {
-                                    "online" -> Color(0xFF35A853)
-                                    "offline" -> Color(0xFFD93025)
-                                    else -> Color(0xFF9E9E9E)
-                                },
+                                text = gateway.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
                             )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = gateway.status.replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (gateway.status.lowercase() == "online") IosGreen else IosRed,
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.admin_doors_count, gateway.doorCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            MistyGroupedSection(title = stringResource(R.string.dashboard_door_controllers)) {
+                if (gateway.doors.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.admin_no_doors),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    )
+                } else {
+                    Column {
+                        gateway.doors.forEachIndexed { index, door ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    Icons.Default.DoorFront,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = door.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                    door.groupName?.let {
+                                        Text(
+                                            text = it,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = doorStatusLabel(door),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = doorStatusColor(door),
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(doorStatusColor(door).copy(alpha = 0.15f))
+                                        .padding(horizontal = 7.dp, vertical = 3.dp),
+                                )
+                            }
+                            if (index < gateway.doors.lastIndex) {
+                                androidx.compose.material3.HorizontalDivider(
+                                    modifier = Modifier.padding(start = 52.dp),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun doorStatusLabel(door: AccessibleDoor): String = when (door.displayStatus()) {
+    DoorDisplayStatus.ONLINE_UNLOCKABLE -> stringResource(R.string.doors_online)
+    DoorDisplayStatus.ONLINE_LOCKED_DOWN -> stringResource(R.string.doors_lockdown)
+    DoorDisplayStatus.OFFLINE -> stringResource(R.string.door_offline)
+    DoorDisplayStatus.DISCONNECTED -> stringResource(R.string.door_disconnected)
+}
+
+private fun doorStatusColor(door: AccessibleDoor): Color = when (door.displayStatus()) {
+    DoorDisplayStatus.ONLINE_UNLOCKABLE -> IosGreen
+    DoorDisplayStatus.ONLINE_LOCKED_DOWN -> IosOrange
+    DoorDisplayStatus.OFFLINE -> IosRed
+    DoorDisplayStatus.DISCONNECTED -> IosGray
+}
+
+@Composable
+private fun GatewayInfoRow(
+    label: String,
+    value: String,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = valueColor,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(start = 16.dp),
+        )
     }
 }

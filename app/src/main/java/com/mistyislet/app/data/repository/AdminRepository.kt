@@ -51,12 +51,13 @@ import com.mistyislet.app.domain.model.RenameRequest
 import com.mistyislet.app.domain.model.ReportExportRequest
 import com.mistyislet.app.domain.model.ReportExportResponse
 import com.mistyislet.app.domain.model.RelatedAdminEvent
-import com.mistyislet.app.domain.model.ShareAccessRequest
 import com.mistyislet.app.domain.model.TeamAccessRight
 import com.mistyislet.app.domain.model.TeamMember
 import com.mistyislet.app.domain.model.UserLogin
 import com.mistyislet.app.domain.model.UserPresenceRecord
 import com.mistyislet.app.domain.model.UserRoleUpdateRequest
+import com.mistyislet.app.domain.model.EmptyRequest
+import com.mistyislet.app.domain.model.UserAccessShare
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -97,11 +98,8 @@ class AdminRepository @Inject constructor(
     suspend fun shareUserAccess(
         placeId: String,
         userId: String,
-        doorId: String,
-        scheduleId: String? = null,
-        expiresAt: String? = null,
-    ): ApiResult<AccessRight> =
-        safeApiCall { adminApi.shareUserAccess(placeId, userId, ShareAccessRequest(doorId, scheduleId, expiresAt)) }
+    ): ApiResult<UserAccessShare> =
+        safeApiCall { adminApi.shareUserAccess(placeId, userId, EmptyRequest()) }
 
     suspend fun getGroups(placeId: String): ApiResult<List<AdminGroup>> =
         safeApiCall { adminApi.listGroups(placeId).items }

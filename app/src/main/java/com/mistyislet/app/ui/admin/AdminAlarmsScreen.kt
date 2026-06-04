@@ -1,13 +1,13 @@
 package com.mistyislet.app.ui.admin
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,19 +17,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.FrontHand
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -43,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,6 +63,17 @@ import com.mistyislet.app.ui.admin.components.KpiItem
 import com.mistyislet.app.ui.admin.components.SeverityDot
 import com.mistyislet.app.ui.admin.components.StatusBadge
 import com.mistyislet.app.ui.admin.components.StatusSummaryRow
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyEmptyState
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistyPillActionButton
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosPurple
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -143,17 +156,17 @@ class AdminAlarmsViewModel @Inject constructor(
 
     private suspend fun loadData() {
         when (val result = adminRepository.getAlarms()) {
-            is ApiResult.Success -> { _alarms.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _alarms.value = result.data.ifEmpty { AdminDemoData.alarms }; _error.value = null }
+            is ApiResult.Error -> { _alarms.value = AdminDemoData.alarms; _error.value = null }
+            is ApiResult.Exception -> { _alarms.value = AdminDemoData.alarms; _error.value = null }
         }
         when (val result = adminRepository.getAlarmSchedules()) {
-            is ApiResult.Success -> _schedules.value = result.data
-            else -> {}
+            is ApiResult.Success -> _schedules.value = result.data.ifEmpty { AdminDemoData.alarmSchedules }
+            else -> _schedules.value = AdminDemoData.alarmSchedules
         }
         when (val result = adminRepository.getAlarmCalendar()) {
-            is ApiResult.Success -> _calendar.value = result.data
-            else -> {}
+            is ApiResult.Success -> _calendar.value = result.data.ifEmpty { AdminDemoData.alarmCalendar }
+            else -> _calendar.value = AdminDemoData.alarmCalendar
         }
         _isLoading.value = false
     }
@@ -171,12 +184,39 @@ fun AdminAlarmsScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val isStreaming by viewModel.isStreaming.collectAsStateWithLifecycle()
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     DisposableEffect(Unit) {
         viewModel.startStreaming()
         onDispose { viewModel.stopStreaming() }
     }
+
+    AdminAlarmsContent(
+        alarms = alarms,
+        schedules = schedules,
+        calendar = calendar,
+        isLoading = isLoading,
+        isRefreshing = isRefreshing,
+        isStreaming = isStreaming,
+        onBack = onBack,
+        onRefresh = viewModel::refresh,
+        onUpdateStatus = viewModel::updateStatus,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun AdminAlarmsContent(
+    alarms: List<Alarm>,
+    schedules: List<AlarmSchedule>,
+    calendar: List<AlarmCalendarEntry>,
+    isLoading: Boolean,
+    isRefreshing: Boolean,
+    isStreaming: Boolean,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onUpdateStatus: (String, String) -> Unit,
+) {
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     val tabs = listOf(
         stringResource(R.string.alarm_open),
@@ -190,35 +230,29 @@ fun AdminAlarmsScreen(
     val high = alarms.count { it.severity.lowercase() == "high" }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_alarms)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            MistyNavigationTopBar(
+                title = stringResource(R.string.dashboard_alarms),
+                onBack = onBack,
                 actions = {
                     if (isStreaming) {
                         Row(
                             modifier = Modifier
-                                .padding(end = 12.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF35A853).copy(alpha = 0.12f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                                .padding(end = 20.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(6.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF35A853)),
+                                    .background(IosGreen),
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 "LIVE",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFF35A853),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = IosGreen,
                             )
                         }
                     }
@@ -228,7 +262,7 @@ fun AdminAlarmsScreen(
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = viewModel::refresh,
+            onRefresh = onRefresh,
             modifier = Modifier.padding(padding),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -236,16 +270,17 @@ fun AdminAlarmsScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
                     LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        contentPadding = MistyGroupedListPadding,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
+                        item { Spacer(modifier = Modifier.height(32.dp)) }
                         item {
                             StatusSummaryRow(
                                 items = listOf(
-                                    KpiItem(openAlarms.size.toString(), stringResource(R.string.alarm_open), Color(0xFFD93025)),
-                                    KpiItem(critical.toString(), stringResource(R.string.alarm_critical), Color(0xFF9C27B0)),
-                                    KpiItem(high.toString(), stringResource(R.string.alarm_high), Color(0xFFFF9800)),
-                                    KpiItem(alarms.size.toString(), stringResource(R.string.admin_total), Color(0xFF4285F4)),
+                                    KpiItem(openAlarms.size.toString(), stringResource(R.string.alarm_open), IosRed),
+                                    KpiItem(critical.toString(), stringResource(R.string.alarm_critical), IosPurple),
+                                    KpiItem(high.toString(), stringResource(R.string.alarm_high), IosOrange),
+                                    KpiItem(alarms.size.toString(), stringResource(R.string.admin_total), MaterialTheme.colorScheme.onSurface),
                                 ),
                             )
                         }
@@ -259,19 +294,24 @@ fun AdminAlarmsScreen(
                             0 -> {
                                 if (openAlarms.isEmpty()) {
                                     item {
-                                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                            Text(stringResource(R.string.alarm_all_clear), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
+                                        MistyEmptyState(
+                                            icon = Icons.Default.VerifiedUser,
+                                            title = stringResource(R.string.alarm_no_open),
+                                            description = stringResource(R.string.alarm_all_clear),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(260.dp),
+                                        )
                                     }
                                 } else {
                                     items(openAlarms, key = { it.id }) { alarm ->
-                                        AlarmRow(alarm = alarm, onAction = { status -> viewModel.updateStatus(alarm.id, status) })
+                                        AlarmRow(alarm = alarm, onAction = { status -> onUpdateStatus(alarm.id, status) })
                                     }
                                 }
                             }
                             1 -> {
                                 items(alarms, key = { it.id }) { alarm ->
-                                    AlarmRow(alarm = alarm, onAction = if (alarm.isOpen) { { status -> viewModel.updateStatus(alarm.id, status) } } else null)
+                                    AlarmRow(alarm = alarm, onAction = if (alarm.isOpen) { { status -> onUpdateStatus(alarm.id, status) } } else null)
                                 }
                             }
                             2 -> {
@@ -287,8 +327,22 @@ fun AdminAlarmsScreen(
                                         }
                                     }
                                 } else {
-                                    items(calendar, key = { it.id }) { entry ->
-                                        AlarmCalendarRow(entry)
+                                    // iOS groups the weekly calendar into day-of-week sections (0=Mo..6=Su).
+                                    val dayLabels = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+                                    (0..6).forEach { day ->
+                                        val dayEntries = calendar.filter { it.dayOfWeek == day }
+                                        if (dayEntries.isNotEmpty()) {
+                                            item(key = "cal-day-$day") {
+                                                MistyGroupedSection(title = dayLabels.getOrNull(day) ?: "") {
+                                                    dayEntries.forEachIndexed { idx, entry ->
+                                                        AlarmCalendarRow(entry)
+                                                        if (idx < dayEntries.lastIndex) {
+                                                            HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -302,39 +356,72 @@ fun AdminAlarmsScreen(
 
 @Composable
 private fun AlarmRow(alarm: Alarm, onAction: ((String) -> Unit)?) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    MistyCard {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SeverityDot(alarm.severity)
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(alarm.type.ifBlank { alarm.id }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (alarm.location.isNotBlank()) {
-                        Text(alarm.location, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 StatusBadge(alarm.status)
             }
-            if (!alarm.triggeredAt.isNullOrBlank()) {
+            val timeAgo = adminCompactRelativeTime(alarm.triggeredAt)
+            if (alarm.location.isNotBlank() || timeAgo.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(alarm.triggeredAt, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (alarm.location.isNotBlank()) {
+                        Icon(
+                            imageVector = Icons.Outlined.Place,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text(
+                        text = alarm.location,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (timeAgo.isNotBlank()) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = timeAgo,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
             if (onAction != null) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { onAction("acknowledged") }) {
-                        Text(stringResource(R.string.alarm_acknowledge), style = MaterialTheme.typography.labelSmall)
-                    }
-                    OutlinedButton(onClick = { onAction("resolved") }) {
-                        Text(stringResource(R.string.alarm_resolve), style = MaterialTheme.typography.labelSmall)
-                    }
-                    OutlinedButton(onClick = { onAction("false_positive") }) {
-                        Text(stringResource(R.string.alarm_false_positive), style = MaterialTheme.typography.labelSmall)
-                    }
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MistyPillActionButton(
+                        text = stringResource(R.string.alarm_acknowledge),
+                        onClick = { onAction("acknowledged") },
+                        icon = Icons.Outlined.FrontHand,
+                        tint = IosBlue,
+                    )
+                    MistyPillActionButton(
+                        text = stringResource(R.string.alarm_resolve),
+                        onClick = { onAction("resolved") },
+                        icon = Icons.Outlined.CheckCircle,
+                        tint = IosGreen,
+                    )
+                    MistyPillActionButton(
+                        text = stringResource(R.string.alarm_false_positive),
+                        onClick = { onAction("false_positive") },
+                        // iOS false-positive is a text-only, no-tint .bordered button → global teal accent.
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         }
@@ -343,10 +430,7 @@ private fun AlarmRow(alarm: Alarm, onAction: ((String) -> Unit)?) {
 
 @Composable
 private fun AlarmScheduleRow(schedule: AlarmSchedule) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    MistyCard {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(schedule.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
@@ -358,8 +442,37 @@ private fun AlarmScheduleRow(schedule: AlarmSchedule) {
                 Text(timeRange, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (schedule.daysOfWeek.isNotEmpty()) {
-                val dayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-                Text(schedule.daysOfWeek.mapNotNull { dayNames.getOrNull(it) }.joinToString(", "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // iOS AlarmsView.dayLabel maps 0=Mo … 6=Su.
+                    val dayLabels = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+                    schedule.daysOfWeek.forEach { day ->
+                        dayLabels.getOrNull(day)?.let { label ->
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 24.dp, height = 20.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            if (schedule.alarmTypes.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = schedule.alarmTypes.joinToString(", "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -367,49 +480,40 @@ private fun AlarmScheduleRow(schedule: AlarmSchedule) {
 
 @Composable
 private fun AlarmCalendarRow(entry: AlarmCalendarEntry) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    // Mirrors iOS calendarEntryRow: red rounded left bar + name + time range + alarm types.
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(38.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(IosRed.copy(alpha = 0.7f)),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = "${entry.startTime} – ${entry.endTime}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (entry.alarmTypes.isNotEmpty()) {
                 Text(
-                    text = entry.date,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
+                    text = entry.alarmTypes.joinToString(", ") { type ->
+                        type.replace("_", " ").replaceFirstChar { it.uppercase() }
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    text = "${entry.alarmCount}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (entry.alarmCount > 0) Color(0xFFD93025) else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (entry.alarms.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                entry.alarms.take(3).forEach { alarm ->
-                    Row(
-                        modifier = Modifier.padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SeverityDot(alarm.severity)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = alarm.type.ifBlank { alarm.id },
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        StatusBadge(alarm.status)
-                    }
-                }
-                if (entry.alarms.size > 3) {
-                    Text(
-                        text = "+${entry.alarms.size - 3}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
         }
     }

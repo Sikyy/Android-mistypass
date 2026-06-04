@@ -16,7 +16,8 @@
     <string name="login_title">Selamat Datang</string>
     <string name="login_subtitle">Masuk untuk mengakses pintu Anda</string>
     <string name="login_email_title">Masukkan email Anda</string>
-    <string name="login_email_body">Gunakan email kerja untuk menemukan organisasi Anda dan lanjut masuk.</string>
+    <string name="login_email_body">Masukkan alamat email Anda untuk meminta tautan masuk</string>
+    <string name="login_manual_sign_in">Masuk manual</string>
     <string name="login_lookup_body">Biasanya hanya perlu beberapa saat.</string>
     <string name="login_signin_title">Masuk ke organisasi Anda</string>
     <string name="login_signin_body">Masukkan detail akun Anda untuk melanjutkan.</string>
@@ -40,6 +41,7 @@
     <string name="search_places">Cari lokasi</string>
     <string name="door_unlock">Buka Kunci</string>
     <string name="door_hold_to_unlock">Tahan untuk Buka</string>
+    <string name="door_release_to_unlock">Lepaskan untuk Buka</string>
     <string name="door_unlocking">Membuka…</string>
     <string name="door_access_granted">Akses Diberikan</string>
     <string name="door_controller_offline">Kontroler offline</string>
@@ -54,6 +56,7 @@
     <string name="doors_sort_status">Status</string>
     <string name="doors_sort_building">Gedung</string>
     <string name="doors_online">Online</string>
+    <string name="door_unlockable">Bisa Dibuka</string>
     <string name="doors_location">Lokasi</string>
     <string name="doors_gateway">Gateway</string>
     <string name="doors_type">Jenis Pintu</string>
@@ -61,10 +64,15 @@
     <string name="doors_access">Akses</string>
     <string name="doors_access_allowed">Diizinkan</string>
     <string name="doors_access_denied">Ditolak</string>
+    <string name="doors_details">Detail</string>
+    <string name="doors_info">Info</string>
     <string name="doors_tab_all">Semua</string>
     <string name="doors_tab_favorites">Favorit</string>
     <string name="doors_no_favorites">Belum ada favorit</string>
     <string name="doors_favorite">Tambah ke favorit</string>
+    <string name="doors_favorite_short">Favorit</string>
+    <string name="doors_save">Simpan</string>
+    <string name="doors_saved">Tersimpan</string>
     <string name="doors_unfavorite">Hapus dari favorit</string>
     <string name="doors_lockdown">Lockdown</string>
     <string name="doors_lockdown_active">Lockdown aktif</string>
@@ -79,7 +87,7 @@
     <string name="doors_last_synced">Terakhir sinkron %1$s</string>
 
     <!-- Places / Organizations -->
-    <string name="places_back">Kembali</string>
+    <string name="places_back">Lokasi</string>
     <string name="places_no_orgs">Tidak ada organisasi</string>
     <string name="places_no_orgs_desc">Anda belum tergabung di organisasi mana pun.</string>
     <string name="places_no_places">Tidak ada lokasi</string>
@@ -104,6 +112,20 @@
     <string name="credential_suspended">Ditangguhkan</string>
     <string name="credential_revoked">Dicabut</string>
     <string name="bind_physical_card">Ikat Kartu Fisik</string>
+    <string name="nfc_title">Ikat Kartu Fisik</string>
+    <string name="nfc_description">Pindai kartu NFC fisik dan tambahkan ke akun Anda.</string>
+    <string name="nfc_scan_step">Pindai</string>
+    <string name="nfc_hold_near">Dekatkan kartu ke bagian belakang ponsel</string>
+    <string name="nfc_make_sure_enabled">Pastikan NFC sudah aktif.</string>
+    <string name="nfc_card_detected">Kartu terdeteksi</string>
+    <string name="nfc_bind_card">Ikat Kartu</string>
+    <string name="nfc_try_another">Coba kartu lain</string>
+    <string name="nfc_try_again">Coba lagi</string>
+    <string name="nfc_no_support">Perangkat ini tidak mendukung NFC.</string>
+    <string name="nfc_disabled">NFC nonaktif. Aktifkan di Pengaturan.</string>
+    <string name="nfc_binding">Mengikat kartu ke akun Anda…</string>
+    <string name="nfc_card_bound">Kartu terikat</string>
+    <string name="nfc_bind_success">Kartu fisik sekarang terhubung ke akun Anda.</string>
     <string name="add_to_google_wallet">Tambahkan ke Google Wallet</string>
     <string name="credentials_other">Kredensial Lainnya</string>
     <string name="qr_my_code">Kode QR Saya</string>
@@ -111,17 +133,22 @@
     <string name="qr_my_code_hint">Tunjukkan kode QR ini ke pemindai pintu untuk membuka</string>
     <string name="qr_visitor_hint">Buat pass pengunjung sementara untuk dibagikan ke tamu</string>
     <string name="tap_to_close">Ketuk di mana saja untuk menutup</string>
+    <string name="common_done">Selesai</string>
 
     <!-- Pass -->
     <string name="pass_title">Pass</string>
     <string name="pass_refreshes_in">Diperbarui dalam</string>
     <string name="pass_refreshing">Memperbarui…</string>
+    <string name="pass_refresh_qr">Perbarui QR</string>
     <string name="pass_present_to_scanner">Tunjukkan ke pemindai pintu</string>
     <string name="pass_enter_at_keypad">Masukkan di pembaca keypad</string>
     <string name="pass_ble_active">Kredensial BLE Aktif</string>
     <string name="pass_keystore_protected">Dilindungi Android Keystore</string>
     <string name="pass_qr_unavailable">Kode QR tidak tersedia</string>
     <string name="pass_pin_unavailable">PIN tidak tersedia</string>
+    <string name="pass_no_doors">Tidak ada pintu tersedia</string>
+    <string name="pass_no_doors_desc">Pilih tempat dengan pintu yang dapat diakses untuk membuat kode QR.</string>
+    <string name="pass_select_door">Pilih pintu</string>
     <string name="pass_no_passes">Tidak Ada Pass</string>
     <string name="pass_no_passes_desc">Pass akses dan kredensial Anda akan muncul di sini.</string>
     <string name="pass_wallet_region_notice">Google Wallet belum tersedia di wilayah Anda. Nantikan pembaruan selanjutnya.</string>
@@ -168,11 +195,19 @@
     <string name="dashboard_door_controllers">Kontroler Pintu</string>
     <string name="dashboard_gateways">Gateway</string>
     <string name="dashboard_cameras">Kamera</string>
+    <string name="hardware_all_controllers">Semua Kontroler</string>
+    <string name="hardware_all_cameras">Semua Kamera</string>
+    <string name="hardware_no_controllers">Tidak Ada Kontroler</string>
+    <string name="hardware_no_controllers_description">Kontroler pintu akan muncul di sini.</string>
     <string name="dashboard_org_settings_section">Organisasi</string>
     <string name="dashboard_org_settings">Pengaturan Organisasi</string>
     <string name="dashboard_no_data">Tidak ada data tersedia</string>
     <string name="dashboard_select_team_first">Pilih tim untuk melihat hak akses</string>
     <string name="dashboard_timezone">Zona Waktu</string>
+    <string name="admin_people_in_building">Orang di Gedung</string>
+    <string name="activity_no_one">Tidak ada orang di dalam</string>
+    <string name="activity_no_one_desc">Aktivitas langsung akan muncul saat pengguna masuk gedung.</string>
+    <string name="access_rights_no_users">Tidak ada pengguna</string>
 
     <!-- Analytics -->
     <string name="admin_active_now">Aktif Sekarang</string>
@@ -186,11 +221,17 @@
     <string name="admin_search_credentials">Cari kredensial</string>
     <string name="admin_search_presence">Cari pengguna</string>
     <string name="admin_role">Peran</string>
+    <string name="admin_user_info">Info Pengguna</string>
     <string name="admin_status">Status</string>
     <string name="admin_last_activity">Aktivitas Terakhir</string>
     <string name="admin_login_sessions">Sesi Login</string>
     <string name="admin_joined">Bergabung</string>
     <string name="admin_change_role">Ubah Peran</string>
+    <string name="admin_share_access">Bagikan Akses</string>
+    <string name="admin_generate_access_link">Buat Tautan Akses</string>
+    <string name="admin_generating_link">Membuat Tautan</string>
+    <string name="admin_url">URL</string>
+    <string name="admin_token">Token</string>
     <string name="admin_apply_role">Terapkan Peran</string>
     <string name="admin_force_sign_out">Paksa Keluar</string>
     <string name="admin_remove_user">Hapus Pengguna</string>
@@ -204,10 +245,18 @@
     <string name="admin_scope_org">Org</string>
     <string name="admin_scope_place">Lokasi</string>
     <string name="admin_scope_group">Grup</string>
+    <string name="admin_uid">UID</string>
+    <string name="admin_card_number">Nomor Kartu</string>
+    <string name="admin_issued_label">Diterbitkan</string>
+    <string name="admin_expires_label">Kedaluwarsa</string>
+    <string name="admin_usage_label">Penggunaan</string>
     <string name="admin_card_uid">UID: %s</string>
     <string name="admin_issued">Diterbitkan %s</string>
     <string name="admin_expires">Kedaluwarsa %s</string>
     <string name="admin_usage_count">%d penggunaan</string>
+    <string name="admin_cards_count">%d kartu</string>
+    <string name="admin_no_cards">Tidak Ada Kartu</string>
+    <string name="admin_no_digital_credentials">Tidak Ada Kredensial Digital</string>
     <string name="admin_days_present">Hari Hadir</string>
     <string name="admin_total_unlocks">Total Buka Kunci</string>
     <string name="admin_avg_days">Rata-rata Hari</string>
@@ -220,12 +269,17 @@
     <string name="admin_confirm_delete">Yakin ingin menghapus item ini?</string>
     <string name="admin_name">Nama</string>
     <string name="admin_description">Deskripsi</string>
+    <string name="admin_create_group">Buat Grup</string>
+    <string name="admin_create_team">Buat Tim</string>
     <string name="admin_type">Jenis</string>
     <string name="admin_start_time">Waktu Mulai</string>
     <string name="admin_end_time">Waktu Selesai</string>
     <string name="admin_weekdays">Hari Kerja</string>
     <string name="admin_weekends">Akhir Pekan</string>
     <string name="admin_every_day">Setiap Hari</string>
+    <string name="schedule_details">Detail</string>
+    <string name="schedule_time_range">Rentang Waktu</string>
+    <string name="schedule_days">Hari</string>
     <string name="admin_members_count">%d anggota</string>
     <string name="admin_doors_count">%d pintu</string>
     <string name="admin_schedule_unlock">Buka Kunci</string>
@@ -241,6 +295,9 @@
     <string name="admin_no_doors">Tidak ada pintu</string>
     <string name="admin_access_rights">Hak Akses</string>
     <string name="admin_no_access_rights">Tidak ada hak akses</string>
+    <string name="admin_access_via_group">Melalui grup</string>
+    <string name="admin_access_via_role">Melalui peran</string>
+    <string name="admin_access_via_group_role">Melalui grup &amp; peran</string>
     <string name="admin_add_member">Tambah Anggota</string>
     <string name="admin_add_door">Tambah Pintu</string>
     <string name="admin_add_access_right">Tambah Hak Akses</string>
@@ -260,15 +317,28 @@
     <string name="export_user_presence">Kehadiran Pengguna</string>
     <string name="export_incidents">Insiden</string>
     <string name="export_hardware">Ringkasan Perangkat Keras</string>
+    <string name="export_desc_weekly">Laporan mingguan lengkap dengan penggunaan, peta panas, tren, dan pintu teratas</string>
+    <string name="export_desc_events">Semua peristiwa akses dengan detail pengguna, pintu, waktu, dan hasil</string>
+    <string name="export_desc_unlock_stats">Tren buka kunci, rata-rata harian, dan rincian jenis kredensial</string>
+    <string name="export_desc_user_presence">Kehadiran pengguna, kehadiran harian, dan pola aktivitas hari kerja</string>
+    <string name="export_desc_incidents">Insiden keamanan dengan tingkat keparahan, status, dan detail penyelesaian</string>
+    <string name="export_desc_hardware">Kontroler pintu, gateway, dan kamera dengan status online/offline</string>
     <string name="export_date_range">Rentang Tanggal</string>
     <string name="export_from">Dari</string>
     <string name="export_to">Sampai</string>
+    <string name="export_pdf_note">Format PDF dengan grafik, tabel, dan tata letak visual</string>
+    <string name="export_csv_note">Format CSV untuk diimpor ke Excel atau Google Sheets</string>
+    <string name="export_preset_7d">7 hari</string>
+    <string name="export_preset_14d">14 hari</string>
+    <string name="export_preset_30d">30 hari</string>
+    <string name="export_preset_90d">90 hari</string>
     <string name="alarm_open">Terbuka</string>
     <string name="alarm_all">Semua</string>
     <string name="alarm_schedules">Jadwal</string>
     <string name="alarm_acknowledge">Akui</string>
     <string name="alarm_resolve">Selesaikan</string>
     <string name="alarm_false_positive">Positif Palsu</string>
+    <string name="alarm_no_open">Tidak ada alarm terbuka</string>
     <string name="alarm_all_clear">Semua aman</string>
     <string name="alarm_calendar">Kalender</string>
     <string name="alarm_critical">Kritis</string>
@@ -276,9 +346,13 @@
     <string name="guest_expected">Diharapkan</string>
     <string name="guest_on_site">Di Lokasi</string>
     <string name="guest_completed">Selesai</string>
+    <string name="guest_empty">Tidak Ada Tamu</string>
+    <string name="guest_empty_description">Belum ada pengunjung terdaftar. Ketuk + untuk menambah tamu.</string>
+    <string name="guest_none_in_tab">Tidak ada tamu di tab ini</string>
     <string name="guest_check_in">Check In</string>
     <string name="guest_check_out">Check Out</string>
     <string name="guest_create">Tamu Baru</string>
+    <string name="guest_register">Daftarkan</string>
     <string name="guest_cancel">Batalkan Kunjungan</string>
     <string name="guest_section_visitor">Info Pengunjung</string>
     <string name="guest_section_host">Info Penerima</string>
@@ -303,11 +377,14 @@
     <string name="booking_spaces">Ruang</string>
     <string name="booking_active">Aktif</string>
     <string name="booking_past">Selesai</string>
+    <string name="booking_no_spaces">Tidak ada ruang tersedia</string>
+    <string name="booking_no_active">Tidak ada pemesanan aktif</string>
     <string name="booking_check_in">Check In</string>
     <string name="booking_check_out">Check Out</string>
     <string name="booking_cancel">Batal</string>
     <string name="booking_create">Pemesanan Baru</string>
     <string name="booking_select_space">Pilih ruang</string>
+    <string name="booking_details">Detail</string>
     <string name="booking_title_hint">Judul pemesanan (opsional)</string>
     <string name="booking_start">Mulai</string>
     <string name="booking_end">Selesai</string>
@@ -326,6 +403,8 @@
 
     <!-- Analytics -->
     <string name="analytics_total_unlocks">Total Buka Kunci</string>
+    <string name="analytics_method_total">Total</string>
+    <string name="analytics_last_n_days">%1$d hari terakhir</string>
     <string name="analytics_unique_users">Pengguna Unik</string>
     <string name="analytics_failed_attempts">Percobaan Gagal</string>
     <string name="analytics_daily_avg">Rata-rata Harian</string>
@@ -339,20 +418,27 @@
     <string name="analytics_weekly_users">Pengguna Mingguan</string>
     <string name="analytics_trend_table">Rincian Harian</string>
     <string name="analytics_date">Tanggal</string>
+    <string name="analytics_users_short">Pengguna</string>
     <string name="analytics_failed_short">Gagal</string>
     <string name="analytics_less">Sedikit</string>
     <string name="analytics_more">Banyak</string>
     <string name="analytics_user">Pengguna</string>
     <string name="analytics_door">Pintu</string>
     <string name="analytics_reason">Alasan</string>
+    <string name="analytics_recent_failed">Percobaan Gagal Terbaru</string>
+    <string name="analytics_no_failed">Tidak ada percobaan gagal pada periode ini.</string>
     <string name="camera_tap_to_stream">Ketuk untuk stream</string>
     <string name="camera_offline">Kamera offline</string>
+    <string name="camera_no_cameras">Tidak Ada Kamera</string>
+    <string name="camera_no_cameras_description">Kamera yang terhubung akan muncul di sini.</string>
+    <string name="camera_info">Info Kamera</string>
     <string name="camera_status">Status</string>
     <string name="camera_vendor">Vendor</string>
     <string name="camera_model">Model</string>
     <string name="camera_ip">Alamat IP</string>
     <string name="camera_door">Pintu</string>
     <string name="camera_cloud">Cloud</string>
+    <string name="camera_cloud_provider">Penyedia</string>
     <string name="camera_cloud_token">Token Cloud</string>
     <string name="camera_cloud_token_available">Tersedia</string>
     <string name="camera_cloud_expires">Kedaluwarsa</string>
@@ -361,13 +447,26 @@
     <string name="camera_no_recordings">Tidak ada rekaman</string>
     <string name="camera_recording_seconds">%d dtk</string>
     <string name="camera_recording_ready">Siap</string>
+    <string name="analytics_day_mon">Sen</string>
+    <string name="analytics_day_tue">Sel</string>
+    <string name="analytics_day_wed">Rab</string>
+    <string name="analytics_day_thu">Kam</string>
+    <string name="analytics_day_fri">Jum</string>
+    <string name="analytics_day_sat">Sab</string>
+    <string name="analytics_day_sun">Min</string>
     <string name="presence_weekday_activity">Aktivitas Hari Kerja</string>
+    <string name="presence_weekday_note">Distribusi pembukaan hari kerja (biru) vs akhir pekan (oranye)</string>
     <string name="presence_user_heatmap">Peta Panas Pengguna</string>
     <string name="presence_users_title">Pengguna</string>
+    <string name="presence_user_details">Detail Pengguna</string>
+    <string name="presence_days_col">Hari</string>
+    <string name="presence_unlocks_col">Buka</string>
+    <string name="presence_first_seen">Pertama</string>
 
     <!-- History -->
     <string name="history_title">Riwayat</string>
     <string name="history_empty">Tidak ada catatan akses</string>
+    <string name="history_empty_description">Riwayat akses Anda akan muncul di sini.</string>
     <string name="history_today">Hari Ini</string>
     <string name="history_yesterday">Kemarin</string>
     <string name="history_event_detail">Detail Acara</string>
@@ -379,6 +478,7 @@
     <string name="history_denied">Ditolak</string>
     <string name="history_reason">Alasan</string>
     <string name="history_camera_snapshots">Tangkapan Kamera</string>
+    <string name="history_no_media">Tidak ada media yang direkam</string>
 
     <!-- Visitors -->
     <string name="visitors_title">Pengunjung</string>
@@ -391,14 +491,18 @@
     <string name="visitor_phone">Nomor telepon</string>
     <string name="visitor_host">Nama tuan rumah</string>
     <string name="delivery_method">Metode pengiriman</string>
-    <string name="valid_duration">Berlaku selama</string>
+    <string name="valid_duration">Durasi Akses</string>
     <string name="create_visitor_pass">Buat Pass Pengunjung</string>
+    <string name="visitors_new">Pengunjung Baru</string>
     <string name="visitor_expired">Kedaluwarsa</string>
+    <string name="visitors_hours">%1$d jam</string>
     <string name="delivery_email">Email</string>
     <string name="delivery_email_qr">Email + QR</string>
     <string name="delivery_whatsapp">WhatsApp</string>
     <string name="delivery_whatsapp_qr">WhatsApp + QR</string>
     <string name="delivery_sms">SMS</string>
+    <string name="visitors_notes">Catatan</string>
+    <string name="visitors_notes_description">Pengunjung akan menerima kredensial akses melalui metode pengiriman yang dipilih. Pass akan kedaluwarsa setelah durasi yang dipilih.</string>
     <string name="visitor_copy_link">Salin Tautan</string>
     <string name="visitor_share_pass">Bagikan</string>
     <string name="visitor_share_subject">Pass Pengunjung</string>
@@ -412,10 +516,12 @@
     <string name="profile_tab_main">Utama</string>
     <string name="profile_tab_logins">Sesi</string>
     <string name="profile_tab_help">Bantuan</string>
+    <string name="profile_settings_section">Pengaturan</string>
     <string name="profile_credentials">Kredensial Saya</string>
     <string name="profile_biometric">Kunci Biometrik</string>
     <string name="profile_biometric_desc">Memerlukan biometrik untuk membuka aplikasi</string>
     <string name="profile_language">Bahasa</string>
+    <string name="profile_auto_unlock_zone">Zona Buka Otomatis</string>
     <string name="profile_notifications">Notifikasi</string>
     <string name="profile_visitor_passes">Pass Pengunjung</string>
     <string name="profile_logout">Keluar</string>
@@ -424,9 +530,14 @@
     <string name="profile_new_password">Kata Sandi Baru</string>
     <string name="profile_confirm_password">Konfirmasi Kata Sandi</string>
     <string name="profile_passwords_mismatch">Kata sandi tidak cocok</string>
+    <string name="profile_change_password">Ubah Kata Sandi</string>
+    <string name="profile_update_password">Perbarui Kata Sandi</string>
     <string name="profile_version">Versi</string>
     <string name="profile_build">Build</string>
     <string name="profile_device">Perangkat</string>
+    <string name="profile_help_placeholder">Hubungi administrator Anda untuk bantuan akses, kredensial, atau pengaturan perangkat.</string>
+    <string name="profile_acknowledgments_placeholder">MistyPass menggunakan perangkat lunak sumber terbuka dan layanan sistem untuk menyediakan akses aman.</string>
+    <string name="profile_app_description">MistyPass menjaga kredensial akses, pintu, dan operasi gedung tetap tersedia dari perangkat Anda.</string>
 
     <!-- Settings -->
     <string name="settings_sign_out">Keluar</string>
@@ -481,6 +592,14 @@
     <!-- Geofence -->
     <string name="geofence_toggle">Buka Kunci Otomatis Geofence</string>
     <string name="geofence_description">Menyiapkan kunci pintu untuk dibuka secara otomatis saat Anda mendekati gedung.</string>
+    <string name="geofence_location_permission">Izin lokasi</string>
+    <string name="geofence_monitored_doors">Pintu dipantau</string>
+    <string name="geofence_perm_not_set">Belum diatur</string>
+    <string name="geofence_how_it_works">Cara kerja</string>
+    <string name="geofence_step_1">Ponsel memantau area gedung terdekat.</string>
+    <string name="geofence_step_2">Mistyislet menyiapkan buka kunci saat Anda tiba.</string>
+    <string name="geofence_step_3">Pintu terdekat siap untuk dibuka.</string>
+    <string name="geofence_step_4">Anda tetap mengonfirmasi sebelum akses diberikan.</string>
     <string name="geofence_notification_title">Pintu di dekat Anda</string>
     <string name="geofence_notification_body">Ketuk untuk membuka</string>
 

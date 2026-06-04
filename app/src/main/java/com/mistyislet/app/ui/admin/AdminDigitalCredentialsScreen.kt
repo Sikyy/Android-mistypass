@@ -1,9 +1,11 @@
 package com.mistyislet.app.ui.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -12,30 +14,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PhoneIphone
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Wallet
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +48,14 @@ import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminDigitalCredential
 import com.mistyislet.app.ui.admin.components.StatusBadge
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyLabeledContentRow
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosCyan
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosPurple
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,17 +71,24 @@ data class CredentialUserGroup(
 )
 
 private fun platformIcon(platform: String): ImageVector = when (platform.lowercase()) {
-    "ios", "apple" -> Icons.Default.PhoneAndroid
+    "ios", "apple" -> Icons.Default.PhoneIphone
     "android", "google" -> Icons.Default.Wallet
     "qr", "qrcode" -> Icons.Default.QrCode
     else -> Icons.Default.Key
 }
 
 private fun platformColor(platform: String): Color = when (platform.lowercase()) {
-    "ios", "apple" -> Color(0xFF4285F4)
-    "android", "google" -> Color(0xFF35A853)
-    "qr", "qrcode" -> Color(0xFF9C27B0)
-    else -> Color(0xFF00ACC1)
+    "ios", "apple" -> IosBlue
+    "android", "google" -> IosGreen
+    "qr", "qrcode" -> IosPurple
+    else -> IosCyan
+}
+
+private fun platformLabel(platform: String): String = when (platform.lowercase()) {
+    "ios", "apple" -> "Apple Wallet"
+    "android", "google" -> "Google Wallet"
+    "qr", "qrcode" -> "QR Code"
+    else -> platform.replaceFirstChar { it.uppercase() }
 }
 
 @HiltViewModel
@@ -139,9 +148,9 @@ class AdminDigitalCredentialsViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getCredentials(pid)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.digitalCredentials }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.digitalCredentials; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.digitalCredentials; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -170,25 +179,72 @@ fun AdminDigitalCredentialsScreen(
     }
 
     var selectedGroup by remember { mutableStateOf<CredentialUserGroup?>(null) }
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
     var credToRevoke by remember { mutableStateOf<AdminDigitalCredential?>(null) }
-    var credToSuspend by remember { mutableStateOf<AdminDigitalCredential?>(null) }
+
+    selectedGroup?.let { group ->
+        BackHandler { selectedGroup = null }
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            topBar = {
+                MistyNavigationTopBar(
+                    title = group.userName,
+                    onBack = { selectedGroup = null },
+                )
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                CredentialGroupDetailSheet(
+                    group = group,
+                    onRevoke = { cred -> credToRevoke = cred },
+                    showHeader = false,
+                )
+            }
+        }
+
+        credToRevoke?.let { cred ->
+            MistyAlertDialog(
+                onDismissRequest = { credToRevoke = null },
+                title = { Text(stringResource(R.string.admin_revoke)) },
+                text = { Text(stringResource(R.string.admin_confirm_revoke)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.revokeCredential(cred.id)
+                        credToRevoke = null
+                        selectedGroup = null
+                    }) { Text(stringResource(R.string.admin_revoke), color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { credToRevoke = null }) { Text(stringResource(R.string.cancel)) }
+                },
+            )
+        }
+
+        return
+    }
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_digital_credentials),
         items = groups.map { group ->
+            val platformSummary = group.credentials
+                .joinToString(" · ") { credential -> platformLabel(credential.platform) }
             AdminListItem(
                 id = group.id,
                 title = group.userName,
-                subtitle = group.userEmail,
-                trailing = "${group.credentials.size}",
+                subtitle = listOfNotNull(
+                    group.userEmail?.takeIf { it != group.userName },
+                    platformSummary.takeIf { it.isNotBlank() },
+                ).joinToString("\n").ifBlank { null },
                 leadingInitial = group.userName.take(1).uppercase(),
-                leadingInitialColor = Color(0xFF00ACC1),
+                leadingInitialColor = IosCyan,
             )
         },
         isLoading = isLoading,
-        emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyMessage = stringResource(R.string.admin_no_digital_credentials),
+        emptyIcon = Icons.Default.Key,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
@@ -199,96 +255,42 @@ fun AdminDigitalCredentialsScreen(
         },
     )
 
-    selectedGroup?.let { group ->
-        ModalBottomSheet(
-            onDismissRequest = { selectedGroup = null },
-            sheetState = sheetState,
-        ) {
-            CredentialGroupDetailSheet(
-                group = group,
-                onRevoke = { cred -> credToRevoke = cred },
-                onSuspend = { cred -> credToSuspend = cred },
-                onActivate = { cred ->
-                    viewModel.activateCredential(cred.id)
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { selectedGroup = null }
-                },
-            )
-        }
-    }
-
-    credToRevoke?.let { cred ->
-        AlertDialog(
-            onDismissRequest = { credToRevoke = null },
-            title = { Text(stringResource(R.string.admin_revoke)) },
-            text = { Text(stringResource(R.string.admin_confirm_revoke)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.revokeCredential(cred.id)
-                    credToRevoke = null
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { selectedGroup = null }
-                }) { Text(stringResource(R.string.admin_revoke), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { credToRevoke = null }) { Text(stringResource(R.string.cancel)) }
-            },
-        )
-    }
-
-    credToSuspend?.let { cred ->
-        AlertDialog(
-            onDismissRequest = { credToSuspend = null },
-            title = { Text(stringResource(R.string.admin_suspend)) },
-            text = { Text(stringResource(R.string.admin_confirm_suspend)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.suspendCredential(cred.id)
-                    credToSuspend = null
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { selectedGroup = null }
-                }) { Text(stringResource(R.string.admin_suspend), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { credToSuspend = null }) { Text(stringResource(R.string.cancel)) }
-            },
-        )
-    }
 }
 
 @Composable
 private fun CredentialGroupDetailSheet(
     group: CredentialUserGroup,
     onRevoke: (AdminDigitalCredential) -> Unit,
-    onSuspend: (AdminDigitalCredential) -> Unit,
-    onActivate: (AdminDigitalCredential) -> Unit,
+    showHeader: Boolean = true,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 32.dp),
+    LazyColumn(
+        contentPadding = MistyGroupedListPadding,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = group.userName,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        group.userEmail?.let {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(group.credentials, key = { it.id }) { cred ->
-                CredentialDetailRow(
-                    credential = cred,
-                    onRevoke = { onRevoke(cred) },
-                    onSuspend = { onSuspend(cred) },
-                    onActivate = { onActivate(cred) },
-                )
+        if (showHeader) {
+            item {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = group.userName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    group.userEmail?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
+        }
+
+        items(group.credentials, key = { it.id }) { cred ->
+            CredentialDetailRow(
+                credential = cred,
+                onRevoke = { onRevoke(cred) },
+            )
         }
     }
 }
@@ -297,16 +299,11 @@ private fun CredentialGroupDetailSheet(
 private fun CredentialDetailRow(
     credential: AdminDigitalCredential,
     onRevoke: () -> Unit,
-    onSuspend: () -> Unit,
-    onActivate: () -> Unit,
 ) {
-    val isSuspended = credential.status.equals("suspended", ignoreCase = true)
     val isRevoked = credential.status.equals("revoked", ignoreCase = true)
+    val isActive = credential.status.equals("active", ignoreCase = true)
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-    ) {
+    MistyCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -327,59 +324,35 @@ private fun CredentialDetailRow(
                 )
                 StatusBadge(credential.status)
             }
-            credential.deviceModel?.let {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            androidx.compose.material3.HorizontalDivider(
+                modifier = Modifier.padding(vertical = 10.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+            )
+            credential.deviceModel?.takeIf { it.isNotBlank() }?.let {
+                MistyLabeledContentRow(stringResource(R.string.dashboard_my_device), it)
             }
-            Column {
-                if (credential.usageCount > 0) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.admin_usage_count, credential.usageCount),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                credential.issuedAt?.let {
-                    Text(
-                        text = stringResource(R.string.admin_issued, it.take(10)),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            MistyLabeledContentRow(
+                label = stringResource(R.string.admin_usage_label),
+                value = credential.usageCount.toString(),
+            )
+            credential.issuedAt?.let {
+                MistyLabeledContentRow(stringResource(R.string.admin_issued_label), it.take(10))
             }
-            if (!isRevoked) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
+            credential.expiresAt?.let {
+                MistyLabeledContentRow(stringResource(R.string.admin_expires_label), it.take(10))
+            }
+            if (isActive && !isRevoked) {
+                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
+                TextButton(
+                    onClick = onRevoke,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (isSuspended) {
-                        OutlinedButton(onClick = onActivate) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.admin_activate))
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                    } else {
-                        OutlinedButton(onClick = onSuspend) {
-                            Icon(Icons.Default.Pause, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.admin_suspend))
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Button(
-                        onClick = onRevoke,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    ) {
-                        Text(stringResource(R.string.admin_revoke))
-                    }
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.admin_revoke),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         }

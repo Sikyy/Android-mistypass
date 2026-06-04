@@ -162,6 +162,16 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    fun goToManualSignIn() {
+        // Mirrors iOS "Manual sign in": jump straight to the email + password step
+        // (no org lookup), so the button needs no email and is always enabled.
+        _uiState.value = _uiState.value.copy(
+            authStep = AuthStep.PasswordInput,
+            orgAuthConfig = null,
+            errorMessage = null,
+        )
+    }
+
     fun goBack() {
         val state = _uiState.value
         if (state.authStep == AuthStep.MfaInput) {

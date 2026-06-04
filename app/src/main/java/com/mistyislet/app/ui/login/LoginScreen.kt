@@ -1,7 +1,6 @@
 package com.mistyislet.app.ui.login
 
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -27,14 +27,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.AlertDialog
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -49,7 +48,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -115,37 +113,35 @@ private fun EmailInputStep(state: LoginUiState, vm: LoginViewModel) {
                 keyboardActions = KeyboardActions(
                     onGo = {
                         focusManager.clearFocus()
-                        vm.submitEmail()
+                        vm.requestMagicLink()
                     },
                 ),
             )
             ErrorText(state.errorMessage)
         },
         footer = {
+            // iOS EmailEntryStep: left = Manual sign in (always enabled → password step),
+            // right Continue = request a magic link (gated on a non-empty email).
             TextButton(
+                onClick = {
+                    focusManager.clearFocus()
+                    vm.goToManualSignIn()
+                },
+                colors = authTextButtonColors(),
+            ) {
+                Text(stringResource(R.string.login_manual_sign_in))
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            AuthPrimaryButton(
+                text = stringResource(R.string.continue_button),
                 onClick = {
                     focusManager.clearFocus()
                     vm.requestMagicLink()
                 },
                 enabled = canContinue,
-                colors = authTextButtonColors(),
-            ) {
-                Text(stringResource(R.string.send_magic_link))
-            }
-
-            Spacer(Modifier.weight(1f))
-
-            Button(
-                onClick = {
-                    focusManager.clearFocus()
-                    vm.submitEmail()
-                },
-                enabled = canContinue,
-                shape = RoundedCornerShape(999.dp),
-                colors = authPrimaryButtonColors(),
-            ) {
-                Text(stringResource(R.string.continue_button))
-            }
+            )
         },
     )
 }
@@ -199,7 +195,7 @@ private fun PasswordInputStep(state: LoginUiState, vm: LoginViewModel) {
             OutlinedTextField(
                 value = state.password,
                 onValueChange = vm::onPasswordChange,
-                label = { Text(stringResource(R.string.login_password)) },
+                placeholder = { Text(stringResource(R.string.login_password)) },
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -234,30 +230,20 @@ private fun PasswordInputStep(state: LoginUiState, vm: LoginViewModel) {
 
             Spacer(Modifier.weight(1f))
 
-            Button(
+            AuthPrimaryButton(
+                text = stringResource(R.string.login_button),
                 onClick = {
                     focusManager.clearFocus()
                     vm.login()
                 },
                 enabled = isValid,
-                shape = RoundedCornerShape(999.dp),
-                colors = authPrimaryButtonColors(),
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White,
-                    )
-                } else {
-                    Text(stringResource(R.string.login_button))
-                }
-            }
+                isLoading = state.isLoading,
+            )
         },
     )
 
     if (showForgotPassword) {
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = {
                 showForgotPassword = false
                 vm.clearForgotPasswordState()
@@ -271,7 +257,7 @@ private fun PasswordInputStep(state: LoginUiState, vm: LoginViewModel) {
                         OutlinedTextField(
                             value = forgotEmail,
                             onValueChange = { forgotEmail = it },
-                            label = { Text(stringResource(R.string.login_email)) },
+                            placeholder = { Text(stringResource(R.string.login_email)) },
                             shape = RoundedCornerShape(12.dp),
                             colors = authTextFieldColors(),
                             modifier = Modifier.fillMaxWidth(),
@@ -332,26 +318,16 @@ private fun MfaInputStep(state: LoginUiState, vm: LoginViewModel) {
             ErrorText(state.errorMessage)
         },
         footer = {
-            Button(
+            AuthPrimaryButton(
+                text = stringResource(R.string.login_mfa_verify),
                 onClick = {
                     focusManager.clearFocus()
                     vm.login()
                 },
                 enabled = state.mfaCode.isNotBlank() && !state.isLoading,
-                shape = RoundedCornerShape(999.dp),
-                colors = authPrimaryButtonColors(),
+                isLoading = state.isLoading,
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White,
-                    )
-                } else {
-                    Text(stringResource(R.string.login_mfa_verify))
-                }
-            }
+            )
         },
     )
 }
@@ -391,16 +367,12 @@ private fun MagicLinkSentStep(state: LoginUiState, vm: LoginViewModel) {
 
         Spacer(Modifier.weight(1f))
 
-        OutlinedButton(
+        AuthPrimaryButton(
+            text = stringResource(R.string.resend),
             onClick = { vm.requestMagicLink() },
             enabled = !state.isLoading,
-            shape = RoundedCornerShape(999.dp),
-            colors = authOutlinedButtonColors(),
-            border = authOutlinedButtonBorder(),
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.resend))
-        }
+        )
 
         TextButton(onClick = vm::goBack, colors = authTextButtonColors(), modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.back_to_login))
@@ -507,7 +479,7 @@ private fun AuthTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        placeholder = { Text(label) },
         singleLine = true,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
@@ -515,6 +487,34 @@ private fun AuthTextField(
         colors = authTextFieldColors(),
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+@Composable
+private fun AuthPrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+) {
+    // iOS login CTAs use .borderedProminent — a filled rounded-rect (not a full pill).
+    Button(
+        onClick = onClick,
+        enabled = enabled && !isLoading,
+        shape = RoundedCornerShape(12.dp),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+        modifier = modifier,
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        } else {
+            Text(text, fontWeight = FontWeight.SemiBold)
+        }
+    }
 }
 
 @Composable
@@ -587,14 +587,6 @@ private fun ErrorText(errorMessage: String?, centered: Boolean = false) {
 }
 
 @Composable
-private fun authPrimaryButtonColors() = ButtonDefaults.buttonColors(
-    containerColor = MaterialTheme.colorScheme.primary,
-    contentColor = Color.White,
-    disabledContainerColor = Color(0xFFE5E5EA),
-    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-)
-
-@Composable
 private fun authTextButtonColors() = ButtonDefaults.textButtonColors(
     contentColor = MaterialTheme.colorScheme.primary,
     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
@@ -605,15 +597,6 @@ private fun authPlainTextButtonColors() = ButtonDefaults.textButtonColors(
     contentColor = MaterialTheme.colorScheme.onSurface,
     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
 )
-
-@Composable
-private fun authOutlinedButtonColors() = ButtonDefaults.outlinedButtonColors(
-    contentColor = MaterialTheme.colorScheme.primary,
-    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-)
-
-@Composable
-private fun authOutlinedButtonBorder() = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.8f))
 
 @Composable
 private fun authTextFieldColors() = OutlinedTextFieldDefaults.colors(

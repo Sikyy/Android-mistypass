@@ -3,6 +3,8 @@ package com.mistyislet.app.ui.credentials
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -10,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,15 +30,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.DoorFront
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -50,8 +53,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,8 +65,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.mistyislet.app.R
+import com.mistyislet.app.domain.model.AccessibleDoor
+import com.mistyislet.app.ui.components.MistyBottomNavInset
+import com.mistyislet.app.ui.components.MistyDoorIcon
+import com.mistyislet.app.ui.components.MistyLargeTitle
+import com.mistyislet.app.ui.components.MistyPillActionButton
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosRed
+import com.mistyislet.app.ui.theme.IosYellow
 import kotlinx.coroutines.delay
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 
 private val AccessPassBg = Color(0xFF1A1F36)
 private val PinPassBg = Color(0xFF0F2027)
@@ -76,9 +92,22 @@ enum class PassType { ACCESS_PASS, PIN_PASS, DEVICE_CREDENTIAL }
 @Composable
 fun CredentialsScreen(
     onNavigateToBindCard: () -> Unit = {},
+    onNavigateToQrPass: () -> Unit = {},
     viewModel: CredentialsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    CredentialsScreenContent(uiState = uiState, onRefreshQr = viewModel::manualRefreshQr)
+}
+
+/**
+ * Stateless Pass/credentials content — driven entirely by [uiState] so it can render in the
+ * DEBUG parity harness with mock data (no Hilt). This is the exact production UI.
+ */
+@Composable
+internal fun CredentialsScreenContent(
+    uiState: CredentialsUiState,
+    onRefreshQr: () -> Unit = {},
+) {
     var expandedPassId by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
@@ -102,13 +131,10 @@ fun CredentialsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .verticalScroll(rememberScrollState()),
     ) {
-        Text(
-            text = stringResource(R.string.pass_title),
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-        )
+        MistyLargeTitle(text = stringResource(R.string.pass_title))
 
         Column(
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -126,6 +152,9 @@ fun CredentialsScreen(
                 },
                 qrToken = uiState.dynamicQrContent,
                 qrExpiresAt = uiState.qrExpiresAt,
+                qrErrorMessage = uiState.qrErrorMessage,
+                isQrLoading = uiState.isQrLoading,
+                onRefreshQr = onRefreshQr,
             )
 
             // PIN Pass card
@@ -150,6 +179,7 @@ fun CredentialsScreen(
                     organizationName = uiState.organizationName,
                     placeName = null,
                     holderName = cred.deviceModel ?: cred.platform,
+                    credentialExpiresAt = cred.expiresAt,
                     isExpanded = expandedPassId == cred.id,
                     onTap = {
                         expandedPassId = if (expandedPassId == cred.id) null else cred.id
@@ -174,7 +204,44 @@ fun CredentialsScreen(
 
         }
 
-        Spacer(modifier = Modifier.height(100.dp))
+        Spacer(modifier = Modifier.height(MistyBottomNavInset))
+    }
+}
+
+@Composable
+internal fun QrDoorSelector(
+    doors: List<AccessibleDoor>,
+    selectedDoorId: String?,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        doors.forEach { door ->
+            val selected = door.id == selectedDoorId
+            Surface(
+                onClick = { onSelect(door.id) },
+                shape = CircleShape,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                border = if (selected) null else androidx.compose.foundation.BorderStroke(
+                    0.7.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f),
+                ),
+            ) {
+                Text(
+                    text = door.name,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    maxLines = 1,
+                )
+            }
+        }
     }
 }
 
@@ -189,35 +256,62 @@ private fun PassCard(
     onTap: () -> Unit,
     qrToken: String? = null,
     qrExpiresAt: Instant? = null,
+    qrErrorMessage: String? = null,
+    isQrLoading: Boolean = false,
+    onRefreshQr: () -> Unit = {},
     pinCode: String? = null,
     pinExpiresAt: Instant? = null,
+    credentialExpiresAt: String? = null,
 ) {
     val bgColor = when (passType) {
         PassType.ACCESS_PASS -> AccessPassBg
         PassType.PIN_PASS -> PinPassBg
         PassType.DEVICE_CREDENTIAL -> DeviceCredentialBg
     }
+    val cardHeight by animateDpAsState(
+        targetValue = if (isExpanded) 260.dp else 200.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "passCardHeight",
+    )
+    val cardScale by animateFloatAsState(
+        targetValue = if (isExpanded) 1f else 0.985f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
+        label = "passCardScale",
+    )
+    val cardShadow by animateDpAsState(
+        targetValue = if (isExpanded) 12.dp else 5.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
+        label = "passCardShadow",
+    )
 
-    Card(
+    Surface(
         onClick = onTap,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            },
         shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
+        color = bgColor,
+        shadowElevation = cardShadow,
     ) {
         Column {
             // Pass body
             Column(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier
+                    .height(cardHeight)
+                    .padding(20.dp),
             ) {
                 // Header row: icon + org name + type badge
                 HeaderRow(passType, organizationName)
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.weight(1f))
                 // Primary field
                 PrimaryField(passType, holderName)
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 // Secondary row
-                SecondaryRow(passType, placeName)
+                SecondaryRow(passType, placeName, credentialExpiresAt)
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
             // Barcode strip (expanded)
@@ -236,6 +330,9 @@ private fun PassCard(
                     bgColor = bgColor,
                     qrToken = qrToken,
                     qrExpiresAt = qrExpiresAt,
+                    qrErrorMessage = qrErrorMessage,
+                    isQrLoading = isQrLoading,
+                    onRefreshQr = onRefreshQr,
                     pinCode = pinCode,
                     pinExpiresAt = pinExpiresAt,
                 )
@@ -246,11 +343,6 @@ private fun PassCard(
 
 @Composable
 private fun HeaderRow(passType: PassType, organizationName: String) {
-    val icon: ImageVector = when (passType) {
-        PassType.ACCESS_PASS -> Icons.Default.QrCode2
-        PassType.PIN_PASS -> Icons.Default.Pin
-        PassType.DEVICE_CREDENTIAL -> Icons.Default.PhoneAndroid
-    }
     val badge = when (passType) {
         PassType.ACCESS_PASS -> "ACCESS"
         PassType.PIN_PASS -> "PIN"
@@ -265,12 +357,28 @@ private fun HeaderRow(passType: PassType, organizationName: String) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f),
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = CardFg,
-                modifier = Modifier.size(22.dp),
-            )
+            when (passType) {
+                PassType.PIN_PASS -> Text(
+                    text = "#",
+                    color = CardFg,
+                    fontSize = 28.sp,
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.width(22.dp),
+                )
+                PassType.ACCESS_PASS -> Icon(
+                    imageVector = MistyDoorIcon,
+                    contentDescription = null,
+                    tint = CardFg,
+                    modifier = Modifier.size(22.dp),
+                )
+                PassType.DEVICE_CREDENTIAL -> Icon(
+                    imageVector = Icons.Default.PhoneAndroid,
+                    contentDescription = null,
+                    tint = CardFg,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = organizationName,
@@ -321,22 +429,47 @@ private fun PrimaryField(passType: PassType, holderName: String?) {
 }
 
 @Composable
-private fun SecondaryRow(passType: PassType, placeName: String?) {
+private fun SecondaryRow(
+    passType: PassType,
+    placeName: String?,
+    credentialExpiresAt: String?,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top,
     ) {
         if (!placeName.isNullOrBlank()) {
             FieldColumn(label = "LOCATION", value = placeName)
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
         }
+
+        Spacer(modifier = Modifier.weight(1f))
 
         when (passType) {
             PassType.ACCESS_PASS -> FieldColumn(label = "TYPE", value = "QR Access")
             PassType.PIN_PASS -> FieldColumn(label = "TYPE", value = "PIN Code")
-            PassType.DEVICE_CREDENTIAL -> {}
+            PassType.DEVICE_CREDENTIAL -> credentialExpiresAt?.let {
+                FieldColumn(label = "EXPIRES", value = formatPassDate(it))
+            }
         }
 
+        Spacer(modifier = Modifier.weight(1f))
         FieldColumn(label = "STATUS", value = "Active")
+    }
+}
+
+private fun formatPassDate(raw: String): String {
+    val formatter = DateTimeFormatter
+        .ofLocalizedDate(FormatStyle.MEDIUM)
+        .withLocale(Locale.getDefault())
+
+    return runCatching {
+        Instant.parse(raw).atZone(ZoneId.systemDefault()).format(formatter)
+    }.recoverCatching {
+        LocalDate.parse(raw.take(10)).format(formatter)
+    }.getOrElse {
+        raw.take(10)
     }
 }
 
@@ -368,6 +501,9 @@ private fun BarcodeStrip(
     bgColor: Color,
     qrToken: String?,
     qrExpiresAt: Instant?,
+    qrErrorMessage: String?,
+    isQrLoading: Boolean,
+    onRefreshQr: () -> Unit,
     pinCode: String?,
     pinExpiresAt: Instant?,
 ) {
@@ -384,7 +520,19 @@ private fun BarcodeStrip(
 
         when (passType) {
             PassType.ACCESS_PASS -> {
-                if (qrToken != null) {
+                if (isQrLoading && qrToken == null) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(40.dp),
+                        strokeWidth = 3.dp,
+                        color = CardFg,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = stringResource(R.string.qrcode_loading),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = CardLabel,
+                    )
+                } else if (qrToken != null) {
                     val bitmap = remember(qrToken) { generateQRCode(qrToken, 200) }
                     if (bitmap != null) {
                         Box(
@@ -406,11 +554,12 @@ private fun BarcodeStrip(
                         ExpiryTimer(expiresAt = qrExpiresAt)
                     }
                 } else {
-                    Icon(
-                        imageVector = Icons.Default.QrCode2,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = CardFg.copy(alpha = 0.3f),
+                    Text(
+                        text = "#",
+                        fontSize = 48.sp,
+                        lineHeight = 48.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = CardFg.copy(alpha = 0.3f),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -418,6 +567,14 @@ private fun BarcodeStrip(
                         style = MaterialTheme.typography.labelMedium,
                         color = CardLabel,
                     )
+                    qrErrorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = CardFg.copy(alpha = 0.7f),
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -425,6 +582,14 @@ private fun BarcodeStrip(
                     text = stringResource(R.string.pass_present_to_scanner),
                     style = MaterialTheme.typography.labelSmall,
                     color = CardLabel,
+                )
+                MistyPillActionButton(
+                    text = stringResource(R.string.pass_refresh_qr),
+                    icon = Icons.Default.Refresh,
+                    onClick = onRefreshQr,
+                    tint = CardFg,
+                    containerColor = CardFg.copy(alpha = 0.14f),
+                    contentColor = CardFg,
                 )
             }
 
@@ -438,7 +603,7 @@ private fun BarcodeStrip(
                     }
                 } else {
                     Icon(
-                        imageVector = Icons.Default.Pin,
+                        imageVector = Icons.Default.QrCode2,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
                         tint = CardFg.copy(alpha = 0.3f),
@@ -468,7 +633,7 @@ private fun BarcodeStrip(
                         imageVector = Icons.Default.Security,
                         contentDescription = null,
                         modifier = Modifier.size(28.dp),
-                        tint = Color(0xFF4CAF50),
+                        tint = IosGreen,
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
@@ -501,32 +666,23 @@ private fun ExpiryTimer(expiresAt: Instant, totalSeconds: Int = 30) {
         }
     }
 
-    val progress = if (totalSeconds > 0) remaining.toFloat() / totalSeconds else 0f
     val color = when {
-        remaining > 15 -> Color(0xFF4CAF50)
-        remaining > 5 -> Color(0xFFFFC107)
-        else -> Color(0xFFF44336)
+        remaining > 15 -> IosGreen
+        remaining > 5 -> IosYellow
+        else -> IosRed
     }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp)) {
-            CircularProgressIndicator(
-                progress = { progress.coerceIn(0f, 1f) },
-                modifier = Modifier.size(28.dp),
-                color = color,
-                trackColor = CardFg.copy(alpha = 0.1f),
-                strokeWidth = 3.dp,
-            )
-            Text(
-                text = "${remaining}",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = CardFg.copy(alpha = 0.7f),
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(color),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = if (remaining > 0) stringResource(R.string.pass_refreshes_in) + " ${remaining}s"
                    else stringResource(R.string.pass_refreshing),
@@ -553,6 +709,8 @@ private fun PinDisplay(pin: String) {
                 Text(
                     text = digit.toString(),
                     style = MaterialTheme.typography.headlineMedium.copy(
+                        fontSize = 32.sp,
+                        lineHeight = 38.sp,
                         fontWeight = FontWeight.Bold,
                     ),
                     color = Color.Black,
@@ -562,7 +720,7 @@ private fun PinDisplay(pin: String) {
     }
 }
 
-private fun generateQRCode(content: String, size: Int): Bitmap? {
+internal fun generateQRCode(content: String, size: Int): Bitmap? {
     return try {
         val writer = QRCodeWriter()
         val pxSize = size * 3

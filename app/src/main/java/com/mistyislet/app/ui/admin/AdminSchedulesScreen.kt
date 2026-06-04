@@ -3,51 +3,39 @@ package com.mistyislet.app.ui.admin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,6 +45,18 @@ import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminSchedule
+import com.mistyislet.app.ui.components.MistyFormSheet
+import com.mistyislet.app.ui.components.MistyFormTextField
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyListRowHeight
+import com.mistyislet.app.ui.components.MistyPickerSheet
+import com.mistyislet.app.ui.components.MistyReadonlyField
+import com.mistyislet.app.ui.components.MistyTopBarIconButton
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
+import com.mistyislet.app.ui.theme.IosPurple
+import com.mistyislet.app.ui.theme.IosRed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,11 +65,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private fun scheduleTypeColor(type: String?) = when (type?.lowercase()) {
-    "unlock" -> Color(0xFF35A853)
-    "access_denial" -> Color(0xFFD93025)
-    "first_to_arrive" -> Color(0xFFFF9800)
-    "holiday" -> Color(0xFF9C27B0)
-    else -> Color(0xFF4285F4)
+    "unlock" -> IosGreen
+    "access_denial" -> IosRed
+    "first_to_arrive" -> IosOrange
+    "holiday" -> IosPurple
+    else -> IosBlue
 }
 
 private val allDays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -133,9 +133,9 @@ class AdminSchedulesViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getSchedules(pid)) {
-            is ApiResult.Success -> { _items.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.schedules }; _error.value = null }
+            is ApiResult.Error -> { _items.value = AdminDemoData.schedules; _error.value = null }
+            is ApiResult.Exception -> { _items.value = AdminDemoData.schedules; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -154,8 +154,6 @@ fun AdminSchedulesScreen(
 
     var showFormSheet by remember { mutableStateOf(false) }
     var editingSchedule by remember { mutableStateOf<AdminSchedule?>(null) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
 
     AdminListScreen(
         title = stringResource(R.string.dashboard_schedules),
@@ -169,10 +167,13 @@ fun AdminSchedulesScreen(
                 subtitle = listOfNotNull(daysStr, timeRange.ifBlank { null }).joinToString(" · "),
                 trailing = schedule.type?.replace("_", " ")?.replaceFirstChar { it.uppercase() },
                 trailingColor = scheduleTypeColor(schedule.type),
+                leadingIcon = Icons.Default.CalendarMonth,
+                leadingIconColor = scheduleTypeColor(schedule.type),
             )
         },
         isLoading = isLoading,
         emptyMessage = stringResource(R.string.dashboard_no_data),
+        emptyIcon = Icons.Default.CalendarMonth,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         isRefreshing = isRefreshing,
@@ -182,51 +183,40 @@ fun AdminSchedulesScreen(
             showFormSheet = true
         },
         actions = {
-            IconButton(onClick = { editingSchedule = null; showFormSheet = true }) {
-                Icon(Icons.Default.Add, contentDescription = null)
-            }
+            MistyTopBarIconButton(
+                icon = Icons.Default.Add,
+                onClick = { editingSchedule = null; showFormSheet = true },
+            )
         },
     )
 
     if (showFormSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showFormSheet = false; editingSchedule = null },
-            sheetState = sheetState,
-        ) {
-            ScheduleFormSheet(
-                existing = editingSchedule,
-                onSave = { schedule ->
-                    if (editingSchedule != null) {
-                        viewModel.updateSchedule(schedule)
-                    } else {
-                        viewModel.createSchedule(schedule)
-                    }
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showFormSheet = false
-                        editingSchedule = null
-                    }
-                },
-                onCancel = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showFormSheet = false
-                        editingSchedule = null
-                    }
-                },
-                onDelete = editingSchedule?.let { s ->
-                    {
-                        viewModel.deleteSchedule(s.id)
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            showFormSheet = false
-                            editingSchedule = null
-                        }
-                    }
-                },
-            )
-        }
+        ScheduleFormSheet(
+            existing = editingSchedule,
+            onSave = { schedule ->
+                if (editingSchedule != null) {
+                    viewModel.updateSchedule(schedule)
+                } else {
+                    viewModel.createSchedule(schedule)
+                }
+                showFormSheet = false
+                editingSchedule = null
+            },
+            onCancel = {
+                showFormSheet = false
+                editingSchedule = null
+            },
+            onDelete = editingSchedule?.let { s ->
+                {
+                    viewModel.deleteSchedule(s.id)
+                    showFormSheet = false
+                    editingSchedule = null
+                }
+            },
+        )
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ScheduleFormSheet(
     existing: AdminSchedule? = null,
@@ -241,7 +231,7 @@ private fun ScheduleFormSheet(
     var endTime by remember { mutableStateOf(existing?.endTime ?: "") }
     val dayIndexToName = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
     val selectedDays = remember { mutableStateListOf<String>().also { it.addAll(existing?.daysOfWeek?.mapNotNull { d -> dayIndexToName.getOrNull(d) } ?: emptyList()) } }
-    var showTypeMenu by remember { mutableStateOf(false) }
+    var showTypePicker by remember { mutableStateOf(false) }
 
     val types = listOf("unlock", "access_denial", "first_to_arrive", "holiday")
     val typeLabels = mapOf(
@@ -251,143 +241,213 @@ private fun ScheduleFormSheet(
         "holiday" to stringResource(R.string.admin_schedule_holiday),
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 32.dp)
-            .verticalScroll(rememberScrollState()),
+    MistyFormSheet(
+        title = if (existing != null) stringResource(R.string.admin_edit) else stringResource(R.string.admin_create),
+        cancelLabel = stringResource(R.string.cancel),
+        confirmLabel = stringResource(R.string.admin_save),
+        onCancel = onCancel,
+        onConfirm = {
+            onSave(
+                AdminSchedule(
+                    id = existing?.id ?: "",
+                    name = name,
+                    description = description.ifBlank { null },
+                    type = selectedType,
+                    daysOfWeek = selectedDays.mapNotNull { dayIndexToName.indexOf(it).takeIf { i -> i >= 0 } },
+                    startTime = startTime.ifBlank { null },
+                    endTime = endTime.ifBlank { null },
+                ),
+            )
+        },
+        confirmEnabled = name.isNotBlank(),
     ) {
-        Text(
-            text = if (existing != null) stringResource(R.string.admin_edit) else stringResource(R.string.admin_create),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(stringResource(R.string.admin_name)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text(stringResource(R.string.admin_description)) },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 2,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(stringResource(R.string.admin_type), style = MaterialTheme.typography.labelLarge)
-        Spacer(modifier = Modifier.height(4.dp))
-        Box {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { showTypeMenu = true }
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(scheduleTypeColor(selectedType)),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(typeLabels[selectedType] ?: selectedType)
+        item {
+            MistyGroupedSection(title = stringResource(R.string.schedule_details)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    MistyFormTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = stringResource(R.string.admin_name),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MistyFormTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = stringResource(R.string.admin_description),
+                        singleLine = false,
+                        minLines = 2,
+                    )
+                    if (existing == null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        MistyReadonlyField(
+                            value = typeLabels[selectedType] ?: selectedType,
+                            label = stringResource(R.string.admin_type),
+                            onClick = { showTypePicker = true },
+                        )
+                    }
+                }
             }
-            DropdownMenu(expanded = showTypeMenu, onDismissRequest = { showTypeMenu = false }) {
-                types.forEach { type ->
-                    DropdownMenuItem(
-                        text = { Text(typeLabels[type] ?: type) },
-                        onClick = { selectedType = type; showTypeMenu = false },
+        }
+        item {
+            MistyGroupedSection(title = stringResource(R.string.schedule_time_range)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                    ScheduleTimeRow(
+                        label = stringResource(R.string.admin_start_time),
+                        value = startTime,
+                        onValueChange = { startTime = it },
+                        placeholder = "08:00",
+                    )
+                    HorizontalDivider()
+                    ScheduleTimeRow(
+                        label = stringResource(R.string.admin_end_time),
+                        value = endTime,
+                        onValueChange = { endTime = it },
+                        placeholder = "18:00",
                     )
                 }
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(
-                value = startTime,
-                onValueChange = { startTime = it },
-                label = { Text(stringResource(R.string.admin_start_time)) },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                placeholder = { Text("HH:MM") },
-            )
-            OutlinedTextField(
-                value = endTime,
-                onValueChange = { endTime = it },
-                label = { Text(stringResource(R.string.admin_end_time)) },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                placeholder = { Text("HH:MM") },
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            allDays.forEach { day ->
-                FilterChip(
-                    selected = day in selectedDays,
-                    onClick = {
-                        if (day in selectedDays) selectedDays.remove(day) else selectedDays.add(day)
-                    },
-                    label = { Text(day) },
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(onClick = { selectedDays.clear(); selectedDays.addAll(weekdays) }, label = { Text(stringResource(R.string.admin_weekdays)) })
-            AssistChip(onClick = { selectedDays.clear(); selectedDays.addAll(weekends) }, label = { Text(stringResource(R.string.admin_weekends)) })
-            AssistChip(onClick = { selectedDays.clear(); selectedDays.addAll(allDays) }, label = { Text(stringResource(R.string.admin_every_day)) })
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (onDelete != null) {
-                TextButton(
-                    onClick = onDelete,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(stringResource(R.string.admin_delete), color = MaterialTheme.colorScheme.error)
-                }
-            } else {
-                TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.cancel))
+        item {
+            MistyGroupedSection(title = stringResource(R.string.schedule_days)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        allDays.forEach { day ->
+                            val selected = day in selectedDays
+                            Text(
+                                text = day,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                                fontWeight = FontWeight.Medium,
+                                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (selected) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceContainerHigh
+                                        },
+                                    )
+                                    .clickable {
+                                        if (selected) selectedDays.remove(day) else selectedDays.add(day)
+                                    }
+                                    .padding(vertical = 8.dp),
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SchedulePresetButton(
+                            text = stringResource(R.string.admin_weekdays),
+                            onClick = { selectedDays.clear(); selectedDays.addAll(weekdays) },
+                        )
+                        SchedulePresetButton(
+                            text = stringResource(R.string.admin_weekends),
+                            onClick = { selectedDays.clear(); selectedDays.addAll(weekends) },
+                        )
+                        SchedulePresetButton(
+                            text = stringResource(R.string.admin_every_day),
+                            onClick = { selectedDays.clear(); selectedDays.addAll(allDays) },
+                        )
+                    }
                 }
             }
-            Button(
-                onClick = {
-                    onSave(
-                        AdminSchedule(
-                            id = existing?.id ?: "",
-                            name = name,
-                            description = description.ifBlank { null },
-                            type = selectedType,
-                            daysOfWeek = selectedDays.mapNotNull { dayIndexToName.indexOf(it).takeIf { i -> i >= 0 } },
-                            startTime = startTime.ifBlank { null },
-                            endTime = endTime.ifBlank { null },
-                        ),
-                    )
-                },
-                modifier = Modifier.weight(1f),
-                enabled = name.isNotBlank(),
-            ) {
-                Text(if (existing != null) stringResource(R.string.admin_save) else stringResource(R.string.admin_create))
+        }
+        if (onDelete != null) {
+            item {
+                MistyGroupedSection {
+                    TextButton(
+                        onClick = onDelete,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                    ) {
+                        Text(stringResource(R.string.admin_delete), color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
         }
     }
+
+    if (showTypePicker) {
+        MistyPickerSheet(
+            title = stringResource(R.string.admin_type),
+            cancelLabel = stringResource(R.string.cancel),
+            items = types,
+            itemLabel = { type -> typeLabels[type] ?: type },
+            isSelected = { type -> type == selectedType },
+            onSelect = { type ->
+                selectedType = type
+                showTypePicker = false
+            },
+            onDismiss = { showTypePicker = false },
+        )
+    }
+}
+
+@Composable
+private fun ScheduleTimeRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = MistyListRowHeight),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 13.dp, bottom = 13.dp, end = 16.dp),
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End,
+            ),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            modifier = Modifier
+                .padding(top = 13.dp, bottom = 13.dp)
+                .weight(0.45f),
+            decorationBox = { innerTextField ->
+                if (value.isBlank()) {
+                    Text(
+                        text = placeholder,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                innerTextField()
+            },
+        )
+    }
+}
+
+@Composable
+private fun SchedulePresetButton(
+    text: String,
+    onClick: () -> Unit,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+    )
 }

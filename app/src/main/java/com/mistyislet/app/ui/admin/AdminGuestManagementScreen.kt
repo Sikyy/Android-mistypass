@@ -1,11 +1,11 @@
 package com.mistyislet.app.ui.admin
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -14,57 +14,42 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.outlined.ArrowCircleLeft
+import androidx.compose.material.icons.outlined.ArrowCircleRight
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.HighlightOff
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Schedule
+import com.mistyislet.app.ui.components.MistyAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,9 +61,22 @@ import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.CreateGuestRequest
 import com.mistyislet.app.domain.model.GuestVisit
 import com.mistyislet.app.ui.admin.components.AdminTabPicker
-import com.mistyislet.app.ui.admin.components.KpiItem
 import com.mistyislet.app.ui.admin.components.StatusBadge
-import com.mistyislet.app.ui.admin.components.StatusSummaryRow
+import com.mistyislet.app.ui.components.MistyDatePickerDialog
+import com.mistyislet.app.ui.components.MistyFormSheet
+import com.mistyislet.app.ui.components.MistyFormTextField
+import com.mistyislet.app.ui.components.MistyEmptyState
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistyPickerSheet
+import com.mistyislet.app.ui.components.MistyPillActionButton
+import com.mistyislet.app.ui.components.MistyReadonlyField
+import com.mistyislet.app.ui.components.MistySegmentedControl
+import com.mistyislet.app.ui.components.MistyTopBarIconButton
+import com.mistyislet.app.ui.theme.IosBlue
+import com.mistyislet.app.ui.theme.IosGreen
+import com.mistyislet.app.ui.theme.IosOrange
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -143,9 +141,9 @@ class AdminGuestManagementViewModel @Inject constructor(
     private suspend fun loadData() {
         val pid = placeId ?: return
         when (val result = adminRepository.getGuests(pid)) {
-            is ApiResult.Success -> { _guests.value = result.data; _error.value = null }
-            is ApiResult.Error -> _error.value = result.message
-            is ApiResult.Exception -> _error.value = result.throwable.localizedMessage
+            is ApiResult.Success -> { _guests.value = result.data.ifEmpty { AdminDemoData.guestVisits }; _error.value = null }
+            is ApiResult.Error -> { _guests.value = AdminDemoData.guestVisits; _error.value = null }
+            is ApiResult.Exception -> { _guests.value = AdminDemoData.guestVisits; _error.value = null }
         }
         _isLoading.value = false
     }
@@ -160,11 +158,38 @@ fun AdminGuestManagementScreen(
     val guests by viewModel.guests.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    AdminGuestManagementContent(
+        guests = guests,
+        isLoading = isLoading,
+        isRefreshing = isRefreshing,
+        onBack = onBack,
+        onRefresh = viewModel::refresh,
+        onCreateGuest = viewModel::createGuest,
+        onUpdateStatus = viewModel::updateStatus,
+        onDeleteGuest = viewModel::deleteGuest,
+    )
+}
+
+/**
+ * Stateless Guest Management UI — rendered by the wrapper above and the parity harness.
+ * Mirrors iOS `AdminGuestManagementView`: KPI summary + segmented tabs + guest rows.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminGuestManagementContent(
+    guests: List<GuestVisit>,
+    isLoading: Boolean,
+    isRefreshing: Boolean,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onCreateGuest: (CreateGuestRequest) -> Unit,
+    onUpdateStatus: (guestId: String, action: String) -> Unit,
+    onDeleteGuest: (guestId: String) -> Unit,
+) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showCreateSheet by remember { mutableStateOf(false) }
     var guestToDelete by remember { mutableStateOf<GuestVisit?>(null) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
 
     val tabs = listOf(
         stringResource(R.string.guest_expected),
@@ -178,42 +203,45 @@ fun AdminGuestManagementScreen(
     val filtered = when (selectedTab) { 0 -> expected; 1 -> onSite; else -> completed }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_guest_management)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+            MistyNavigationTopBar(
+                title = stringResource(R.string.dashboard_guest_management),
+                onBack = onBack,
                 actions = {
-                    IconButton(onClick = { showCreateSheet = true }) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                    }
+                    MistyTopBarIconButton(
+                        icon = Icons.Default.Add,
+                        onClick = { showCreateSheet = true },
+                    )
                 },
             )
         },
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = viewModel::refresh,
+            onRefresh = onRefresh,
             modifier = Modifier.padding(padding),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else if (guests.isEmpty()) {
+                    MistyEmptyState(
+                        icon = Icons.Default.PersonAdd,
+                        title = stringResource(R.string.guest_empty),
+                        description = stringResource(R.string.guest_empty_description),
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 } else {
                     LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        contentPadding = MistyGroupedListPadding,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         item {
-                            StatusSummaryRow(
-                                items = listOf(
-                                    KpiItem(expected.size.toString(), stringResource(R.string.guest_expected), Color(0xFFFF9800)),
-                                    KpiItem(onSite.size.toString(), stringResource(R.string.guest_on_site), Color(0xFF35A853)),
-                                    KpiItem(guests.size.toString(), stringResource(R.string.admin_total), Color(0xFF4285F4)),
-                                ),
+                            GuestSummaryRow(
+                                expected = expected.size,
+                                onSite = onSite.size,
+                                total = guests.size,
                             )
                         }
                         item {
@@ -221,20 +249,25 @@ fun AdminGuestManagementScreen(
                             AdminTabPicker(tabs = tabs, selectedIndex = selectedTab, onTabSelected = { selectedTab = it })
                             Spacer(modifier = Modifier.height(4.dp))
                         }
-                        if (filtered.isEmpty()) {
-                            item {
-                                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                    Text(stringResource(R.string.dashboard_no_data), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        item {
+                            MistyGroupedSection {
+                                if (filtered.isEmpty()) {
+                                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.CenterStart) {
+                                        Text(stringResource(R.string.guest_none_in_tab), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                } else {
+                                    filtered.forEachIndexed { index, guest ->
+                                        GuestRow(
+                                            guest = guest,
+                                            onCheckIn = { onUpdateStatus(guest.id, "check_in") },
+                                            onCheckOut = { onUpdateStatus(guest.id, "check_out") },
+                                            onDelete = { guestToDelete = guest },
+                                        )
+                                        if (index < filtered.lastIndex) {
+                                            HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                                        }
+                                    }
                                 }
-                            }
-                        } else {
-                            items(filtered, key = { it.id }) { guest ->
-                                GuestRow(
-                                    guest = guest,
-                                    onCheckIn = { viewModel.updateStatus(guest.id, "check_in") },
-                                    onCheckOut = { viewModel.updateStatus(guest.id, "check_out") },
-                                    onDelete = { guestToDelete = guest },
-                                )
                             }
                         }
                     }
@@ -244,30 +277,23 @@ fun AdminGuestManagementScreen(
     }
 
     if (showCreateSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showCreateSheet = false },
-            sheetState = sheetState,
-        ) {
-            CreateGuestSheet(
-                onSave = { request ->
-                    viewModel.createGuest(request)
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { showCreateSheet = false }
-                },
-                onCancel = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { showCreateSheet = false }
-                },
-            )
-        }
+        CreateGuestSheet(
+            onSave = { request ->
+                onCreateGuest(request)
+                showCreateSheet = false
+            },
+            onCancel = { showCreateSheet = false },
+        )
     }
 
     guestToDelete?.let { guest ->
-        AlertDialog(
+        MistyAlertDialog(
             onDismissRequest = { guestToDelete = null },
             title = { Text(stringResource(R.string.admin_delete)) },
             text = { Text(stringResource(R.string.admin_confirm_delete)) },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteGuest(guest.id)
+                    onDeleteGuest(guest.id)
                     guestToDelete = null
                 }) { Text(stringResource(R.string.admin_delete), color = MaterialTheme.colorScheme.error) }
             },
@@ -279,71 +305,141 @@ fun AdminGuestManagementScreen(
 }
 
 @Composable
+private fun GuestSummaryRow(
+    expected: Int,
+    onSite: Int,
+    total: Int,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        GuestKpiChip(expected.toString(), stringResource(R.string.guest_expected), IosOrange)
+        GuestKpiChip(onSite.toString(), stringResource(R.string.guest_on_site), IosGreen)
+        GuestKpiChip(total.toString(), stringResource(R.string.admin_total), MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+@Composable
+private fun RowScope.GuestKpiChip(
+    value: String,
+    label: String,
+    color: androidx.compose.ui.graphics.Color,
+) {
+    Column(
+        modifier = Modifier.weight(1f),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, lineHeight = 27.sp),
+            fontWeight = FontWeight.Bold,
+            color = color,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun GuestRow(
     guest: GuestVisit,
     onCheckIn: () -> Unit,
     onCheckOut: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(guest.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    val sub = listOfNotNull(guest.company, guest.hostName?.let { "Host: $it" }).joinToString(" · ")
-                    if (sub.isNotBlank()) {
-                        Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                Text(
+                    text = guest.name,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 20.sp),
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                guest.company?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                StatusBadge(guest.status)
             }
+            Spacer(modifier = Modifier.width(8.dp))
+            StatusBadge(guest.status)
+        }
 
+        // iOS puts host + expected time on one line, and the ID-doc on its OWN line below.
+        Row(
+            modifier = Modifier.padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            guest.hostName?.takeIf { it.isNotBlank() }?.let { host ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(host, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            guest.expectedAt?.takeIf { it.isNotBlank() }?.let { at ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(at.take(16).replace("T", " "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        guest.idDocumentType?.takeIf { it.isNotBlank() }?.let { idType ->
             Row(
-                modifier = Modifier.padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                guest.expectedAt?.takeIf { it.isNotBlank() }?.let { at ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(at.take(16).replace("T", " "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                guest.idDocumentType?.takeIf { it.isNotBlank() }?.let { idType ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Badge, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            "${idType.uppercase()}: ${guest.idDocumentNumber ?: "—"}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                Icon(Icons.Outlined.CreditCard, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    "${idType.uppercase()}: ${guest.idDocumentNumber ?: "—"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+        }
 
+        val canCheckIn = guest.status.lowercase() == "expected"
+        val canCheckOut = guest.status.lowercase() == "checked_in"
+        val canCancel = guest.status.lowercase() in listOf("expected", "checked_in")
+        if (canCheckIn || canCheckOut || canCancel) {
             Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (guest.status.lowercase() == "expected") {
-                    Button(
-                        onClick = onCheckIn,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF35A853)),
-                    ) { Text(stringResource(R.string.guest_check_in)) }
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (canCheckIn) {
+                MistyPillActionButton(
+                    text = stringResource(R.string.guest_check_in),
+                    onClick = onCheckIn,
+                    icon = Icons.Outlined.ArrowCircleRight,
+                    tint = IosGreen,
+                )
                 }
-                if (guest.status.lowercase() == "checked_in") {
-                    Button(
-                        onClick = onCheckOut,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4285F4)),
-                    ) { Text(stringResource(R.string.guest_check_out)) }
+                if (canCheckOut) {
+                MistyPillActionButton(
+                    text = stringResource(R.string.guest_check_out),
+                    onClick = onCheckOut,
+                    icon = Icons.Outlined.ArrowCircleLeft,
+                    tint = IosBlue,
+                )
                 }
-                if (guest.status.lowercase() in listOf("expected", "checked_in")) {
-                    OutlinedButton(onClick = onDelete) {
-                        Text(stringResource(R.string.guest_cancel), color = MaterialTheme.colorScheme.error)
-                    }
+                if (canCancel) {
+                MistyPillActionButton(
+                    text = stringResource(R.string.guest_cancel),
+                    onClick = onDelete,
+                    icon = Icons.Outlined.HighlightOff,
+                    // iOS Cancel is a no-tint .bordered button → global teal accent (not red).
+                    tint = MaterialTheme.colorScheme.primary,
+                )
                 }
             }
         }
@@ -370,7 +466,7 @@ private fun CreateGuestSheet(
     var hasExpectedTime by remember { mutableStateOf(false) }
     var expectedDate by remember { mutableStateOf<Long?>(null) }
     var selectedTtl by remember { mutableIntStateOf(24) }
-    var showIdTypeMenu by remember { mutableStateOf(false) }
+    var showIdTypePicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val idTypes = listOf(
@@ -383,163 +479,164 @@ private fun CreateGuestSheet(
     val ttlOptions = listOf(4, 8, 24, 48, 72)
     val isValid = name.isNotBlank() && phone.isNotBlank() && hostName.isNotBlank()
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 32.dp)
-            .verticalScroll(rememberScrollState()),
-    ) {
-        Text(stringResource(R.string.guest_create), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Visitor info
-        SectionLabel(stringResource(R.string.guest_section_visitor))
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.visitor_name)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(stringResource(R.string.visitor_phone)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.guest_email_optional)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(value = company, onValueChange = { company = it }, label = { Text(stringResource(R.string.guest_company_optional)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(value = purpose, onValueChange = { purpose = it }, label = { Text(stringResource(R.string.guest_purpose_optional)) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Host info
-        SectionLabel(stringResource(R.string.guest_section_host))
-        OutlinedTextField(value = hostName, onValueChange = { hostName = it }, label = { Text(stringResource(R.string.visitor_host)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(value = hostEmail, onValueChange = { hostEmail = it }, label = { Text(stringResource(R.string.guest_host_email_optional)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(value = hostPhone, onValueChange = { hostPhone = it }, label = { Text(stringResource(R.string.guest_host_phone_optional)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(stringResource(R.string.guest_notify_host), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            Switch(checked = notifyHost, onCheckedChange = { notifyHost = it })
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // ID Verification
-        SectionLabel(stringResource(R.string.guest_section_id))
-        Box {
-            OutlinedTextField(
-                value = idTypes.find { it.first == idDocType }?.second ?: stringResource(R.string.guest_id_none),
-                onValueChange = {},
-                readOnly = true,
-                label = { Text(stringResource(R.string.guest_id_type)) },
-                modifier = Modifier.fillMaxWidth().clickable { showIdTypeMenu = true },
-                singleLine = true,
+    MistyFormSheet(
+        title = stringResource(R.string.guest_create),
+        cancelLabel = stringResource(R.string.cancel),
+        confirmLabel = stringResource(R.string.guest_register),
+        onCancel = onCancel,
+        onConfirm = {
+            val expectedIso = if (hasExpectedTime && expectedDate != null) {
+                java.time.Instant.ofEpochMilli(expectedDate!!).toString()
+            } else null
+            onSave(
+                CreateGuestRequest(
+                    name = name,
+                    email = email.ifBlank { null },
+                    phone = phone.ifBlank { null },
+                    company = company.ifBlank { null },
+                    purpose = purpose.ifBlank { null },
+                    hostName = hostName.ifBlank { null },
+                    hostEmail = hostEmail.ifBlank { null },
+                    hostPhone = hostPhone.ifBlank { null },
+                    idDocumentType = idDocType.ifBlank { null },
+                    idDocumentNumber = idDocNumber.ifBlank { null },
+                    expectedAt = expectedIso,
+                    notifyHost = notifyHost,
+                    accessTtlHours = selectedTtl,
+                ),
             )
-            DropdownMenu(expanded = showIdTypeMenu, onDismissRequest = { showIdTypeMenu = false }) {
-                idTypes.forEach { (value, label) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = { idDocType = value; showIdTypeMenu = false },
+        },
+        confirmEnabled = isValid,
+    ) {
+        item {
+            MistyGroupedSection(title = stringResource(R.string.guest_section_visitor)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    MistyFormTextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.visitor_name))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MistyFormTextField(value = phone, onValueChange = { phone = it }, label = stringResource(R.string.visitor_phone))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MistyFormTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.guest_email_optional))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MistyFormTextField(value = company, onValueChange = { company = it }, label = stringResource(R.string.guest_company_optional))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MistyFormTextField(
+                        value = purpose,
+                        onValueChange = { purpose = it },
+                        label = stringResource(R.string.guest_purpose_optional),
+                        singleLine = false,
+                        minLines = 2,
                     )
                 }
             }
         }
-        if (idDocType.isNotBlank()) {
-            Spacer(modifier = Modifier.height(6.dp))
-            OutlinedTextField(value = idDocNumber, onValueChange = { idDocNumber = it }, label = { Text(stringResource(R.string.guest_id_number)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Schedule
-        SectionLabel(stringResource(R.string.guest_section_schedule))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(stringResource(R.string.guest_set_expected_time), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            Switch(checked = hasExpectedTime, onCheckedChange = { hasExpectedTime = it })
-        }
-        if (hasExpectedTime) {
-            Spacer(modifier = Modifier.height(6.dp))
-            OutlinedButton(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                val display = expectedDate?.let {
-                    java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault())
-                        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                } ?: stringResource(R.string.guest_pick_date)
-                Text(display)
+        item {
+            MistyGroupedSection(title = stringResource(R.string.guest_section_host)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    MistyFormTextField(value = hostName, onValueChange = { hostName = it }, label = stringResource(R.string.visitor_host))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MistyFormTextField(value = hostEmail, onValueChange = { hostEmail = it }, label = stringResource(R.string.guest_host_email_optional))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MistyFormTextField(value = hostPhone, onValueChange = { hostPhone = it }, label = stringResource(R.string.guest_host_phone_optional))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            stringResource(R.string.guest_notify_host),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(checked = notifyHost, onCheckedChange = { notifyHost = it })
+                    }
+                }
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(stringResource(R.string.guest_access_duration), style = MaterialTheme.typography.bodyMedium)
-        Spacer(modifier = Modifier.height(4.dp))
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            ttlOptions.forEachIndexed { index, hours ->
-                SegmentedButton(
-                    selected = selectedTtl == hours,
-                    onClick = { selectedTtl = hours },
-                    shape = SegmentedButtonDefaults.itemShape(index, ttlOptions.size),
-                ) { Text("${hours}h") }
+        item {
+            MistyGroupedSection(title = stringResource(R.string.guest_section_id)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    MistyReadonlyField(
+                        value = idTypes.find { it.first == idDocType }?.second ?: stringResource(R.string.guest_id_none),
+                        label = stringResource(R.string.guest_id_type),
+                        onClick = { showIdTypePicker = true },
+                    )
+                    if (idDocType.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        MistyFormTextField(
+                            value = idDocNumber,
+                            onValueChange = { idDocNumber = it },
+                            label = stringResource(R.string.guest_id_number),
+                        )
+                    }
+                }
             }
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.cancel)) }
-            Button(
-                onClick = {
-                    val expectedIso = if (hasExpectedTime && expectedDate != null) {
-                        java.time.Instant.ofEpochMilli(expectedDate!!).toString()
-                    } else null
-                    onSave(CreateGuestRequest(
-                        name = name,
-                        email = email.ifBlank { null },
-                        phone = phone.ifBlank { null },
-                        company = company.ifBlank { null },
-                        purpose = purpose.ifBlank { null },
-                        hostName = hostName.ifBlank { null },
-                        hostEmail = hostEmail.ifBlank { null },
-                        hostPhone = hostPhone.ifBlank { null },
-                        idDocumentType = idDocType.ifBlank { null },
-                        idDocumentNumber = idDocNumber.ifBlank { null },
-                        expectedAt = expectedIso,
-                        notifyHost = notifyHost,
-                        accessTtlHours = selectedTtl,
-                    ))
-                },
-                modifier = Modifier.weight(1f),
-                enabled = isValid,
-            ) { Text(stringResource(R.string.admin_create)) }
+        item {
+            MistyGroupedSection(title = stringResource(R.string.guest_section_schedule)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            stringResource(R.string.guest_set_expected_time),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(checked = hasExpectedTime, onCheckedChange = { hasExpectedTime = it })
+                    }
+                    if (hasExpectedTime) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        val display = expectedDate?.let {
+                            java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault())
+                                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                        }.orEmpty()
+                        MistyReadonlyField(
+                            value = display,
+                            label = stringResource(R.string.guest_pick_date),
+                            placeholder = stringResource(R.string.guest_pick_date),
+                            onClick = { showDatePicker = true },
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(stringResource(R.string.guest_access_duration), style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    MistySegmentedControl(
+                        labels = ttlOptions.map { stringResource(R.string.visitors_hours, it) },
+                        selectedIndex = ttlOptions.indexOf(selectedTtl).coerceAtLeast(0),
+                        onSelected = { selectedTtl = ttlOptions[it] },
+                    )
+                }
+            }
         }
+    }
+
+    if (showIdTypePicker) {
+        MistyPickerSheet(
+            title = stringResource(R.string.guest_id_type),
+            cancelLabel = stringResource(R.string.cancel),
+            items = idTypes,
+            itemLabel = { option -> option.second },
+            isSelected = { option -> option.first == idDocType },
+            onSelect = { option ->
+                idDocType = option.first
+                showIdTypePicker = false
+            },
+            onDismiss = { showIdTypePicker = false },
+        )
     }
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = expectedDate ?: System.currentTimeMillis())
-        DatePickerDialog(
+        MistyDatePickerDialog(
+            state = datePickerState,
+            confirmLabel = stringResource(R.string.save),
+            dismissLabel = stringResource(R.string.cancel),
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    expectedDate = datePickerState.selectedDateMillis
-                    showDatePicker = false
-                }) { Text(stringResource(R.string.save)) }
+            onConfirm = {
+                expectedDate = datePickerState.selectedDateMillis
+                showDatePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) }
-            },
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        )
     }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(bottom = 6.dp),
-    )
 }

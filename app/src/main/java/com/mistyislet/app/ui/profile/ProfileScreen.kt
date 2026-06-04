@@ -1,5 +1,6 @@
 package com.mistyislet.app.ui.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,45 +17,46 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.ExitToApp
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Laptop
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PhonelinkSetup
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.Face
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.FrontHand
+import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.NearMe
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,11 +72,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.fragment.app.FragmentActivity
@@ -82,9 +88,28 @@ import coil.compose.AsyncImage
 import com.mistyislet.app.R
 import kotlinx.coroutines.launch
 import com.mistyislet.app.domain.model.UserLogin
+import com.mistyislet.app.ui.components.MistyCard
+import com.mistyislet.app.ui.components.MistyBottomNavInset
+import com.mistyislet.app.ui.components.MistyFaceIdIcon
+import com.mistyislet.app.ui.components.MistyKeyIcon
+import com.mistyislet.app.ui.components.MistyGroupedListPadding
+import com.mistyislet.app.ui.components.MistyGroupedSection
+import com.mistyislet.app.ui.components.MistyLargeTitle
+import com.mistyislet.app.ui.components.MistyNavigationTopBar
+import com.mistyislet.app.ui.components.MistyPillActionButton
+import com.mistyislet.app.ui.components.MistySegmentedControl
 import com.mistyislet.app.ui.theme.Danger
 import com.mistyislet.app.ui.theme.Success
+import java.util.Locale
 
+private const val PROFILE_PAGE_CHANGE_PASSWORD = "change_password"
+private const val PROFILE_PAGE_LANGUAGE = "language"
+private const val PROFILE_PAGE_GEOFENCE = "geofence"
+private const val PROFILE_PAGE_ABOUT = "about"
+private const val PROFILE_PAGE_HELP = "help"
+private const val PROFILE_PAGE_ACKNOWLEDGMENTS = "acknowledgments"
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
@@ -93,47 +118,85 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var subpage by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.logoutEvent.collect { onLogout() }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = stringResource(R.string.profile_title),
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-        )
+    subpage?.let { page ->
+        BackHandler { subpage = null }
+        when (page) {
+            PROFILE_PAGE_CHANGE_PASSWORD -> ChangePasswordContent(
+                uiState = uiState,
+                onBack = {
+                    subpage = null
+                    viewModel.clearPasswordState()
+                },
+                onSubmit = viewModel::changePassword,
+            )
+            PROFILE_PAGE_LANGUAGE -> LanguageSettingsContent(
+                onBack = { subpage = null },
+                onSelect = viewModel::setLanguage,
+            )
+            PROFILE_PAGE_GEOFENCE -> GeofenceSettingsContent(onBack = { subpage = null })
+            PROFILE_PAGE_ABOUT -> AboutPage(
+                viewModel = viewModel,
+                onBack = { subpage = null },
+                onNavigateToTCPTest = onNavigateToTCPTest,
+            )
+            PROFILE_PAGE_HELP -> SimpleTextPage(
+                title = stringResource(R.string.settings_help),
+                body = stringResource(R.string.profile_help_placeholder),
+                onBack = { subpage = null },
+            )
+            PROFILE_PAGE_ACKNOWLEDGMENTS -> SimpleTextPage(
+                title = stringResource(R.string.settings_acknowledgments),
+                body = stringResource(R.string.profile_acknowledgments_placeholder),
+                onBack = { subpage = null },
+            )
+        }
+        return
+    }
 
-        TabRow(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier.padding(horizontal = 16.dp),
-            containerColor = Color.Transparent,
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface),
         ) {
-            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                Text(
-                    text = stringResource(R.string.profile_tab_main),
-                    modifier = Modifier.padding(vertical = 12.dp),
-                )
-            }
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                Text(
-                    text = stringResource(R.string.profile_tab_logins),
-                    modifier = Modifier.padding(vertical = 12.dp),
-                )
-            }
-            Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) {
-                Text(
-                    text = stringResource(R.string.profile_tab_help),
-                    modifier = Modifier.padding(vertical = 12.dp),
-                )
-            }
+            MistyLargeTitle(text = stringResource(R.string.profile_title))
+
+            Spacer(modifier = Modifier.height(10.dp))
+            MistySegmentedControl(
+                labels = listOf(
+                    stringResource(R.string.profile_tab_main),
+                    stringResource(R.string.profile_tab_logins),
+                    stringResource(R.string.profile_tab_help),
+                ),
+                selectedIndex = selectedTab,
+                onSelected = { selectedTab = it },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(modifier = Modifier.height(6.dp))
         }
 
         when (selectedTab) {
-            0 -> MainSettingsTab(uiState, viewModel)
+            0 -> MainSettingsTab(
+                uiState = uiState,
+                viewModel = viewModel,
+                onNavigateSubpage = { subpage = it },
+            )
             1 -> LoginsTab(uiState, viewModel)
-            2 -> HelpTab(viewModel, onNavigateToTCPTest)
+            2 -> HelpTab(
+                viewModel = viewModel,
+                onNavigateToTCPTest = onNavigateToTCPTest,
+                onNavigateSubpage = { subpage = it },
+            )
         }
     }
 }
@@ -142,98 +205,147 @@ fun ProfileScreen(
 private fun MainSettingsTab(
     uiState: ProfileUiState,
     viewModel: ProfileViewModel,
+    onNavigateSubpage: (String) -> Unit,
 ) {
-    var showChangePassword by remember { mutableStateOf(false) }
-    val surfaceColor = MaterialTheme.colorScheme.surface
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
-
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri ->
-        uri?.let { viewModel.uploadAvatar(it) }
-    }
+    ) { uri -> uri?.let { viewModel.uploadAvatar(it) } }
 
+    ProfileMainContent(
+        uiState = uiState,
+        onPickAvatar = {
+            photoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        },
+        onChangePassword = { onNavigateSubpage(PROFILE_PAGE_CHANGE_PASSWORD) },
+        onLanguage = { onNavigateSubpage(PROFILE_PAGE_LANGUAGE) },
+        onGeofence = { onNavigateSubpage(PROFILE_PAGE_GEOFENCE) },
+        onLogout = viewModel::logout,
+        onToggleBiometric = { enabled ->
+            if (enabled) {
+                val activity = context as? FragmentActivity
+                if (activity != null) {
+                    scope.launch {
+                        val ok = viewModel.biometricHelper.authenticate(
+                            activity,
+                            title = context.getString(R.string.biometric_prompt_title),
+                            subtitle = context.getString(R.string.biometric_prompt_subtitle),
+                        )
+                        if (ok) viewModel.toggleBiometric(true)
+                    }
+                }
+            } else {
+                viewModel.toggleBiometric(false)
+            }
+        },
+    )
+}
+
+/**
+ * Stateless main Profile tab content — driven by [uiState] + callbacks so it renders in the
+ * DEBUG parity harness with mock data. Exact production UI.
+ */
+@Composable
+internal fun ProfileMainContent(
+    uiState: ProfileUiState,
+    onPickAvatar: () -> Unit = {},
+    onChangePassword: () -> Unit = {},
+    onToggleBiometric: (Boolean) -> Unit = {},
+    onLanguage: () -> Unit = {},
+    onGeofence: () -> Unit = {},
+    onLogout: () -> Unit = {},
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 16.dp)
+            .padding(top = 40.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        // Profile header
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = surfaceColor),
-        ) {
+        MistyCard(modifier = Modifier.fillMaxWidth()) {
             if (uiState.user != null) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(52.dp)
                             .clip(CircleShape)
-                            .clickable {
-                                photoPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                )
-                            },
+                            .clickable(onClick = onPickAvatar),
                     ) {
                         if (uiState.user.avatar != null) {
                             AsyncImage(
                                 model = uiState.user.avatar,
                                 contentDescription = null,
                                 modifier = Modifier
-                                    .size(56.dp)
+                                    .size(52.dp)
                                     .clip(CircleShape),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                             )
                         } else {
                             Box(
                                 modifier = Modifier
-                                    .size(56.dp)
+                                    .size(52.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.primary),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text(
-                                    text = userInitials(uiState.user.name),
-                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onPrimary,
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(40.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimary,
                                 )
                             }
                         }
                         Box(
                             modifier = Modifier
-                                .size(20.dp)
+                                .size(18.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .background(MaterialTheme.colorScheme.primary)
                                 .align(Alignment.BottomEnd),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 Icons.Default.CameraAlt,
                                 contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(11.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary,
                             )
                         }
                     }
                     Spacer(modifier = Modifier.width(16.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = uiState.user.name,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = uiState.user.email,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        val organizationLine = listOfNotNull(
+                            uiState.user.organizationName?.takeIf { it.isNotBlank() },
+                            (uiState.user.roleDisplayLabel ?: uiState.user.role)?.toRoleLabel()?.takeIf { it.isNotBlank() },
+                        ).joinToString(" · ")
+                        if (organizationLine.isNotBlank()) {
+                            Text(
+                                text = organizationLine,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             } else if (uiState.isLoading) {
@@ -248,177 +360,636 @@ private fun MainSettingsTab(
             }
         }
 
-        // Settings
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = surfaceColor),
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                text = stringResource(R.string.profile_settings_section),
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 14.dp),
+            )
+            MistyCard(modifier = Modifier.fillMaxWidth()) {
             Column {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_password)) },
-                    leadingContent = { Icon(Icons.Default.Key, contentDescription = null) },
-                    modifier = Modifier.clickable { showChangePassword = true },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                ProfileRow(
+                    icon = MistyKeyIcon,
+                    title = stringResource(R.string.settings_password),
+                    onClick = onChangePassword,
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                ProfileDivider()
 
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            if (uiState.biometricAvailable) uiState.biometricTypeName
-                            else stringResource(R.string.settings_biometric),
-                        )
-                    },
-                    supportingContent = {
-                        Text(
-                            if (uiState.biometricAvailable)
-                                stringResource(R.string.settings_biometric_subtitle)
-                            else
-                                stringResource(R.string.settings_biometric_unavailable),
-                        )
-                    },
-                    leadingContent = {
-                        Icon(
-                            when {
-                                uiState.biometricTypeName.contains("Face") -> Icons.Default.Face
-                                else -> Icons.Default.Fingerprint
-                            },
-                            contentDescription = null,
-                        )
-                    },
-                    trailingContent = {
+                ProfileRow(
+                    icon = if (uiState.biometricTypeName.contains("Face")) MistyFaceIdIcon else Icons.Outlined.Fingerprint,
+                    title = if (uiState.biometricAvailable) uiState.biometricTypeName else stringResource(R.string.settings_biometric),
+                    showChevron = false,
+                    trailing = {
                         Switch(
                             checked = uiState.biometricEnabled,
-                            onCheckedChange = { enabled ->
-                                if (enabled) {
-                                    val activity = context as? FragmentActivity
-                                    if (activity != null) {
-                                        scope.launch {
-                                            val ok = viewModel.biometricHelper.authenticate(
-                                                activity,
-                                                title = context.getString(R.string.biometric_prompt_title),
-                                                subtitle = context.getString(R.string.biometric_prompt_subtitle),
-                                            )
-                                            if (ok) viewModel.toggleBiometric(true)
-                                        }
-                                    }
-                                } else {
-                                    viewModel.toggleBiometric(false)
-                                }
-                            },
+                            onCheckedChange = onToggleBiometric,
                             enabled = uiState.biometricAvailable,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedThumbColor = MaterialTheme.colorScheme.surface,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                            ),
                         )
                     },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                ProfileDivider()
 
-                var langExpanded by remember { mutableStateOf(false) }
-                val languages = listOf("English" to "en", "中文" to "zh", "Indonesia" to "in")
+                val languages = listOf("中文" to "zh", "English" to "en", "Bahasa Indonesia" to "in")
                 val currentLocale = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
                     .toLanguageTags().takeIf { it.isNotBlank() }
+                val fallbackLanguage = Locale.getDefault().language
                 val currentLabel = languages.find { it.second == currentLocale }?.first
                     ?: languages.find { it.second == currentLocale?.take(2) }?.first
+                    ?: languages.find { it.second == fallbackLanguage }?.first
                     ?: "English"
-                Box {
-                    ListItem(
-                        headlineContent = { Text(stringResource(R.string.profile_language)) },
-                        supportingContent = { Text(currentLabel) },
-                        leadingContent = { Icon(Icons.Default.Language, contentDescription = null) },
-                        modifier = Modifier.clickable { langExpanded = true },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                ProfileRow(
+                    icon = Icons.Outlined.Language,
+                    title = stringResource(R.string.profile_language),
+                    value = currentLabel,
+                    onClick = onLanguage,
+                )
+                ProfileDivider()
+                ProfileRow(
+                    icon = Icons.Outlined.NearMe,
+                    title = stringResource(R.string.profile_auto_unlock_zone),
+                    onClick = onGeofence,
+                )
+            }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        MistyCard(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onLogout,
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.AutoMirrored.Outlined.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    stringResource(R.string.settings_sign_out),
+                    color = Danger,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(MistyBottomNavInset))
+    }
+}
+
+/** Large title + segmented header + main settings — used by the DEBUG parity harness. */
+@Composable
+internal fun ProfileMainView(uiState: ProfileUiState) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface),
+        ) {
+            MistyLargeTitle(text = stringResource(R.string.profile_title))
+            Spacer(modifier = Modifier.height(10.dp))
+            MistySegmentedControl(
+                labels = listOf(
+                    stringResource(R.string.profile_tab_main),
+                    stringResource(R.string.profile_tab_logins),
+                    stringResource(R.string.profile_tab_help),
+                ),
+                selectedIndex = 0,
+                onSelected = {},
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+        }
+        ProfileMainContent(uiState = uiState)
+    }
+}
+
+@Composable
+private fun ProfileDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 52.dp, end = 20.dp),
+        color = MaterialTheme.colorScheme.outlineVariant,
+    )
+}
+
+@Composable
+private fun ProfileRow(
+    icon: ImageVector,
+    title: String,
+    value: String? = null,
+    showChevron: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(start = 16.dp, end = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (!value.isNullOrBlank()) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        trailing?.invoke()
+        if (showChevron) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = MaterialTheme.colorScheme.outline,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun ChangePasswordContent(
+    uiState: ProfileUiState,
+    onBack: () -> Unit,
+    onSubmit: (String, String) -> Unit,
+) {
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var showCurrent by remember { mutableStateOf(false) }
+    var showNew by remember { mutableStateOf(false) }
+
+    val passwordsMatch = newPassword.isNotEmpty() && newPassword == confirmPassword
+    val isValid = currentPassword.isNotEmpty() && passwordsMatch
+
+    LaunchedEffect(uiState.passwordChangeSuccess) {
+        if (uiState.passwordChangeSuccess) onBack()
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = {
+            MistyNavigationTopBar(
+                title = stringResource(R.string.profile_change_password),
+                onBack = onBack,
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = MistyGroupedListPadding,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                MistyGroupedSection {
+                    SecureFormRow(
+                        value = currentPassword,
+                        onValueChange = { currentPassword = it },
+                        placeholder = stringResource(R.string.profile_current_password),
+                        isVisible = showCurrent,
+                        onToggleVisible = { showCurrent = !showCurrent },
                     )
-                    DropdownMenu(
-                        expanded = langExpanded,
-                        onDismissRequest = { langExpanded = false },
+                }
+            }
+
+            item {
+                MistyGroupedSection {
+                    SecureFormRow(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        placeholder = stringResource(R.string.profile_new_password),
+                        isVisible = showNew,
+                        onToggleVisible = { showNew = !showNew },
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                    SecureFormRow(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        placeholder = stringResource(R.string.profile_confirm_password),
+                    )
+                    if (confirmPassword.isNotEmpty() && !passwordsMatch) {
+                        Text(
+                            text = stringResource(R.string.profile_passwords_mismatch),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Danger,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+            }
+
+            uiState.passwordChangeError?.let { error ->
+                item {
+                    MistyGroupedSection {
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Danger,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        )
+                    }
+                }
+            }
+
+            item {
+                MistyGroupedSection {
+                    // iOS renders the form action as plain tinted text, not a filled pill.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .then(
+                                if (isValid) {
+                                    Modifier.clickable { onSubmit(currentPassword, newPassword) }
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        languages.forEach { (label, code) ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(label, modifier = Modifier.weight(1f))
-                                        if (code == currentLocale || code == currentLocale?.take(2) || (currentLocale.isNullOrBlank() && code == "en")) {
-                                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp), tint = Success)
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    langExpanded = false
-                                    viewModel.setLanguage(code)
-                                },
+                        Text(
+                            text = stringResource(R.string.profile_update_password),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isValid) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun LanguageSettingsContent(
+    onBack: () -> Unit,
+    onSelect: (String) -> Unit,
+) {
+    val languages = listOf("中文" to "zh", "English" to "en", "Bahasa Indonesia" to "in")
+    val currentLocale = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        .toLanguageTags().takeIf { it.isNotBlank() }
+    val fallbackLanguage = Locale.getDefault().language
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = {
+            MistyNavigationTopBar(
+                title = stringResource(R.string.profile_language),
+                onBack = onBack,
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = MistyGroupedListPadding,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                MistyGroupedSection {
+                    languages.forEachIndexed { index, (label, code) ->
+                        val selected = code == currentLocale ||
+                            code == currentLocale?.take(2) ||
+                            (currentLocale.isNullOrBlank() && code == fallbackLanguage)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .clickable { onSelect(code) }
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
                             )
+                            if (selected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                        if (index < languages.lastIndex) {
+                            HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
                         }
                     }
                 }
             }
         }
+    }
+}
 
-        // Primary device + Geofence settings
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = surfaceColor),
+@Composable
+internal fun GeofenceSettingsContent(onBack: () -> Unit) {
+    var enabled by rememberSaveable { mutableStateOf(false) }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = {
+            MistyNavigationTopBar(
+                title = stringResource(R.string.profile_auto_unlock_zone),
+                onBack = onBack,
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = MistyGroupedListPadding,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_primary_device)) },
-                    supportingContent = {
+            item {
+                MistyGroupedSection {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
-                            if (uiState.isPrimaryDeviceSet) stringResource(R.string.settings_primary_device_active)
-                            else stringResource(R.string.settings_primary_device_subtitle),
+                            text = stringResource(R.string.geofence_toggle),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
                         )
-                    },
-                    leadingContent = { Icon(Icons.Default.PhonelinkSetup, contentDescription = null) },
-                    trailingContent = {
-                        if (uiState.isSettingPrimaryDevice) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else if (uiState.isPrimaryDeviceSet) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Success)
-                        } else {
-                            OutlinedButton(onClick = viewModel::setPrimaryDevice) {
-                                Text(stringResource(R.string.settings_set_primary))
-                            }
-                        }
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.geofence_toggle)) },
-                    supportingContent = { Text(stringResource(R.string.geofence_description)) },
-                    leadingContent = { Icon(Icons.Default.LocationOn, contentDescription = null) },
-                    trailingContent = {
                         Switch(
-                            checked = uiState.geofenceEnabled,
-                            onCheckedChange = { viewModel.toggleGeofence(it) },
+                            checked = enabled,
+                            onCheckedChange = { enabled = it },
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedThumbColor = MaterialTheme.colorScheme.surface,
+                            ),
                         )
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    }
+                }
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.geofence_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
+            item {
+                MistyGroupedSection {
+                    AboutRow(
+                        label = stringResource(R.string.geofence_location_permission),
+                        value = stringResource(R.string.geofence_perm_not_set),
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                    AboutRow(
+                        label = stringResource(R.string.geofence_monitored_doors),
+                        value = "0",
+                    )
+                }
+            }
+            item {
+                MistyGroupedSection(title = stringResource(R.string.geofence_how_it_works)) {
+                    GeofenceInstructionRow(
+                        icon = Icons.Outlined.LocationOn,
+                        text = stringResource(R.string.geofence_step_1),
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                    GeofenceInstructionRow(
+                        icon = Icons.Outlined.Notifications,
+                        text = stringResource(R.string.geofence_step_2),
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                    GeofenceInstructionRow(
+                        icon = Icons.Outlined.LockOpen,
+                        text = stringResource(R.string.geofence_step_3),
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                    GeofenceInstructionRow(
+                        icon = Icons.Outlined.FrontHand,
+                        text = stringResource(R.string.geofence_step_4),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GeofenceInstructionRow(icon: ImageVector, text: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun AboutPage(
+    viewModel: ProfileViewModel,
+    onBack: () -> Unit,
+    onNavigateToTCPTest: (() -> Unit)?,
+) {
+    var versionTapCount by remember { mutableIntStateOf(0) }
+    var showDevOptions by rememberSaveable { mutableStateOf(false) }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = {
+            MistyNavigationTopBar(
+                title = stringResource(R.string.settings_about),
+                onBack = onBack,
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = MistyGroupedListPadding,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                MistyGroupedSection {
+                    AboutRow(
+                        label = stringResource(R.string.profile_version),
+                        value = viewModel.appVersion,
+                        onClick = {
+                            versionTapCount++
+                            if (versionTapCount >= 7) {
+                                showDevOptions = true
+                                versionTapCount = 0
+                            }
+                        },
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                    AboutRow(label = stringResource(R.string.profile_build), value = viewModel.buildNumber)
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                    AboutRow(label = stringResource(R.string.profile_device), value = viewModel.deviceModel)
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                    AboutRow(label = "Android", value = viewModel.androidVersion)
+                }
+            }
+
+            if (showDevOptions && com.mistyislet.app.BuildConfig.DEBUG && onNavigateToTCPTest != null) {
+                item {
+                    MistyGroupedSection(title = "Developer Options") {
+                        ListItem(
+                            headlineContent = { Text("TCP Auth Test") },
+                            supportingContent = { Text("Test BLE auth via Gateway TCP simulator") },
+                            leadingContent = { Icon(Icons.Default.PhonelinkSetup, contentDescription = null) },
+                            modifier = Modifier.clickable { onNavigateToTCPTest() },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        )
+                    }
+                }
+            }
+
+            item {
+                MistyGroupedSection {
+                    Text(
+                        text = stringResource(R.string.profile_app_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimpleTextPage(
+    title: String,
+    body: String,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = {
+            MistyNavigationTopBar(
+                title = title,
+                onBack = onBack,
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = MistyGroupedListPadding,
+        ) {
+            item {
+                MistyGroupedSection {
+                    Text(
+                        text = body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecureFormRow(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    isVisible: Boolean = false,
+    onToggleVisible: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            visualTransformation = if (isVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            modifier = Modifier.weight(1f),
+            decorationBox = { innerTextField ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    if (value.isEmpty()) {
+                        Text(
+                            text = placeholder,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    innerTextField()
+                }
+            },
+        )
+        if (onToggleVisible != null) {
+            IconButton(onClick = onToggleVisible) {
+                Icon(
+                    if (isVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-
-        // Sign out
-        TextButton(
-            onClick = viewModel::logout,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Danger)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.settings_sign_out), color = Danger)
-        }
-
-        Spacer(modifier = Modifier.height(80.dp))
-    }
-
-    if (showChangePassword) {
-        ChangePasswordSheet(
-            viewModel = viewModel,
-            uiState = uiState,
-            onDismiss = {
-                showChangePassword = false
-                viewModel.clearPasswordState()
-            },
-        )
     }
 }
 
@@ -448,12 +1019,11 @@ private fun ChangePasswordSheet(
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center,
     ) {
-        Card(
+        MistyCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp)
                 .clickable(enabled = false) {},
-            shape = RoundedCornerShape(16.dp),
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
@@ -462,49 +1032,28 @@ private fun ChangePasswordSheet(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
+                SecureFormRow(
                     value = currentPassword,
                     onValueChange = { currentPassword = it },
-                    label = { Text(stringResource(R.string.profile_current_password)) },
-                    visualTransformation = if (showCurrent) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { showCurrent = !showCurrent }) {
-                            Icon(
-                                if (showCurrent) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = stringResource(R.string.profile_current_password),
+                    isVisible = showCurrent,
+                    onToggleVisible = { showCurrent = !showCurrent },
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
 
-                OutlinedTextField(
+                SecureFormRow(
                     value = newPassword,
                     onValueChange = { newPassword = it },
-                    label = { Text(stringResource(R.string.profile_new_password)) },
-                    visualTransformation = if (showNew) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { showNew = !showNew }) {
-                            Icon(
-                                if (showNew) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = stringResource(R.string.profile_new_password),
+                    isVisible = showNew,
+                    onToggleVisible = { showNew = !showNew },
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
 
-                OutlinedTextField(
+                SecureFormRow(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = { Text(stringResource(R.string.profile_confirm_password)) },
-                    visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = stringResource(R.string.profile_confirm_password),
                 )
 
                 if (confirmPassword.isNotEmpty() && !passwordsMatch) {
@@ -531,12 +1080,14 @@ private fun ChangePasswordSheet(
                         Text(stringResource(R.string.cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
+                    MistyPillActionButton(
+                        text = stringResource(R.string.save),
                         onClick = { viewModel.changePassword(currentPassword, newPassword) },
                         enabled = isValid,
-                    ) {
-                        Text(stringResource(R.string.save))
-                    }
+                        tint = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    )
                 }
             }
         }
@@ -585,10 +1136,7 @@ private fun LoginsTab(uiState: ProfileUiState, viewModel: ProfileViewModel) {
                 }
             }
         } else {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
+            MistyCard(modifier = Modifier.fillMaxWidth()) {
                 Column {
                     uiState.logins.forEachIndexed { index, login ->
                         LoginSessionRow(login = login, onLogout = { viewModel.remoteLogout(login) })
@@ -655,78 +1203,57 @@ private fun LoginSessionRow(login: UserLogin, onLogout: () -> Unit) {
         }
 
         if (!login.isCurrent) {
-            OutlinedButton(
+            MistyPillActionButton(
+                text = stringResource(R.string.settings_login_logout),
                 onClick = onLogout,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Danger),
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ExitToApp,
-                    contentDescription = stringResource(R.string.settings_login_logout),
-                    modifier = Modifier.size(16.dp),
-                )
-            }
+                icon = Icons.AutoMirrored.Outlined.ExitToApp,
+                tint = Danger,
+            )
         }
     }
 }
 
 @Composable
-private fun HelpTab(viewModel: ProfileViewModel, onNavigateToTCPTest: (() -> Unit)? = null) {
-    val surfaceColor = MaterialTheme.colorScheme.surface
-    var showAbout by remember { mutableStateOf(false) }
-    var versionTapCount by remember { mutableIntStateOf(0) }
-    var showDevOptions by remember { mutableStateOf(false) }
-
+private fun HelpTab(
+    viewModel: ProfileViewModel,
+    onNavigateToTCPTest: (() -> Unit)? = null,
+    onNavigateSubpage: (String) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = surfaceColor),
-        ) {
+        MistyCard(modifier = Modifier.fillMaxWidth()) {
             Column {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_about)) },
-                    leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
-                    modifier = Modifier.clickable { showAbout = !showAbout },
+                    leadingContent = { Icon(Icons.Outlined.Info, contentDescription = null) },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
+                    },
+                    modifier = Modifier.clickable { onNavigateSubpage(PROFILE_PAGE_ABOUT) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
-
-                if (showAbout) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    versionTapCount++
-                                    if (versionTapCount >= 7) {
-                                        showDevOptions = true
-                                        versionTapCount = 0
-                                    }
-                                }
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(text = stringResource(R.string.profile_version), style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = viewModel.appVersion,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        AboutRow(label = stringResource(R.string.profile_build), value = viewModel.buildNumber)
-                        AboutRow(label = stringResource(R.string.profile_device), value = viewModel.deviceModel)
-                        AboutRow(label = "Android", value = viewModel.androidVersion)
-                    }
-                }
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_help)) },
                     leadingContent = { Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null) },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
+                    },
+                    modifier = Modifier.clickable { onNavigateSubpage(PROFILE_PAGE_HELP) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -734,43 +1261,31 @@ private fun HelpTab(viewModel: ProfileViewModel, onNavigateToTCPTest: (() -> Uni
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_acknowledgments)) },
                     leadingContent = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
+                    },
+                    modifier = Modifier.clickable { onNavigateSubpage(PROFILE_PAGE_ACKNOWLEDGMENTS) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
-            }
-        }
-
-        if (showDevOptions && com.mistyislet.app.BuildConfig.DEBUG && onNavigateToTCPTest != null) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = surfaceColor),
-            ) {
-                Column {
-                    Text(
-                        text = "Developer Options",
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(start = 16.dp, top = 12.dp),
-                    )
-                    ListItem(
-                        headlineContent = { Text("TCP Auth Test") },
-                        supportingContent = { Text("Test BLE auth via Gateway TCP simulator") },
-                        leadingContent = { Icon(Icons.Default.PhonelinkSetup, contentDescription = null) },
-                        modifier = Modifier.clickable { onNavigateToTCPTest() },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    )
-                }
             }
         }
     }
 }
 
 @Composable
-private fun AboutRow(label: String, value: String) {
+private fun AboutRow(label: String, value: String, onClick: (() -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .height(48.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyMedium)
         Text(
@@ -790,3 +1305,20 @@ private fun userInitials(name: String): String {
         else -> parts[0].take(2).uppercase()
     }
 }
+
+private fun String.toRoleLabel(): String =
+    when (lowercase().replace('_', ' ').trim()) {
+        "building", "building_admin" -> "Building Admin"
+        "tenant", "tenant admin" -> "Organization Admin"
+        "super admin" -> "Super Admin"
+        "building admin" -> "Building Admin"
+        "organization admin" -> "Organization Admin"
+        else -> null
+    } ?: replace('_', ' ')
+        .split(' ')
+        .filter { it.isNotBlank() }
+        .joinToString(" ") { word ->
+            word.lowercase().replaceFirstChar { char ->
+                if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString()
+            }
+        }
