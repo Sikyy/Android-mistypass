@@ -113,22 +113,23 @@ private fun EmailInputStep(state: LoginUiState, vm: LoginViewModel) {
                 keyboardActions = KeyboardActions(
                     onGo = {
                         focusManager.clearFocus()
-                        vm.submitEmail()
+                        vm.requestMagicLink()
                     },
                 ),
             )
             ErrorText(state.errorMessage)
         },
         footer = {
+            // iOS EmailEntryStep: left = Manual sign in (always enabled → password step),
+            // right Continue = request a magic link (gated on a non-empty email).
             TextButton(
                 onClick = {
                     focusManager.clearFocus()
-                    vm.requestMagicLink()
+                    vm.goToManualSignIn()
                 },
-                enabled = canContinue,
                 colors = authTextButtonColors(),
             ) {
-                Text(stringResource(R.string.send_magic_link))
+                Text(stringResource(R.string.login_manual_sign_in))
             }
 
             Spacer(Modifier.weight(1f))
@@ -137,7 +138,7 @@ private fun EmailInputStep(state: LoginUiState, vm: LoginViewModel) {
                 text = stringResource(R.string.continue_button),
                 onClick = {
                     focusManager.clearFocus()
-                    vm.submitEmail()
+                    vm.requestMagicLink()
                 },
                 enabled = canContinue,
             )

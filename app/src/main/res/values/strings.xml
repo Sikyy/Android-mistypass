@@ -16,7 +16,8 @@
     <string name="login_title">Welcome</string>
     <string name="login_subtitle">Sign in to access your doors</string>
     <string name="login_email_title">Enter your email</string>
-    <string name="login_email_body">Use your work email to find your organization and continue sign in.</string>
+    <string name="login_email_body">Enter your email address to request a sign-in link</string>
+    <string name="login_manual_sign_in">Manual sign in</string>
     <string name="login_lookup_body">This usually takes a moment.</string>
     <string name="login_signin_title">Sign in to your organization</string>
     <string name="login_signin_body">Enter your account details to continue.</string>
