@@ -70,14 +70,20 @@ object ApiClientModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(
+    fun provideAuthInterceptor(
         tokenStore: TokenStore,
         authApi: AuthApi,
+    ): AuthInterceptor = AuthInterceptor(tokenStore) { authApi }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        authInterceptor: AuthInterceptor,
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(AuthInterceptor(tokenStore) { authApi })
+            .addInterceptor(authInterceptor)
             .apply {
                 if (BuildConfig.DEBUG) {
                     addInterceptor(HttpLoggingInterceptor().apply {

@@ -12,6 +12,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Mutex
 
 /**
  * Manages the BLE mobile credential lifecycle:
@@ -26,6 +27,7 @@ class MobileCredentialRepository @Inject constructor(
 ) {
     private val deviceId: String =
         "${Build.BOARD}_${Build.FINGERPRINT.hashCode().toUInt()}"
+    private val renewMutex = Mutex()
     /**
      * Full registration flow:
      * 1. Generate EC P-256 keypair in Android Keystore (StrongBox if available)
@@ -91,19 +93,28 @@ class MobileCredentialRepository @Inject constructor(
      */
     suspend fun renewIfNeeded() {
         if (!hasLocalKeyPair()) return
-        when (val result = listCredentials()) {
-            is ApiResult.Success -> {
-                val hasValid = result.data.any { cred ->
-                    cred.deviceId == deviceId &&
-                        cred.status == "active" &&
-                        !isExpiringSoon(cred)
+        // Prevent concurrent renewals from rapid onResume calls
+        if (!renewMutex.tryLock()) {
+            Log.d(TAG, "Renewal already in progress, skipping")
+            return
+        }
+        try {
+            when (val result = listCredentials()) {
+                is ApiResult.Success -> {
+                    val hasValid = result.data.any { cred ->
+                        cred.deviceId == deviceId &&
+                            cred.status == "active" &&
+                            !isExpiringSoon(cred)
+                    }
+                    if (!hasValid) {
+                        Log.i(TAG, "BLE credential expired or expiring soon, re-registering")
+                        registerCredential()
+                    }
                 }
-                if (!hasValid) {
-                    Log.i(TAG, "BLE credential expired or expiring soon, re-registering")
-                    registerCredential()
-                }
+                else -> Log.w(TAG, "Credential renewal check failed: could not fetch credentials")
             }
-            else -> Log.w(TAG, "Credential renewal check failed: could not fetch credentials")
+        } finally {
+            renewMutex.unlock()
         }
     }
 
