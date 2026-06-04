@@ -230,6 +230,7 @@
     <string name="admin_share_access">Bagikan Akses</string>
     <string name="admin_generate_access_link">Buat Tautan Akses</string>
     <string name="admin_generating_link">Membuat Tautan</string>
+    <string name="admin_no_doors_to_share">Tidak ada pintu untuk dibagikan</string>
     <string name="admin_url">URL</string>
     <string name="admin_token">Token</string>
     <string name="admin_apply_role">Terapkan Peran</string>

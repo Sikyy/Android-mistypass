@@ -368,6 +368,11 @@ data class UserAccessShare(
 )
 
 @Serializable
+data class ShareAccessRequest(
+    @SerialName("door_ids") val doorIds: List<String>,
+)
+
+@Serializable
 data class OrgSettings(
     @SerialName("tenant_id") val id: String = "",
     val name: String = "",
@@ -567,9 +572,6 @@ data class AssignAccessRightRequest(
     @SerialName("door_id") val doorId: String,
     @SerialName("schedule_id") val scheduleId: String? = null,
 )
-
-@Serializable
-class EmptyRequest
 
 @Serializable
 data class FailedAttemptEvent(
