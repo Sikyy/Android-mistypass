@@ -1,6 +1,6 @@
 package com.mistyislet.app.data.api
 
-import com.mistyislet.app.domain.model.EmptyRequest
+import com.mistyislet.app.domain.model.ShareAccessRequest
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -8,6 +8,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import retrofit2.Retrofit
@@ -49,13 +50,29 @@ class AdminApiEndpointTest {
         api.getUser("place-1", "user-1")
         api.listUserLogins("place-1", "user-1")
         api.listUserAccessRights("place-1", "user-1")
-        api.shareUserAccess("place-1", "user-1", EmptyRequest())
+        api.shareUserAccess("place-1", "user-1", ShareAccessRequest(doorIds = listOf("door-1")))
 
         assertEquals("/api/v1/app/places/place-1/users", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/users/user-1", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/users/user-1/logins", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/users/user-1/access-rights", server.takeRequest().path)
         assertEquals("/api/v1/app/places/place-1/users/user-1/share-access", server.takeRequest().path)
+    }
+
+    @Test
+    fun `share access sends door_ids in request body`() = runTest {
+        server.enqueueJson("""{"user_id":"user-1","url":"https://share","token":"tok","expires_at":"2026-05-24T02:00:00Z"}""")
+
+        api.shareUserAccess("place-1", "user-1", ShareAccessRequest(doorIds = listOf("door-1", "door-2")))
+
+        val recorded = server.takeRequest()
+        assertEquals("/api/v1/app/places/place-1/users/user-1/share-access", recorded.path)
+        val body = recorded.body.readUtf8()
+        // Backend requires the snake_case key `door_ids`; an empty body (the old bug) regresses this.
+        assertTrue("body should contain door_ids, was: $body", body.contains("\"door_ids\""))
+        val parsed = Json { ignoreUnknownKeys = true }
+            .decodeFromString(ShareAccessRequest.serializer(), body)
+        assertEquals(listOf("door-1", "door-2"), parsed.doorIds)
     }
 
     @Test

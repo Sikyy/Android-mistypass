@@ -230,6 +230,7 @@
     <string name="admin_share_access">Share Access</string>
     <string name="admin_generate_access_link">Generate Access Link</string>
     <string name="admin_generating_link">Generating Link</string>
+    <string name="admin_no_doors_to_share">No doors available to share</string>
     <string name="admin_url">URL</string>
     <string name="admin_token">Token</string>
     <string name="admin_apply_role">Apply Role</string>
