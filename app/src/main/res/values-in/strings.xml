@@ -379,7 +379,6 @@
     <string name="guest_select_doors">Pilih pintu</string>
     <string name="guest_doors_default">Akses bawaan</string>
     <string name="guest_doors_selected">%1$d dipilih</string>
-    <string name="done">Selesai</string>
     <string name="booking_spaces">Ruang</string>
     <string name="booking_active">Aktif</string>
     <string name="booking_past">Selesai</string>

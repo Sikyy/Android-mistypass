@@ -379,7 +379,6 @@
     <string name="guest_select_doors">Select doors</string>
     <string name="guest_doors_default">Default access</string>
     <string name="guest_doors_selected">%1$d selected</string>
-    <string name="done">Done</string>
     <string name="booking_spaces">Spaces</string>
     <string name="booking_active">Active</string>
     <string name="booking_past">Past</string>
