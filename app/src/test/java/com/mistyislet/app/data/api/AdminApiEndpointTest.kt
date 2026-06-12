@@ -1,5 +1,6 @@
 package com.mistyislet.app.data.api
 
+import com.mistyislet.app.domain.model.CreateGuestRequest
 import com.mistyislet.app.domain.model.ShareAccessRequest
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -73,6 +74,35 @@ class AdminApiEndpointTest {
         val parsed = Json { ignoreUnknownKeys = true }
             .decodeFromString(ShareAccessRequest.serializer(), body)
         assertEquals(listOf("door-1", "door-2"), parsed.doorIds)
+    }
+
+    @Test
+    fun `create guest sends door_ids in request body`() = runTest {
+        server.enqueueJson("""{"id":"guest-1","name":"Tamu","status":"expected"}""")
+
+        api.createGuest(
+            "place-1",
+            CreateGuestRequest(name = "Tamu", doorIds = listOf("door-1", "door-2")),
+        )
+
+        val recorded = server.takeRequest()
+        assertEquals("/api/v1/app/places/place-1/guests", recorded.path)
+        val body = recorded.body.readUtf8()
+        assertTrue("body should contain door_ids, was: $body", body.contains("\"door_ids\""))
+        val parsed = Json { ignoreUnknownKeys = true }
+            .decodeFromString(CreateGuestRequest.serializer(), body)
+        assertEquals(listOf("door-1", "door-2"), parsed.doorIds)
+    }
+
+    @Test
+    fun `create guest omits door_ids when none selected`() = runTest {
+        server.enqueueJson("""{"id":"guest-2","name":"Tamu","status":"expected"}""")
+
+        api.createGuest("place-1", CreateGuestRequest(name = "Tamu"))
+
+        val body = server.takeRequest().body.readUtf8()
+        // encodeDefaults=false：默认空列表整键省略 = 与改动前的请求体一致（兼容）
+        assertEquals(false, body.contains("door_ids"))
     }
 
     @Test
