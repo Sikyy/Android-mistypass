@@ -26,6 +26,7 @@ class AdminApiEndpointTest {
         val json = Json {
             ignoreUnknownKeys = true
             coerceInputValues = true
+            encodeDefaults = true // mirror ApiClientModule so body assertions document production wire format
         }
         api = Retrofit.Builder()
             .baseUrl(server.url("/api/v1/"))
@@ -95,14 +96,15 @@ class AdminApiEndpointTest {
     }
 
     @Test
-    fun `create guest omits door_ids when none selected`() = runTest {
+    fun `create guest sends empty door_ids when none selected`() = runTest {
         server.enqueueJson("""{"id":"guest-2","name":"Tamu","status":"expected"}""")
 
         api.createGuest("place-1", CreateGuestRequest(name = "Tamu"))
 
         val body = server.takeRequest().body.readUtf8()
-        // encodeDefaults=false：默认空列表整键省略 = 与改动前的请求体一致（兼容）
-        assertEquals(false, body.contains("door_ids"))
+        // Production Json uses encodeDefaults=true, so an unselected door list goes out as
+        // door_ids:[] — identical to the pre-feature request body (backend treats [] as default).
+        assertTrue("empty selection should send door_ids:[], was: $body", body.contains("\"door_ids\":[]"))
     }
 
     @Test
