@@ -375,6 +375,11 @@
     <string name="guest_set_expected_time">Atur waktu kedatangan</string>
     <string name="guest_pick_date">Pilih tanggal</string>
     <string name="guest_access_duration">Durasi akses</string>
+    <string name="guest_section_doors">Pintu yang dapat diakses</string>
+    <string name="guest_select_doors">Pilih pintu</string>
+    <string name="guest_doors_default">Akses bawaan</string>
+    <string name="guest_doors_selected">%1$d dipilih</string>
+    <string name="done">Selesai</string>
     <string name="booking_spaces">Ruang</string>
     <string name="booking_active">Aktif</string>
     <string name="booking_past">Selesai</string>
