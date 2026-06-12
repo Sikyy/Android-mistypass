@@ -56,6 +56,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -204,6 +207,7 @@ fun MistyFormSheet(
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
     confirmEnabled: Boolean = true,
+    errorMessage: String? = null,
     contentPadding: PaddingValues = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 32.dp),
     content: LazyListScope.() -> Unit,
 ) {
@@ -252,6 +256,17 @@ fun MistyFormSheet(
                 ) {
                     Text(confirmLabel)
                 }
+            }
+            errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                )
             }
 
             LazyColumn(
@@ -415,6 +430,123 @@ fun <T> MistyPickerSheet(
                                 }
                             }
                             if (index < items.lastIndex) {
+                                HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> MistyMultiSelectPickerSheet(
+    title: String,
+    doneLabel: String,
+    items: List<T>,
+    itemLabel: (T) -> String,
+    isSelected: (T) -> Boolean,
+    onToggle: (T) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    searchPlaceholder: String? = null,
+    itemDetail: (T) -> String? = { null },
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var query by remember { mutableStateOf("") }
+    val visibleItems = if (query.isBlank()) items else items.filter { itemLabel(it).contains(query, ignoreCase = true) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = modifier.fillMaxHeight(),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        dragHandle = null,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.surfaceContainer),
+        ) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .padding(horizontal = 12.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 88.dp),
+                )
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                ) {
+                    Text(doneLabel)
+                }
+            }
+            searchPlaceholder?.let { placeholder ->
+                MistySearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = placeholder,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                item {
+                    MistyGroupedSection {
+                        visibleItems.forEachIndexed { index, entry ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 50.dp)
+                                    .clickable { onToggle(entry) }
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = itemLabel(entry),
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp, lineHeight = 22.sp),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    itemDetail(entry)?.takeIf { it.isNotBlank() }?.let { detail ->
+                                        Text(
+                                            text = detail,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                }
+                                if (isSelected(entry)) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(22.dp),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                            if (index < visibleItems.lastIndex) {
                                 HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
                             }
                         }
