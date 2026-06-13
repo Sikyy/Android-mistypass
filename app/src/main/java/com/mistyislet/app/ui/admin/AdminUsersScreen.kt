@@ -97,6 +97,7 @@ import javax.inject.Inject
 class AdminUsersViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AdminUser>>(emptyList())
     val items: StateFlow<List<AdminUser>> = _items
@@ -166,25 +167,17 @@ class AdminUsersViewModel @Inject constructor(
             var userError: String? = null
             when (val result = adminRepository.getUser(pid, userId)) {
                 is ApiResult.Success -> user = result.data
-                is ApiResult.Error -> user = AdminDemoData.placeUsers.firstOrNull { it.id == userId }
-                is ApiResult.Exception -> user = AdminDemoData.placeUsers.firstOrNull { it.id == userId }
+                is ApiResult.Error -> user = demoFallback.demoOrNull { AdminDemoData.placeUsers.firstOrNull { it.id == userId } }
+                is ApiResult.Exception -> user = demoFallback.demoOrNull { AdminDemoData.placeUsers.firstOrNull { it.id == userId } }
             }
 
             var logins = emptyList<UserLogin>()
             var loginsError: String? = null
-            when (val result = adminRepository.getUserLogins(pid, userId)) {
-                is ApiResult.Success -> logins = result.data.ifEmpty { AdminDemoData.userLogins }
-                is ApiResult.Error -> logins = AdminDemoData.userLogins
-                is ApiResult.Exception -> logins = AdminDemoData.userLogins
-            }
+            logins = demoFallback.resolveList(adminRepository.getUserLogins(pid, userId)) { AdminDemoData.userLogins }.items
 
             var accessRights = emptyList<AccessRight>()
             var accessRightsError: String? = null
-            when (val result = adminRepository.getUserAccessRights(pid, userId)) {
-                is ApiResult.Success -> accessRights = result.data.ifEmpty { AdminDemoData.userAccessRights }
-                is ApiResult.Error -> accessRights = AdminDemoData.userAccessRights
-                is ApiResult.Exception -> accessRights = AdminDemoData.userAccessRights
-            }
+            accessRights = demoFallback.resolveList(adminRepository.getUserAccessRights(pid, userId)) { AdminDemoData.userAccessRights }.items
 
             _detailState.value = AdminUserDetailDataState(
                 user = user,
@@ -237,11 +230,9 @@ class AdminUsersViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getUsers(pid)) {
-            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.placeUsers }; _error.value = null }
-            is ApiResult.Error -> { _items.value = AdminDemoData.placeUsers; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.placeUsers; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getUsers(pid)) { AdminDemoData.placeUsers }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }

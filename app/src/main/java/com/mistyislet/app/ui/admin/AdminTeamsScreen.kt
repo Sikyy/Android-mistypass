@@ -48,7 +48,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.R
-import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminTeam
@@ -72,6 +71,7 @@ import javax.inject.Inject
 class AdminTeamsViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AdminTeam>>(emptyList())
     val items: StateFlow<List<AdminTeam>> = _items
@@ -127,14 +127,8 @@ class AdminTeamsViewModel @Inject constructor(
             _detailLoading.value = true
             _teamMembers.value = emptyList()
             _teamAccessRights.value = emptyList()
-            when (val r = adminRepository.getTeamMembers(pid, teamId)) {
-                is ApiResult.Success -> _teamMembers.value = r.data.ifEmpty { AdminDemoData.teamMembers }
-                else -> _teamMembers.value = AdminDemoData.teamMembers
-            }
-            when (val r = adminRepository.getTeamAccessRights(pid, teamId)) {
-                is ApiResult.Success -> _teamAccessRights.value = r.data.ifEmpty { AdminDemoData.teamAccessRights }
-                else -> _teamAccessRights.value = AdminDemoData.teamAccessRights
-            }
+            _teamMembers.value = demoFallback.resolveList(adminRepository.getTeamMembers(pid, teamId)) { AdminDemoData.teamMembers }.items
+            _teamAccessRights.value = demoFallback.resolveList(adminRepository.getTeamAccessRights(pid, teamId)) { AdminDemoData.teamAccessRights }.items
             _detailLoading.value = false
         }
     }
@@ -175,11 +169,9 @@ class AdminTeamsViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getTeams(pid)) {
-            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.teams }; _error.value = null }
-            is ApiResult.Error -> { _items.value = AdminDemoData.teams; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.teams; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getTeams(pid)) { AdminDemoData.teams }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }

@@ -63,6 +63,7 @@ import javax.inject.Inject
 class AdminZonesViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AdminZone>>(emptyList())
     val items: StateFlow<List<AdminZone>> = _items
@@ -100,29 +101,20 @@ class AdminZonesViewModel @Inject constructor(
             var zoneError: String? = null
             when (val result = adminRepository.getZone(pid, zoneId)) {
                 is ApiResult.Success -> zone = result.data
-                is ApiResult.Error -> zone = AdminDemoData.zones.firstOrNull { it.id == zoneId }
-                is ApiResult.Exception -> zone = AdminDemoData.zones.firstOrNull { it.id == zoneId }
+                is ApiResult.Error -> zone = demoFallback.demoOrNull { AdminDemoData.zones.firstOrNull { it.id == zoneId } }
+                is ApiResult.Exception -> zone = demoFallback.demoOrNull { AdminDemoData.zones.firstOrNull { it.id == zoneId } }
             }
 
-            var regions = emptyList<HolidayRegion>()
             var regionsError: String? = null
-            when (val result = adminRepository.getHolidayRegions(pid)) {
-                is ApiResult.Success -> regions = result.data.ifEmpty { AdminDemoData.holidayRegions }
-                is ApiResult.Error -> regions = AdminDemoData.holidayRegions
-                is ApiResult.Exception -> regions = AdminDemoData.holidayRegions
-            }
+            val regions = demoFallback.resolveList(adminRepository.getHolidayRegions(pid)) { AdminDemoData.holidayRegions }.items
 
             val holidaysByRegion = mutableMapOf<String, List<Holiday>>()
             var holidaysError: String? = null
             regions.take(2).forEach { region ->
                 if (region.id.isNotBlank()) {
-                    when (val result = adminRepository.getHolidays(pid, region.id)) {
-                        is ApiResult.Success -> holidaysByRegion[region.id] = result.data.ifEmpty {
-                            AdminDemoData.holidaysByRegion[region.id].orEmpty()
-                        }
-                        is ApiResult.Error -> holidaysByRegion[region.id] = AdminDemoData.holidaysByRegion[region.id].orEmpty()
-                        is ApiResult.Exception -> holidaysByRegion[region.id] = AdminDemoData.holidaysByRegion[region.id].orEmpty()
-                    }
+                    holidaysByRegion[region.id] = demoFallback.resolveList(adminRepository.getHolidays(pid, region.id)) {
+                        AdminDemoData.holidaysByRegion[region.id].orEmpty()
+                    }.items
                 }
             }
 
@@ -144,14 +136,9 @@ class AdminZonesViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getZones(pid)) {
-            is ApiResult.Success -> {
-                _items.value = result.data.ifEmpty { AdminDemoData.zones }
-                _error.value = null
-            }
-            is ApiResult.Error -> { _items.value = AdminDemoData.zones; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.zones; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getZones(pid)) { AdminDemoData.zones }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }

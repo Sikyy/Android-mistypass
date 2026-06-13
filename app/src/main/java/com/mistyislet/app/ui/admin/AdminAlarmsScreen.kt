@@ -53,7 +53,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.R
 import com.mistyislet.app.core.network.AlarmStreamManager
-import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.domain.model.Alarm
 import com.mistyislet.app.domain.model.AlarmCalendarEntry
@@ -85,6 +84,7 @@ import javax.inject.Inject
 class AdminAlarmsViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val alarmStreamManager: AlarmStreamManager,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _alarms = MutableStateFlow<List<Alarm>>(emptyList())
     val alarms: StateFlow<List<Alarm>> = _alarms
@@ -155,19 +155,11 @@ class AdminAlarmsViewModel @Inject constructor(
     }
 
     private suspend fun loadData() {
-        when (val result = adminRepository.getAlarms()) {
-            is ApiResult.Success -> { _alarms.value = result.data.ifEmpty { AdminDemoData.alarms }; _error.value = null }
-            is ApiResult.Error -> { _alarms.value = AdminDemoData.alarms; _error.value = null }
-            is ApiResult.Exception -> { _alarms.value = AdminDemoData.alarms; _error.value = null }
-        }
-        when (val result = adminRepository.getAlarmSchedules()) {
-            is ApiResult.Success -> _schedules.value = result.data.ifEmpty { AdminDemoData.alarmSchedules }
-            else -> _schedules.value = AdminDemoData.alarmSchedules
-        }
-        when (val result = adminRepository.getAlarmCalendar()) {
-            is ApiResult.Success -> _calendar.value = result.data.ifEmpty { AdminDemoData.alarmCalendar }
-            else -> _calendar.value = AdminDemoData.alarmCalendar
-        }
+        val alarmsState = demoFallback.resolveList(adminRepository.getAlarms()) { AdminDemoData.alarms }
+        _alarms.value = alarmsState.items
+        _error.value = alarmsState.error
+        _schedules.value = demoFallback.resolveList(adminRepository.getAlarmSchedules()) { AdminDemoData.alarmSchedules }.items
+        _calendar.value = demoFallback.resolveList(adminRepository.getAlarmCalendar()) { AdminDemoData.alarmCalendar }.items
         _isLoading.value = false
     }
 }

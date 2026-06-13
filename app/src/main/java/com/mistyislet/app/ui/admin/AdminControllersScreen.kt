@@ -18,7 +18,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.R
-import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.PlaceRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
@@ -44,6 +43,7 @@ class AdminControllersViewModel @Inject constructor(
     private val placeRepository: PlaceRepository,
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AccessibleDoor>>(emptyList())
     val items: StateFlow<List<AccessibleDoor>> = _items
@@ -80,11 +80,9 @@ class AdminControllersViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = placeRepository.listPlaceDoors(pid)) {
-            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.accessibleDoors }; _error.value = null }
-            is ApiResult.Error -> { _items.value = AdminDemoData.accessibleDoors; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.accessibleDoors; _error.value = null }
-        }
+        val state = demoFallback.resolveList(placeRepository.listPlaceDoors(pid)) { AdminDemoData.accessibleDoors }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }

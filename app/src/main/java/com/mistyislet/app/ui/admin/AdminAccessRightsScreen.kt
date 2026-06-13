@@ -14,7 +14,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.R
-import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminUser
@@ -53,6 +52,7 @@ private fun roleColor(role: String): Color = when {
 class AdminAccessRightsViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AdminUser>>(emptyList())
     val items: StateFlow<List<AdminUser>> = _items
@@ -81,11 +81,9 @@ class AdminAccessRightsViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getUsers(pid)) {
-            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.placeUsers }; _error.value = null }
-            is ApiResult.Error -> { _items.value = AdminDemoData.placeUsers; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.placeUsers; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getUsers(pid)) { AdminDemoData.placeUsers }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }

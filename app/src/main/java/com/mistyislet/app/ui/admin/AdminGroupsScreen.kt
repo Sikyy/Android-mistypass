@@ -48,7 +48,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.R
-import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminGroup
@@ -76,6 +75,7 @@ import javax.inject.Inject
 class AdminGroupsViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AdminGroup>>(emptyList())
     val items: StateFlow<List<AdminGroup>> = _items
@@ -139,14 +139,8 @@ class AdminGroupsViewModel @Inject constructor(
             _detailLoading.value = true
             _groupMembers.value = emptyList()
             _groupDoors.value = emptyList()
-            when (val r = adminRepository.getGroupMembers(pid, groupId)) {
-                is ApiResult.Success -> _groupMembers.value = r.data.ifEmpty { AdminDemoData.groupMembers }
-                else -> _groupMembers.value = AdminDemoData.groupMembers
-            }
-            when (val r = adminRepository.getGroupDoors(pid, groupId)) {
-                is ApiResult.Success -> _groupDoors.value = r.data.ifEmpty { AdminDemoData.groupDoors }
-                else -> _groupDoors.value = AdminDemoData.groupDoors
-            }
+            _groupMembers.value = demoFallback.resolveList(adminRepository.getGroupMembers(pid, groupId)) { AdminDemoData.groupMembers }.items
+            _groupDoors.value = demoFallback.resolveList(adminRepository.getGroupDoors(pid, groupId)) { AdminDemoData.groupDoors }.items
             _detailLoading.value = false
         }
     }
@@ -189,11 +183,9 @@ class AdminGroupsViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getGroups(pid)) {
-            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.groups }; _error.value = null }
-            is ApiResult.Error -> { _items.value = AdminDemoData.groups; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.groups; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getGroups(pid)) { AdminDemoData.groups }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }
