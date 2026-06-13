@@ -3,7 +3,6 @@ package com.mistyislet.app.core.network
 import com.mistyislet.app.domain.model.ApiError
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 
 sealed class ApiResult<out T> {
@@ -12,18 +11,13 @@ sealed class ApiResult<out T> {
     data class Exception(val throwable: Throwable) : ApiResult<Nothing>()
 }
 
-private val errorJson = Json {
-    ignoreUnknownKeys = true
-    coerceInputValues = true
-}
-
 suspend fun <T> safeApiCall(block: suspend () -> T): ApiResult<T> {
     return try {
         ApiResult.Success(block())
     } catch (e: HttpException) {
         val rawBody = e.response()?.errorBody()?.string()
         val parsed = rawBody?.let { body ->
-            runCatching { errorJson.decodeFromString<ApiError>(body) }.getOrNull()
+            runCatching { NetworkJson.decodeFromString<ApiError>(body) }.getOrNull()
         }
         ApiResult.Error(
             code = e.code(),

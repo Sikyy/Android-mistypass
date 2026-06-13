@@ -8,7 +8,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
-import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -24,11 +23,6 @@ class AlarmStreamManager @Inject constructor(
     private val tokenStore: TokenStore,
     private val authInterceptor: AuthInterceptor,
 ) {
-    private val json = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-    }
-
     // Dedicated SSE client — longer timeouts, includes auth interceptor for token refresh
     private val sseClient by lazy {
         OkHttpClient.Builder()
@@ -68,7 +62,7 @@ class AlarmStreamManager @Inject constructor(
             val listener = object : EventSourceListener() {
                 override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
                     try {
-                        val alarm = json.decodeFromString<Alarm>(data)
+                        val alarm = NetworkJson.decodeFromString<Alarm>(data)
                         trySend(alarm)
                     } catch (_: Exception) {
                         // Malformed event — skip
