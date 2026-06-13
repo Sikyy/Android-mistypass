@@ -37,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,9 +56,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.R
-import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
+import com.mistyislet.app.data.repository.PlaceRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
+import com.mistyislet.app.domain.model.AccessibleDoor
 import com.mistyislet.app.domain.model.CreateGuestRequest
 import com.mistyislet.app.domain.model.GuestVisit
 import com.mistyislet.app.ui.admin.components.AdminTabPicker
@@ -65,6 +67,7 @@ import com.mistyislet.app.ui.admin.components.StatusBadge
 import com.mistyislet.app.ui.components.MistyDatePickerDialog
 import com.mistyislet.app.ui.components.MistyFormSheet
 import com.mistyislet.app.ui.components.MistyFormTextField
+import com.mistyislet.app.ui.components.MistyMultiSelectPickerSheet
 import com.mistyislet.app.ui.components.MistyEmptyState
 import com.mistyislet.app.ui.components.MistyGroupedListPadding
 import com.mistyislet.app.ui.components.MistyGroupedSection
@@ -87,7 +90,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminGuestManagementViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
+    private val placeRepository: PlaceRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _guests = MutableStateFlow<List<GuestVisit>>(emptyList())
     val guests: StateFlow<List<GuestVisit>> = _guests
@@ -97,12 +102,17 @@ class AdminGuestManagementViewModel @Inject constructor(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+    private val _availableDoors = MutableStateFlow<List<AccessibleDoor>>(emptyList())
+    val availableDoors: StateFlow<List<AccessibleDoor>> = _availableDoors
+    private val _createGuestState = MutableStateFlow<CreateGuestState>(CreateGuestState.Idle)
+    val createGuestState: StateFlow<CreateGuestState> = _createGuestState
     private var placeId: String? = null
 
     init {
         viewModelScope.launch {
             placeId = selectedPlaceRepository.scope.first().placeId ?: return@launch
             loadData()
+            loadDoors()
         }
     }
 
@@ -117,9 +127,15 @@ class AdminGuestManagementViewModel @Inject constructor(
     fun createGuest(request: CreateGuestRequest) {
         val pid = placeId ?: return
         viewModelScope.launch {
-            adminRepository.createGuest(pid, request)
-            loadData()
+            _createGuestState.value = CreateGuestState.Submitting
+            val state = createGuestStateOf(adminRepository.createGuest(pid, request))
+            _createGuestState.value = state
+            if (state is CreateGuestState.Success) loadData()
         }
+    }
+
+    fun consumeCreateGuestState() {
+        _createGuestState.value = CreateGuestState.Idle
     }
 
     fun updateStatus(guestId: String, action: String) {
@@ -140,12 +156,19 @@ class AdminGuestManagementViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getGuests(pid)) {
-            is ApiResult.Success -> { _guests.value = result.data.ifEmpty { AdminDemoData.guestVisits }; _error.value = null }
-            is ApiResult.Error -> { _guests.value = AdminDemoData.guestVisits; _error.value = null }
-            is ApiResult.Exception -> { _guests.value = AdminDemoData.guestVisits; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getGuests(pid)) { AdminDemoData.guestVisits }
+        _guests.value = state.items
+        _error.value = state.error
         _isLoading.value = false
+    }
+
+    private suspend fun loadDoors() {
+        val pid = placeId ?: return
+        // Doors are an optional pick-list for the create form: demo-gated like every list
+        // here, but a load failure must not block guest creation, so the error is dropped.
+        _availableDoors.value = demoFallback
+            .resolveList(placeRepository.listPlaceDoors(pid)) { AdminDemoData.accessibleDoors }
+            .items
     }
 }
 
@@ -158,11 +181,16 @@ fun AdminGuestManagementScreen(
     val guests by viewModel.guests.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val availableDoors by viewModel.availableDoors.collectAsStateWithLifecycle()
+    val createGuestState by viewModel.createGuestState.collectAsStateWithLifecycle()
 
     AdminGuestManagementContent(
         guests = guests,
         isLoading = isLoading,
         isRefreshing = isRefreshing,
+        availableDoors = availableDoors,
+        createGuestState = createGuestState,
+        onConsumeCreateGuestState = viewModel::consumeCreateGuestState,
         onBack = onBack,
         onRefresh = viewModel::refresh,
         onCreateGuest = viewModel::createGuest,
@@ -181,6 +209,9 @@ fun AdminGuestManagementContent(
     guests: List<GuestVisit>,
     isLoading: Boolean,
     isRefreshing: Boolean,
+    availableDoors: List<AccessibleDoor> = emptyList(),
+    createGuestState: CreateGuestState = CreateGuestState.Idle,
+    onConsumeCreateGuestState: () -> Unit = {},
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onCreateGuest: (CreateGuestRequest) -> Unit,
@@ -190,6 +221,13 @@ fun AdminGuestManagementContent(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showCreateSheet by remember { mutableStateOf(false) }
     var guestToDelete by remember { mutableStateOf<GuestVisit?>(null) }
+
+    LaunchedEffect(createGuestState) {
+        if (createGuestState is CreateGuestState.Success) {
+            showCreateSheet = false
+            onConsumeCreateGuestState()
+        }
+    }
 
     val tabs = listOf(
         stringResource(R.string.guest_expected),
@@ -278,11 +316,14 @@ fun AdminGuestManagementContent(
 
     if (showCreateSheet) {
         CreateGuestSheet(
-            onSave = { request ->
-                onCreateGuest(request)
+            availableDoors = availableDoors,
+            errorMessage = (createGuestState as? CreateGuestState.Error)?.message,
+            isSubmitting = createGuestState is CreateGuestState.Submitting,
+            onSave = onCreateGuest,
+            onCancel = {
+                onConsumeCreateGuestState()
                 showCreateSheet = false
             },
-            onCancel = { showCreateSheet = false },
         )
     }
 
@@ -449,6 +490,9 @@ private fun GuestRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateGuestSheet(
+    availableDoors: List<AccessibleDoor>,
+    errorMessage: String?,
+    isSubmitting: Boolean,
     onSave: (CreateGuestRequest) -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -468,6 +512,8 @@ private fun CreateGuestSheet(
     var selectedTtl by remember { mutableIntStateOf(24) }
     var showIdTypePicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var selectedDoorIds by remember { mutableStateOf(setOf<String>()) }
+    var showDoorPicker by remember { mutableStateOf(false) }
 
     val idTypes = listOf(
         "" to stringResource(R.string.guest_id_none),
@@ -502,11 +548,13 @@ private fun CreateGuestSheet(
                     idDocumentNumber = idDocNumber.ifBlank { null },
                     expectedAt = expectedIso,
                     notifyHost = notifyHost,
+                    doorIds = selectedDoorIds.sorted(),
                     accessTtlHours = selectedTtl,
                 ),
             )
         },
-        confirmEnabled = isValid,
+        confirmEnabled = isValid && !isSubmitting,
+        errorMessage = errorMessage,
     ) {
         item {
             MistyGroupedSection(title = stringResource(R.string.guest_section_visitor)) {
@@ -609,6 +657,21 @@ private fun CreateGuestSheet(
                 }
             }
         }
+        item {
+            MistyGroupedSection(title = stringResource(R.string.guest_section_doors)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    MistyReadonlyField(
+                        value = if (selectedDoorIds.isEmpty()) {
+                            stringResource(R.string.guest_doors_default)
+                        } else {
+                            stringResource(R.string.guest_doors_selected, selectedDoorIds.size)
+                        },
+                        label = stringResource(R.string.guest_select_doors),
+                        onClick = { showDoorPicker = true },
+                    )
+                }
+            }
+        }
     }
 
     if (showIdTypePicker) {
@@ -637,6 +700,22 @@ private fun CreateGuestSheet(
                 expectedDate = datePickerState.selectedDateMillis
                 showDatePicker = false
             },
+        )
+    }
+
+    if (showDoorPicker) {
+        MistyMultiSelectPickerSheet(
+            title = stringResource(R.string.guest_select_doors),
+            doneLabel = stringResource(R.string.common_done),
+            items = availableDoors,
+            itemLabel = { it.name },
+            isSelected = { it.id in selectedDoorIds },
+            onToggle = { door ->
+                selectedDoorIds = if (door.id in selectedDoorIds) selectedDoorIds - door.id else selectedDoorIds + door.id
+            },
+            onDismiss = { showDoorPicker = false },
+            searchPlaceholder = stringResource(R.string.search_doors),
+            itemDetail = { it.groupName },
         )
     }
 }
