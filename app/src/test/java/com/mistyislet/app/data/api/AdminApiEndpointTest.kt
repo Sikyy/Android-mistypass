@@ -1,5 +1,7 @@
 package com.mistyislet.app.data.api
 
+import com.mistyislet.app.core.network.NetworkJson
+import com.mistyislet.app.domain.model.CreateGuestRequest
 import com.mistyislet.app.domain.model.ShareAccessRequest
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -19,16 +21,17 @@ class AdminApiEndpointTest {
     private lateinit var server: MockWebServer
     private lateinit var api: AdminApi
 
+    // Not NetworkJson on purpose: assertion-side parsing must stay strict
+    // (no coerceInputValues) so a malformed recorded body fails the test
+    // instead of being coerced back to property defaults.
+    private val bodyJson = Json { ignoreUnknownKeys = true }
+
     @Before
     fun setUp() {
         server = MockWebServer()
-        val json = Json {
-            ignoreUnknownKeys = true
-            coerceInputValues = true
-        }
         api = Retrofit.Builder()
             .baseUrl(server.url("/api/v1/"))
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .addConverterFactory(NetworkJson.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(AdminApi::class.java)
     }
@@ -70,9 +73,37 @@ class AdminApiEndpointTest {
         val body = recorded.body.readUtf8()
         // Backend requires the snake_case key `door_ids`; an empty body (the old bug) regresses this.
         assertTrue("body should contain door_ids, was: $body", body.contains("\"door_ids\""))
-        val parsed = Json { ignoreUnknownKeys = true }
-            .decodeFromString(ShareAccessRequest.serializer(), body)
+        val parsed = bodyJson.decodeFromString(ShareAccessRequest.serializer(), body)
         assertEquals(listOf("door-1", "door-2"), parsed.doorIds)
+    }
+
+    @Test
+    fun `create guest sends door_ids in request body`() = runTest {
+        server.enqueueJson("""{"id":"guest-1","name":"Tamu","status":"expected"}""")
+
+        api.createGuest(
+            "place-1",
+            CreateGuestRequest(name = "Tamu", doorIds = listOf("door-1", "door-2")),
+        )
+
+        val recorded = server.takeRequest()
+        assertEquals("/api/v1/app/places/place-1/guests", recorded.path)
+        val body = recorded.body.readUtf8()
+        assertTrue("body should contain door_ids, was: $body", body.contains("\"door_ids\""))
+        val parsed = bodyJson.decodeFromString(CreateGuestRequest.serializer(), body)
+        assertEquals(listOf("door-1", "door-2"), parsed.doorIds)
+    }
+
+    @Test
+    fun `create guest sends empty door_ids when none selected`() = runTest {
+        server.enqueueJson("""{"id":"guest-2","name":"Tamu","status":"expected"}""")
+
+        api.createGuest("place-1", CreateGuestRequest(name = "Tamu"))
+
+        val body = server.takeRequest().body.readUtf8()
+        // Production Json uses encodeDefaults=true, so an unselected door list goes out as
+        // door_ids:[] — identical to the pre-feature request body (backend treats [] as default).
+        assertTrue("empty selection should send door_ids:[], was: $body", body.contains("\"door_ids\":[]"))
     }
 
     @Test

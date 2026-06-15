@@ -41,7 +41,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.mistyislet.app.R
-import com.mistyislet.app.core.network.ApiResult
 import com.mistyislet.app.data.repository.AdminRepository
 import com.mistyislet.app.data.repository.SelectedPlaceRepository
 import com.mistyislet.app.domain.model.AdminSchedule
@@ -80,6 +79,7 @@ private val weekends = listOf("Sat", "Sun")
 class AdminSchedulesViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AdminSchedule>>(emptyList())
     val items: StateFlow<List<AdminSchedule>> = _items
@@ -132,11 +132,9 @@ class AdminSchedulesViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getSchedules(pid)) {
-            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.schedules }; _error.value = null }
-            is ApiResult.Error -> { _items.value = AdminDemoData.schedules; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.schedules; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getSchedules(pid)) { AdminDemoData.schedules }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }

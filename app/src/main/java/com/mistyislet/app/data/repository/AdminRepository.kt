@@ -62,10 +62,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AdminRepository @Inject constructor(
+open class AdminRepository @Inject constructor(
     private val adminApi: AdminApi,
 ) {
-    suspend fun getEvents(placeId: String): ApiResult<List<AdminEvent>> =
+    open suspend fun getEvents(placeId: String): ApiResult<List<AdminEvent>> =
         safeApiCall { adminApi.listEvents(placeId).items }
 
     suspend fun getEvent(placeId: String, eventId: String): ApiResult<AdminEvent> =
@@ -83,7 +83,7 @@ class AdminRepository @Inject constructor(
     suspend fun getIncidentOccurrences(placeId: String, incidentId: String): ApiResult<List<IncidentOccurrence>> =
         safeApiCall { adminApi.getIncidentOccurrences(placeId, incidentId).items }
 
-    suspend fun getUsers(placeId: String): ApiResult<List<AdminUser>> =
+    open suspend fun getUsers(placeId: String): ApiResult<List<AdminUser>> =
         safeApiCall { adminApi.listUsers(placeId).items }
 
     suspend fun getUser(placeId: String, userId: String): ApiResult<AdminUser> =

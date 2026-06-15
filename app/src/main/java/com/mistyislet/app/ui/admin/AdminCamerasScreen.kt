@@ -85,6 +85,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminCamerasViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<Camera>>(emptyList())
     val items: StateFlow<List<Camera>> = _items
@@ -182,11 +183,9 @@ class AdminCamerasViewModel @Inject constructor(
     }
 
     private suspend fun loadData() {
-        when (val result = adminRepository.getCameras()) {
-            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.cameras }; _error.value = null }
-            is ApiResult.Error -> { _items.value = AdminDemoData.cameras; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.cameras; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getCameras()) { AdminDemoData.cameras }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }

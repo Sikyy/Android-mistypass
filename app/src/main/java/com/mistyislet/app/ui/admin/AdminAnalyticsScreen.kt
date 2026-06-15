@@ -96,6 +96,7 @@ import javax.inject.Inject
 class AdminAnalyticsViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _summary = MutableStateFlow<AnalyticsSummary?>(null)
     val summary: StateFlow<AnalyticsSummary?> = _summary
@@ -139,16 +140,26 @@ class AdminAnalyticsViewModel @Inject constructor(
         val pid = placeId ?: return
         when (val result = adminRepository.getAnalyticsSummary(pid, _days.value)) {
             is ApiResult.Success -> {
-                _summary.value = if (result.data.isEmptyAnalytics()) AdminDemoData.analyticsSummary(_days.value) else result.data
+                _summary.value = if (result.data.isEmptyAnalytics()) {
+                    demoFallback.demoOrNull { AdminDemoData.analyticsSummary(_days.value) } ?: result.data
+                } else {
+                    result.data
+                }
                 _error.value = null
             }
-            is ApiResult.Error -> { _summary.value = AdminDemoData.analyticsSummary(_days.value); _error.value = null }
-            is ApiResult.Exception -> { _summary.value = AdminDemoData.analyticsSummary(_days.value); _error.value = null }
+            is ApiResult.Error -> {
+                val demo = demoFallback.demoOrNull { AdminDemoData.analyticsSummary(_days.value) }
+                _summary.value = demo
+                _error.value = if (demo == null) result.message else null
+            }
+            is ApiResult.Exception -> {
+                val demo = demoFallback.demoOrNull { AdminDemoData.analyticsSummary(_days.value) }
+                _summary.value = demo
+                _error.value = if (demo == null) result.throwable.adminErrorMessage() else null
+            }
         }
-        when (val result = adminRepository.getFailedAttempts(pid, _days.value)) {
-            is ApiResult.Success -> _failedAttempts.value = result.data.ifEmpty { AdminDemoData.failedAttempts() }
-            else -> _failedAttempts.value = AdminDemoData.failedAttempts()
-        }
+        _failedAttempts.value =
+            demoFallback.resolveList(adminRepository.getFailedAttempts(pid, _days.value)) { AdminDemoData.failedAttempts() }.items
         _isLoading.value = false
     }
 }

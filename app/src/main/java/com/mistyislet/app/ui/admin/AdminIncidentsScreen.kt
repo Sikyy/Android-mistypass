@@ -64,6 +64,7 @@ import javax.inject.Inject
 class AdminIncidentsViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AdminIncident>>(emptyList())
     val items: StateFlow<List<AdminIncident>> = _items
@@ -90,10 +91,7 @@ class AdminIncidentsViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getIncidents(pid)) {
-            is ApiResult.Success -> _items.value = result.data.ifEmpty { AdminDemoData.incidents }
-            else -> _items.value = AdminDemoData.incidents
-        }
+        _items.value = demoFallback.resolveList(adminRepository.getIncidents(pid)) { AdminDemoData.incidents }.items
         _isLoading.value = false
     }
 }
@@ -110,6 +108,7 @@ data class AdminIncidentDetailUiState(
 class AdminIncidentDetailViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _state = MutableStateFlow(AdminIncidentDetailUiState())
     val state: StateFlow<AdminIncidentDetailUiState> = _state
@@ -136,31 +135,33 @@ class AdminIncidentDetailViewModel @Inject constructor(
                     when (val occurrencesResult = adminRepository.getIncidentOccurrences(placeId, incidentId)) {
                         is ApiResult.Success -> _state.value = AdminIncidentDetailUiState(
                             incident = incidentResult.data,
-                            occurrences = occurrencesResult.data.ifEmpty { AdminDemoData.incidentOccurrences },
+                            occurrences = occurrencesResult.data.ifEmpty {
+                                demoFallback.demoOrNull { AdminDemoData.incidentOccurrences }.orEmpty()
+                            },
                             isLoading = false,
                         )
                         is ApiResult.Error -> _state.value = AdminIncidentDetailUiState(
                             incident = incidentResult.data,
-                            occurrences = AdminDemoData.incidentOccurrences,
+                            occurrences = demoFallback.demoOrNull { AdminDemoData.incidentOccurrences }.orEmpty(),
                             isLoading = false,
                             occurrencesError = null,
                         )
                         is ApiResult.Exception -> _state.value = AdminIncidentDetailUiState(
                             incident = incidentResult.data,
-                            occurrences = AdminDemoData.incidentOccurrences,
+                            occurrences = demoFallback.demoOrNull { AdminDemoData.incidentOccurrences }.orEmpty(),
                             isLoading = false,
                             occurrencesError = null,
                         )
                     }
                 }
-                is ApiResult.Error -> _state.value = AdminDemoData.incident(incidentId)?.let { demo ->
+                is ApiResult.Error -> _state.value = demoFallback.demoOrNull { AdminDemoData.incident(incidentId) }?.let { demo ->
                     AdminIncidentDetailUiState(
                         incident = demo,
                         occurrences = AdminDemoData.incidentOccurrences,
                         isLoading = false,
                     )
                 } ?: AdminIncidentDetailUiState(isLoading = false, error = incidentResult.message)
-                is ApiResult.Exception -> _state.value = AdminDemoData.incident(incidentId)?.let { demo ->
+                is ApiResult.Exception -> _state.value = demoFallback.demoOrNull { AdminDemoData.incident(incidentId) }?.let { demo ->
                     AdminIncidentDetailUiState(
                         incident = demo,
                         occurrences = AdminDemoData.incidentOccurrences,

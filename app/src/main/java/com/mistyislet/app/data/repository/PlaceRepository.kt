@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PlaceRepository @Inject constructor(
+open class PlaceRepository @Inject constructor(
     private val placeApi: PlaceApi,
 ) {
     suspend fun listOrgs(): ApiResult<List<Organization>> = safeApiCall {
@@ -25,7 +25,7 @@ class PlaceRepository @Inject constructor(
         placeApi.listPlaces(orgId)
     }
 
-    suspend fun listPlaceDoors(placeId: String): ApiResult<List<AccessibleDoor>> = safeApiCall {
+    open suspend fun listPlaceDoors(placeId: String): ApiResult<List<AccessibleDoor>> = safeApiCall {
         placeApi.listPlaceDoors(placeId).items
     }
 

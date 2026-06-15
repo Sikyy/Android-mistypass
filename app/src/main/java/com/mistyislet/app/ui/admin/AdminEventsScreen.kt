@@ -66,6 +66,7 @@ import javax.inject.Inject
 class AdminEventsViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _items = MutableStateFlow<List<AdminEvent>>(emptyList())
     val items: StateFlow<List<AdminEvent>> = _items
@@ -94,11 +95,9 @@ class AdminEventsViewModel @Inject constructor(
 
     private suspend fun loadData() {
         val pid = placeId ?: return
-        when (val result = adminRepository.getEvents(pid)) {
-            is ApiResult.Success -> { _items.value = result.data.ifEmpty { AdminDemoData.events }; _error.value = null }
-            is ApiResult.Error -> { _items.value = AdminDemoData.events; _error.value = null }
-            is ApiResult.Exception -> { _items.value = AdminDemoData.events; _error.value = null }
-        }
+        val state = demoFallback.resolveList(adminRepository.getEvents(pid)) { AdminDemoData.events }
+        _items.value = state.items
+        _error.value = state.error
         _isLoading.value = false
     }
 }
@@ -115,6 +114,7 @@ data class AdminEventDetailUiState(
 class AdminEventDetailViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val selectedPlaceRepository: SelectedPlaceRepository,
+    private val demoFallback: AdminDemoFallback,
 ) : ViewModel() {
     private val _state = MutableStateFlow(AdminEventDetailUiState())
     val state: StateFlow<AdminEventDetailUiState> = _state
@@ -141,31 +141,33 @@ class AdminEventDetailViewModel @Inject constructor(
                     when (val relatedResult = adminRepository.getRelatedEvents(placeId, eventId)) {
                         is ApiResult.Success -> _state.value = AdminEventDetailUiState(
                             event = eventResult.data,
-                            relatedEvents = relatedResult.data.ifEmpty { AdminDemoData.relatedEvents(eventId) },
+                            relatedEvents = relatedResult.data.ifEmpty {
+                                demoFallback.demoOrNull { AdminDemoData.relatedEvents(eventId) }.orEmpty()
+                            },
                             isLoading = false,
                         )
                         is ApiResult.Error -> _state.value = AdminEventDetailUiState(
                             event = eventResult.data,
-                            relatedEvents = AdminDemoData.relatedEvents(eventId),
+                            relatedEvents = demoFallback.demoOrNull { AdminDemoData.relatedEvents(eventId) }.orEmpty(),
                             isLoading = false,
                             relatedError = null,
                         )
                         is ApiResult.Exception -> _state.value = AdminEventDetailUiState(
                             event = eventResult.data,
-                            relatedEvents = AdminDemoData.relatedEvents(eventId),
+                            relatedEvents = demoFallback.demoOrNull { AdminDemoData.relatedEvents(eventId) }.orEmpty(),
                             isLoading = false,
                             relatedError = null,
                         )
                     }
                 }
-                is ApiResult.Error -> _state.value = AdminDemoData.event(eventId)?.let { demo ->
+                is ApiResult.Error -> _state.value = demoFallback.demoOrNull { AdminDemoData.event(eventId) }?.let { demo ->
                     AdminEventDetailUiState(
                         event = demo,
                         relatedEvents = AdminDemoData.relatedEvents(eventId),
                         isLoading = false,
                     )
                 } ?: AdminEventDetailUiState(isLoading = false, error = eventResult.message)
-                is ApiResult.Exception -> _state.value = AdminDemoData.event(eventId)?.let { demo ->
+                is ApiResult.Exception -> _state.value = demoFallback.demoOrNull { AdminDemoData.event(eventId) }?.let { demo ->
                     AdminEventDetailUiState(
                         event = demo,
                         relatedEvents = AdminDemoData.relatedEvents(eventId),

@@ -49,16 +49,22 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/v1/\"")
+            // Local/mock build: admin screens may fall back to AdminDemoData when the API
+            // is unavailable so the console stays explorable offline.
+            buildConfigField("Boolean", "ALLOW_DEMO_DATA", "true")
             isDebuggable = true
         }
         create("staging") {
             initWith(getByName("debug"))
             buildConfigField("String", "API_BASE_URL", "\"https://staging-api.mistyislet.com/api/v1/\"")
+            // Real backend: never fabricate demo data — API failures must surface as errors.
+            buildConfigField("Boolean", "ALLOW_DEMO_DATA", "false")
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = true
         }
         release {
             buildConfigField("String", "API_BASE_URL", "\"https://api.mistyislet.com/api/v1/\"")
+            buildConfigField("Boolean", "ALLOW_DEMO_DATA", "false")
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true

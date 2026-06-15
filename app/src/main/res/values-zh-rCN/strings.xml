@@ -375,6 +375,10 @@
     <string name="guest_set_expected_time">设置预计到达时间</string>
     <string name="guest_pick_date">选择日期</string>
     <string name="guest_access_duration">通行时长</string>
+    <string name="guest_section_doors">可访问门</string>
+    <string name="guest_select_doors">选择门</string>
+    <string name="guest_doors_default">默认权限</string>
+    <string name="guest_doors_selected">已选 %1$d 扇门</string>
     <string name="booking_spaces">空间</string>
     <string name="booking_active">进行中</string>
     <string name="booking_past">已结束</string>
